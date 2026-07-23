@@ -1,5 +1,3 @@
-version: '3.8'
-
 # ==============================================================================
 # Docker Compose Setup for RAG PDF Chatbot
 # Follows .agents/skills/docker-patterns/SKILL.md best practices:
