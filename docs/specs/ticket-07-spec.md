@@ -1,7 +1,7 @@
 # Ticket-07 Specification: Premium Next.js UI Chat Interface & Citation Panel
 
 > **Reference Ticket:** [TICKET-07] (from `docs/TICKETS.md`)  
-> **Applied Skills:** `to-spec`, `nextjs-best-practices`, `frontend-design`, `tailwind-design-system`, `typescript-advanced-types`, `clean-code`  
+> **Applied Skills:** `to-spec`, `nextjs-best-practices`, `design-taste-frontend`, `tailwind-design-system`, `typescript-advanced-types`, `clean-code`  
 > **Status:** Specification Complete (Ready for Implementation)  
 
 ---

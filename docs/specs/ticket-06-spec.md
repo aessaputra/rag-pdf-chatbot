@@ -1,7 +1,7 @@
 # Ticket-06 Specification: Frontend Next.js 15 Setup & Supabase Auth Client
 
 > **Reference Ticket:** [TICKET-06] (from `docs/TICKETS.md`)  
-> **Applied Skills:** `to-spec`, `nextjs-best-practices`, `nextjs-supabase-auth`, `frontend-design`, `tailwind-design-system`, `typescript-advanced-types`, `clean-code`  
+> **Applied Skills:** `to-spec`, `nextjs-best-practices`, `nextjs-supabase-auth`, `design-taste-frontend`, `tailwind-design-system`, `typescript-advanced-types`, `clean-code`  
 > **Status:** Specification Complete (Ready for Implementation)  
 
 ---
