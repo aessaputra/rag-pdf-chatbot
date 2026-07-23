@@ -2,11 +2,11 @@
 Configuration Module
 
 Loads and validates environment variables using Pydantic v2 BaseSettings.
-Supports modern Supabase key conventions (SUPABASE_SECRET_KEY) with legacy fallback choices.
+Supports modern Supabase key conventions (SUPABASE_SECRET_KEY, SUPABASE_JWKS_URL).
 """
 
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,7 +14,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application Settings Model."""
 
-    # Supabase Configuration
+    # Modern Supabase Configuration
     SUPABASE_URL: str = Field(..., alias="SUPABASE_URL")
     SUPABASE_SECRET_KEY: str = Field(
         ...,
@@ -24,7 +24,8 @@ class Settings(BaseSettings):
         "placeholder_service_role_key",
         validation_alias=AliasChoices("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY")
     )
-    SUPABASE_JWT_SECRET: str = Field(..., alias="SUPABASE_JWT_SECRET")
+    SUPABASE_JWKS_URL: Optional[str] = Field(None, alias="SUPABASE_JWKS_URL")
+    SUPABASE_JWT_SECRET: str = Field("placeholder_jwt_secret", alias="SUPABASE_JWT_SECRET")
 
     # LLM Provider Configuration
     DEFAULT_LLM_PROVIDER: Literal["gemini", "openai", "ollama"] = Field("gemini", alias="DEFAULT_LLM_PROVIDER")
