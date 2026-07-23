@@ -33,7 +33,7 @@ def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPaylo
     """
     Verifies a Supabase JWT access token.
     Uses modern JWKS endpoint if token has 'kid' header and SUPABASE_JWKS_URL is provided,
-    otherwise falls back to HMAC secret decoding.
+    otherwise falls back to HMAC secret decoding with flexible algorithm allowance.
     """
     if secret is None:
         secret = getattr(settings, "SUPABASE_JWT_SECRET", None) or getattr(settings, "SUPABASE_SECRET_KEY", None)
@@ -50,14 +50,15 @@ def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPaylo
             payload = jwt.decode(
                 token,
                 signing_key.key,
-                algorithms=["RS256", "ES256", "HS256"],
+                algorithms=list(set([alg, "RS256", "ES256", "HS256"])),
                 options={"verify_aud": False}
             )
         else:
+            allowed_algs = list(set([alg, "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "ES256", "PS256", "EdDSA"]))
             payload = jwt.decode(
                 token,
                 secret,
-                algorithms=["HS256", "RS256"],
+                algorithms=allowed_algs,
                 options={"verify_aud": False}
             )
 
