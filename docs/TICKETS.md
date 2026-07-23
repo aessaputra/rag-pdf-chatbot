@@ -54,11 +54,13 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-05] FastAPI Main Endpoints & Router Integration
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
+  - `backend/app/schemas.py`
   - `backend/app/routers/document_router.py`
   - `backend/app/routers/chat_router.py`
   - `backend/app/main.py`
+  - `backend/tests/test_routers.py`
 - **Description**: Menyusun endpoint REST API untuk unggah/hapus dokumen dan endpoint streaming RAG SSE.
 - **Dependencies**: TICKET-02, TICKET-03, TICKET-04
 

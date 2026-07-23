@@ -56,3 +56,11 @@ class DocumentUploadResponse(BaseModel):
     total_pages: int
     total_chunks: int
     created_at: datetime
+
+
+class ChatQueryRequest(BaseModel):
+    """Payload for submitting a RAG query to the streaming endpoint."""
+
+    query: str = Field(..., min_length=1, description="User question prompt")
+    provider: Optional[str] = Field("gemini", description="LLM provider name: gemini, openai, or ollama")
+    document_ids: Optional[List[str]] = Field(None, description="Optional document ID filters")
