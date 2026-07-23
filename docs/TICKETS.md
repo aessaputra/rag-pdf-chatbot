@@ -20,8 +20,9 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-02] Supabase JWT Authentication Middleware in FastAPI
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
+  - `backend/app/schemas.py`
   - `backend/app/auth.py`
   - `backend/tests/test_auth.py`
 - **Description**: Menyiapkan middleware JWT Supabase untuk memverifikasi token Bearer pada HTTP header dan mengisolasi `user_id` di FastAPI.
