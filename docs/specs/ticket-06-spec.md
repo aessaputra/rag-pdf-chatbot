@@ -1,8 +1,8 @@
 # Ticket-06 Specification: Frontend Next.js 15 Setup & Supabase Auth Client
 
 > **Reference Ticket:** [TICKET-06] (from `docs/TICKETS.md`)  
-> **Applied Skills:** `to-spec`, `nextjs-best-practices`, `nextjs-supabase-auth`, `frontend-design`, `tailwind-design-system`, `clean-code`  
-> **Status:** Specification Complete (Ready for Implementation)
+> **Applied Skills:** `to-spec`, `nextjs-best-practices`, `nextjs-supabase-auth`, `frontend-design`, `tailwind-design-system`, `typescript-advanced-types`, `clean-code`  
+> **Status:** Specification Complete (Ready for Implementation)  
 
 ---
 
@@ -10,7 +10,7 @@
 
 Sebagai pengguna, kita membutuhkan antarmuka web modern yang responsif, estetis, dan aman untuk melakukan login atau pendaftaran akun sebelum dapat mengakses dashboard RAG PDF Chatbot.
 
-Tanpa konfigurasi frontend Next.js 15 yang tepat, integrasi Supabase Auth Client (`@supabase/ssr`), dan desain UI berkelas tinggi (_glassmorphism dark mode_), pengalaman pengguna akan terasa kaku, tidak menarik, dan tidak aman.
+Tanpa konfigurasi frontend Next.js 15 yang tepat, integrasi Supabase Auth Client (`@supabase/ssr`), type safety TypeScript mutakhir (*Discriminated Unions* & *Strict Null Checks*), dan desain UI berkelas tinggi (*glassmorphism dark mode*), pengalaman pengguna akan terasa kaku, tidak menarik, dan rentan terhadap runtime type error.
 
 ---
 
@@ -19,12 +19,15 @@ Tanpa konfigurasi frontend Next.js 15 yang tepat, integrasi Supabase Auth Client
 Menginisialisasi proyek frontend `frontend/` menggunakan **Next.js 15 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS v4**, dan **`@supabase/ssr`**:
 
 1. **Package Setup (`frontend/package.json`)**: Mengonfigurasi dependensi Next.js 15, `@supabase/ssr`, `@supabase/supabase-js`, Lucide React, dan Tailwind CSS v4.
-2. **Supabase Browser Client (`frontend/src/lib/supabaseClient.ts`)**: Membuat helper Supabase Client yang aman untuk browser client-side.
-3. **Design System & Global Styling (`frontend/src/app/globals.css` & `layout.tsx`)**:
+2. **TypeScript Advanced Types (`frontend/src/types/index.ts`)**:
+   - Menyiapkan *Discriminated Unions* untuk `AuthState` (`{ status: 'idle' } | { status: 'loading' } | { status: 'success'; user: User } | { status: 'error'; message: string }`).
+   - Generic API response wrappers (`ApiResponse<T>`) tanpa pengunaan `any`.
+3. **Supabase Browser Client (`frontend/src/lib/supabaseClient.ts`)**: Membuat helper Supabase Client yang aman untuk browser client-side.
+4. **Design System & Global Styling (`frontend/src/app/globals.css` & `layout.tsx`)**:
    - Tema _Modern Dark Mode_ dengan palet warna curated (Slate 950, Indigo 600, Cyan 500).
    - Efek _Glassmorphism_ (`backdrop-blur-md`, `bg-slate-900/60`, `border-slate-800`).
    - Tipografi modern berbasis Google Font (Inter) & ikonisasi Lucide React.
-4. **Login / Register Page (`frontend/src/app/login/page.tsx`)**:
+5. **Login / Register Page (`frontend/src/app/login/page.tsx`)**:
    - Form otentikasi interaktif dengan tab beralih antara "Masuk Akun" dan "Daftar Baru".
    - Penanganan _state loading_, pesan error interaktif, dan navigasi otomatis ke `/dashboard` saat login sukses.
 
