@@ -2,7 +2,8 @@
 -- Supabase Migration: RAG PDF Chatbot Schema
 -- Created per .agents/skills/supabase and .agents/skills/supabase-postgres-best-practices
 -- Includes: pgvector extension, documents, document_chunks, chat_sessions, chat_messages,
--- HNSW vector cosine index, and cached RLS policies ((select auth.uid()) = user_id)
+-- HNSW vector cosine index, cached RLS policies ((select auth.uid()) = user_id),
+-- search_path hardening, and Data API Grants for authenticated role.
 -- ==============================================================================
 
 -- 1. Enable Vector Extension
@@ -79,66 +80,79 @@ ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- RLS: documents
+DROP POLICY IF EXISTS "Users can select own documents" ON public.documents;
 CREATE POLICY "Users can select own documents"
 ON public.documents FOR SELECT TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own documents" ON public.documents;
 CREATE POLICY "Users can insert own documents"
 ON public.documents FOR INSERT TO authenticated
 WITH CHECK ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own documents" ON public.documents;
 CREATE POLICY "Users can delete own documents"
 ON public.documents FOR DELETE TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
 -- RLS: document_chunks
+DROP POLICY IF EXISTS "Users can select own chunks" ON public.document_chunks;
 CREATE POLICY "Users can select own chunks"
 ON public.document_chunks FOR SELECT TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own chunks" ON public.document_chunks;
 CREATE POLICY "Users can insert own chunks"
 ON public.document_chunks FOR INSERT TO authenticated
 WITH CHECK ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own chunks" ON public.document_chunks;
 CREATE POLICY "Users can delete own chunks"
 ON public.document_chunks FOR DELETE TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
 -- RLS: chat_sessions
+DROP POLICY IF EXISTS "Users can select own sessions" ON public.chat_sessions;
 CREATE POLICY "Users can select own sessions"
 ON public.chat_sessions FOR SELECT TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own sessions" ON public.chat_sessions;
 CREATE POLICY "Users can insert own sessions"
 ON public.chat_sessions FOR INSERT TO authenticated
 WITH CHECK ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can update own sessions" ON public.chat_sessions;
 CREATE POLICY "Users can update own sessions"
 ON public.chat_sessions FOR UPDATE TO authenticated
 USING ((SELECT auth.uid()) = user_id)
 WITH CHECK ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own sessions" ON public.chat_sessions;
 CREATE POLICY "Users can delete own sessions"
 ON public.chat_sessions FOR DELETE TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
 -- RLS: chat_messages
+DROP POLICY IF EXISTS "Users can select own messages" ON public.chat_messages;
 CREATE POLICY "Users can select own messages"
 ON public.chat_messages FOR SELECT TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own messages" ON public.chat_messages;
 CREATE POLICY "Users can insert own messages"
 ON public.chat_messages FOR INSERT TO authenticated
 WITH CHECK ((SELECT auth.uid()) = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own messages" ON public.chat_messages;
 CREATE POLICY "Users can delete own messages"
 ON public.chat_messages FOR DELETE TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
 -- ==============================================================================
--- RPC Function: Vector Similarity Search
+-- RPC Function: Vector Similarity Search (Hardened with search_path)
 -- ==============================================================================
-CREATE OR REPLACE FUNCTION match_document_chunks(
+CREATE OR REPLACE FUNCTION public.match_document_chunks(
     query_embedding VECTOR(768),
     match_count INT DEFAULT 4,
     filter_user_id UUID DEFAULT NULL
@@ -153,6 +167,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY INVOKER
+SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
     RETURN QUERY
@@ -169,3 +184,10 @@ BEGIN
     LIMIT match_count;
 END;
 $$;
+
+-- ==============================================================================
+-- Data API Grants (Supabase Core Principle 4)
+-- ==============================================================================
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
