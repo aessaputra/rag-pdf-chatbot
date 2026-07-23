@@ -96,10 +96,11 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-08] Docker Integration & Full Stack Verification
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
   - `docker-compose.yml`
   - `backend/Dockerfile`
+  - `backend/.dockerignore`
   - `README.md`
 - **Description**: Menyiapkan file Docker Compose untuk kemudahan run secara terintegrasi dan memverifikasi seluruh alur RAG PDF Chatbot.
 - **Dependencies**: TICKET-05, TICKET-07
