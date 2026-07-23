@@ -35,7 +35,7 @@ class LLMFactory:
         else:  # Default: Google Gemini
             api_key = settings.GEMINI_API_KEY or "mock-gemini-key"
             return ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 google_api_key=api_key,
                 streaming=True
             )
@@ -59,6 +59,7 @@ class LLMFactory:
         else:  # Default: Google Gemini
             api_key = settings.GEMINI_API_KEY or "mock-gemini-key"
             return GoogleGenerativeAIEmbeddings(
-                model="models/text-embedding-004",
-                google_api_key=api_key
+                model="models/gemini-embedding-001",
+                google_api_key=api_key,
+                output_dimensionality=768
             )

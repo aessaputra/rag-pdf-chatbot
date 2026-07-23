@@ -88,8 +88,8 @@ class PDFIngestionService:
         doc_data = {
             "user_id": user_id,
             "filename": filename,
-            "file_path": f"documents/{user_id}/{filename}",
-            "file_size": file_size
+            "file_size": file_size,
+            "total_pages": total_pages
         }
         doc_response = supabase.table("documents").insert(doc_data).execute()
         document_id = doc_response.data[0]["id"]
@@ -106,6 +106,7 @@ class PDFIngestionService:
                 "document_id": document_id,
                 "user_id": user_id,
                 "content": chunk.content,
+                "page_number": chunk.page_number,
                 "metadata": chunk.metadata,
                 "embedding": embedding_vector
             })

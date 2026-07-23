@@ -1,165 +1,143 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabaseClient';
 import { deleteDocument, fetchSSEStream, listDocuments, uploadDocument } from '@/lib/api';
 import type { ChatMessage, Citation, DocumentItem, UserPayload } from '@/types';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 import Sidebar from '@/components/Sidebar';
 import DocumentManager from '@/components/DocumentManager';
 import ChatWindow from '@/components/ChatWindow';
 import CitationPanel from '@/components/CitationPanel';
 
+function createUserPayload(id: string, email: string | undefined): UserPayload {
+  return { user_id: id, email: email || '', role: 'authenticated' };
+}
+
+function createChatMessage(id: string, sender: 'user' | 'assistant', content: string): ChatMessage {
+  return { id, sender, content, citations: [], created_at: new Date().toISOString() };
+}
+
 export default function DashboardPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [user, setUser] = useState<UserPayload | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [provider, setProvider] = useState<string>('gemini');
-
+  const [provider, setProvider] = useState('gemini');
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState<boolean>(false);
-
+  const [isStreaming, setIsStreaming] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
 
-  // 1. Verify Authentication Session
   useEffect(() => {
-    async function checkAuth() {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+    let mounted = true;
+
+    async function initializeAuth() {
+      const { data: { user: authUser }, error } = await supabase.auth.getUser();
+      if (error || !authUser) { router.push('/login'); return; }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.push('/login'); return; }
+
+      if (!mounted) return;
+
+      setUser(createUserPayload(authUser.id, authUser.email));
+      setToken(session.access_token);
+
+      const docsRes = await listDocuments(session.access_token);
+      if (docsRes.success && docsRes.data && mounted) {
+        setDocuments(docsRes.data);
+      }
+    }
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      if (!mounted) return;
+
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setToken(null);
         router.push('/login');
         return;
       }
 
-      const sessionUser = data.session.user;
-      setUser({
-        user_id: sessionUser.id,
-        email: sessionUser.email || '',
-        role: 'authenticated',
-      });
-      setToken(data.session.access_token);
-
-      // Load Documents
-      const docsRes = await listDocuments(data.session.access_token);
-      if (docsRes.success && docsRes.data) {
-        setDocuments(docsRes.data);
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        setToken(session.access_token);
+        setUser(createUserPayload(session.user.id, session.user.email));
       }
-    }
+    });
 
-    checkAuth();
-  }, [router, supabase.auth]);
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, [supabase, router]);
 
-  // 2. Handle PDF Upload
-  const handleUploadDocument = async (file: File) => {
-    if (!token) return;
+  const reloadDocuments = useCallback(async (accessToken: string) => {
+    const res = await listDocuments(accessToken);
+    if (res.success && res.data) setDocuments(res.data);
+  }, []);
+
+  const handleUploadDocument = useCallback(async (file: File) => {
+    if (!token) throw new Error('Sesi login telah berakhir. Silakan login kembali.');
+
     const res = await uploadDocument(file, token);
-    if (res.success) {
-      // Reload Document List
-      const docsRes = await listDocuments(token);
-      if (docsRes.success && docsRes.data) {
-        setDocuments(docsRes.data);
-      }
-    } else {
-      throw new Error(res.error || 'Gagal mengunggah dokumen.');
-    }
-  };
+    if (!res.success) throw new Error(res.error || 'Gagal mengunggah dokumen.');
 
-  // 3. Handle PDF Delete
-  const handleDeleteDocument = async (id: string) => {
+    await reloadDocuments(token);
+  }, [token, reloadDocuments]);
+
+  const handleDeleteDocument = useCallback(async (id: string) => {
     if (!token) return;
     const res = await deleteDocument(id, token);
-    if (res.success) {
-      setDocuments((prev) => prev.filter((d) => d.id !== id));
-    }
-  };
+    if (res.success) setDocuments((prev) => prev.filter((d) => d.id !== id));
+  }, [token]);
 
-  // 4. Handle Logout
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
     router.push('/login');
-  };
+  }, [supabase, router]);
 
-  // 5. Handle New Chat
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     setMessages([]);
     setSelectedCitation(null);
-  };
+  }, []);
 
-  // 6. Handle Send Message with SSE Streaming
-  const handleSendMessage = async (query: string) => {
+  const updateAssistantMessage = useCallback((assistantId: string, update: Partial<ChatMessage>) => {
+    setMessages((prev) =>
+      prev.map((msg) => msg.id === assistantId ? { ...msg, ...update } : msg)
+    );
+  }, []);
+
+  const handleSendMessage = useCallback(async (query: string) => {
     if (!token) return;
 
-    const userMsgId = `user-${Date.now()}`;
-    const assistantMsgId = `assistant-${Date.now()}`;
+    const assistantId = `assistant-${Date.now()}`;
+    const userMsg = createChatMessage(`user-${Date.now()}`, 'user', query);
+    const assistantMsg = createChatMessage(assistantId, 'assistant', '');
 
-    const newUserMsg: ChatMessage = {
-      id: userMsgId,
-      sender: 'user',
-      content: query,
-      created_at: new Date().toISOString(),
-    };
-
-    const newAssistantMsg: ChatMessage = {
-      id: assistantMsgId,
-      sender: 'assistant',
-      content: '',
-      citations: [],
-      created_at: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, newUserMsg, newAssistantMsg]);
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setIsStreaming(true);
 
-    let streamCitations: Citation[] = [];
-    let streamTokens = '';
+    let accumulatedTokens = '';
 
-    await fetchSSEStream(
-      query,
-      token,
-      provider,
-      documents.map((d) => d.id),
-      (citations) => {
-        streamCitations = citations;
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMsgId
-              ? { ...msg, citations: streamCitations }
-              : msg
-          )
-        );
+    await fetchSSEStream(query, token, provider, documents.map((d) => d.id), {
+      onCitations: (citations) => updateAssistantMessage(assistantId, { citations }),
+      onToken: (tokenText) => {
+        accumulatedTokens += tokenText;
+        updateAssistantMessage(assistantId, { content: accumulatedTokens });
       },
-      (tokenText) => {
-        streamTokens += tokenText;
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMsgId
-              ? { ...msg, content: streamTokens }
-              : msg
-          )
-        );
-      },
-      () => {
+      onComplete: () => setIsStreaming(false),
+      onError: (errorMsg) => {
+        updateAssistantMessage(assistantId, { content: `Error: ${errorMsg}` });
         setIsStreaming(false);
       },
-      (errorMsg) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMsgId
-              ? { ...msg, content: `Error: ${errorMsg}` }
-              : msg
-          )
-        );
-        setIsStreaming(false);
-      }
-    );
-  };
+    });
+  }, [token, provider, documents, updateAssistantMessage]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
-      {/* Sidebar Component */}
       <Sidebar
         user={user}
         provider={provider}
@@ -167,23 +145,17 @@ export default function DashboardPage() {
         onNewChat={handleNewChat}
         onLogout={handleLogout}
       />
-
-      {/* Document Manager Component */}
       <DocumentManager
         documents={documents}
         onUpload={handleUploadDocument}
         onDelete={handleDeleteDocument}
       />
-
-      {/* Chat Window Component */}
       <ChatWindow
         messages={messages}
         isStreaming={isStreaming}
         onSendMessage={handleSendMessage}
         onSelectCitation={setSelectedCitation}
       />
-
-      {/* Citation Panel Drawer Component */}
       <CitationPanel
         citation={selectedCitation}
         onClose={() => setSelectedCitation(null)}

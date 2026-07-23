@@ -34,13 +34,19 @@ class RAGService:
         supabase = get_supabase_client()
         query_embedding = self.embeddings_model.embed_query(query)
 
-        # Call Supabase vector similarity search table
-        query_builder = supabase.table("document_chunks").select("id, content, metadata").eq("user_id", user_id)
-        if document_ids:
-            query_builder = query_builder.in_("document_id", document_ids)
+        # Call PostgreSQL HNSW Vector Cosine Distance Similarity Search RPC
+        rpc_params = {
+            "query_embedding": query_embedding,
+            "match_count": top_k,
+            "filter_user_id": user_id
+        }
+        response = supabase.rpc("match_document_chunks", rpc_params).execute()
+        results = response.data if response.data else []
 
-        response = query_builder.limit(top_k).execute()
-        return response.data if response.data else []
+        if document_ids:
+            results = [r for r in results if r.get("document_id") in document_ids]
+
+        return results
 
     def extract_citations(self, chunks: List[Dict[str, Any]]) -> List[Citation]:
         """Extracts structured Citation DTOs from retrieved document chunks."""

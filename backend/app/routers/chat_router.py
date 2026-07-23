@@ -2,15 +2,16 @@
 Chat Router Module
 
 Handles RAG query SSE streaming responses and conversation session history.
+Follows FastAPI best practices (Annotated dependencies, explicit router tags).
 """
 
 from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from app.auth import get_current_user
+from app.auth import CurrentUserDep
 from app.database import get_supabase_client
-from app.schemas import ChatQueryRequest, UserPayload
+from app.schemas import ChatQueryRequest
 from app.services.rag_service import RAGService
 
 router = APIRouter()
@@ -19,7 +20,7 @@ router = APIRouter()
 @router.post("/stream")
 async def stream_chat_response(
     request: ChatQueryRequest,
-    user: UserPayload = Depends(get_current_user)
+    user: CurrentUserDep
 ) -> StreamingResponse:
     """
     Submits a RAG query and streams Server-Sent Events (SSE) tokens and citations in real time.
@@ -38,7 +39,7 @@ async def stream_chat_response(
 
 
 @router.get("/sessions", response_model=List[Dict[str, Any]])
-def list_chat_sessions(user: UserPayload = Depends(get_current_user)) -> List[Dict[str, Any]]:
+def list_chat_sessions(user: CurrentUserDep) -> List[Dict[str, Any]]:
     """Retrieves all chat session history records owned by the authenticated user."""
     supabase = get_supabase_client()
     response = (

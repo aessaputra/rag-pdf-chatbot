@@ -57,7 +57,7 @@ export default function Sidebar({
             className="w-full glass-input py-2 px-3 rounded-lg text-xs font-medium text-slate-200 cursor-pointer"
           >
             <option value="gemini" className="bg-slate-900 text-white">
-              Google Gemini (Gemini 1.5 Flash)
+              Google Gemini (Gemini 2.5 Flash)
             </option>
             <option value="openai" className="bg-slate-900 text-white">
               OpenAI (GPT-4o mini)

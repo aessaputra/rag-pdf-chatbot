@@ -1,11 +1,4 @@
-"""
-Supabase Authentication Module
-
-Verifies incoming Bearer access tokens sent by Next.js frontend via PyJWT.
-Supports modern Supabase JWKS (JSON Web Key Set) endpoint URL validation and fallback HMAC secret verification.
-"""
-
-from typing import Optional
+from typing import Annotated, Optional
 import jwt
 from jwt import PyJWKClient
 from fastapi import Depends, HTTPException, status
@@ -16,7 +9,6 @@ from app.schemas import UserPayload
 
 security = HTTPBearer()
 
-# Cache PyJWKClient for modern Supabase JWKS endpoint
 _jwks_client: Optional[PyJWKClient] = None
 
 def get_jwks_client() -> Optional[PyJWKClient]:
@@ -29,12 +21,11 @@ def get_jwks_client() -> Optional[PyJWKClient]:
     return _jwks_client
 
 
+def _is_asymmetric_algorithm(alg: str) -> bool:
+    return alg.startswith("RS") or alg.startswith("ES") or alg.startswith("PS") or alg == "EdDSA"
+
+
 def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPayload:
-    """
-    Verifies a Supabase JWT access token.
-    Uses modern JWKS endpoint if token has 'kid' header and SUPABASE_JWKS_URL is provided,
-    otherwise falls back to HMAC secret decoding with flexible algorithm allowance.
-    """
     if secret is None:
         secret = getattr(settings, "SUPABASE_JWT_SECRET", None) or getattr(settings, "SUPABASE_SECRET_KEY", None)
 
@@ -43,22 +34,24 @@ def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPaylo
         alg = header.get("alg", "HS256")
         kid = header.get("kid")
 
-        jwks_client = get_jwks_client() if kid and alg.startswith("RS") else None
+        # Use JWKS for any asymmetric algorithm (RS256, ES256, PS256, EdDSA)
+        jwks_client = get_jwks_client() if kid and _is_asymmetric_algorithm(alg) else None
 
         if jwks_client:
             signing_key = jwks_client.get_signing_key_from_jwt(token)
             payload = jwt.decode(
                 token,
                 signing_key.key,
-                algorithms=list(set([alg, "RS256", "ES256", "HS256"])),
+                algorithms=[alg],
                 options={"verify_aud": False}
             )
         else:
-            allowed_algs = list(set([alg, "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "ES256", "PS256", "EdDSA"]))
+            # HMAC symmetric fallback — only allow HS* algorithms with a shared secret
+            hmac_algorithms = ["HS256", "HS384", "HS512"]
             payload = jwt.decode(
                 token,
                 secret,
-                algorithms=allowed_algs,
+                algorithms=hmac_algorithms,
                 options={"verify_aud": False}
             )
 
@@ -82,7 +75,7 @@ def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPaylo
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired authentication token."
         )
-    except jwt.PyJWTError as e:
+    except (jwt.PyJWTError, ValueError, KeyError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid or expired authentication token: {str(e)}"
@@ -92,5 +85,8 @@ def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPaylo
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> UserPayload:
-    """FastAPI Dependency for protected endpoints."""
     return verify_supabase_token(credentials.credentials)
+
+
+# FastAPI Annotated Dependency Type Alias per skill guidelines
+CurrentUserDep = Annotated[UserPayload, Depends(get_current_user)]

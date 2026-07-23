@@ -2,16 +2,16 @@
 Document Router Module
 
 Handles PDF document uploads, text extraction & chunk vectorization, listing documents, and deletion.
-Uses fastapi.concurrency.run_in_threadpool for non-blocking CPU & synchronous I/O operations.
+Follows FastAPI best practices (Annotated dependencies, explicit response models, run_in_threadpool).
 """
 
 from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 
-from app.auth import get_current_user
+from app.auth import CurrentUserDep
 from app.database import get_supabase_client
-from app.schemas import DocumentUploadResponse, UserPayload
+from app.schemas import DocumentUploadResponse
 from app.services.ingestion_service import PDFIngestionService
 
 router = APIRouter()
@@ -19,8 +19,8 @@ router = APIRouter()
 
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_pdf_document(
-    file: UploadFile = File(...),
-    user: UserPayload = Depends(get_current_user)
+    user: CurrentUserDep,
+    file: UploadFile = File(...)
 ) -> DocumentUploadResponse:
     """
     Uploads and ingests a PDF document.
@@ -52,20 +52,25 @@ async def upload_pdf_document(
         )
 
     # Run Supabase vector storage in threadpool
-    response = await run_in_threadpool(
-        ingestion_service.store_document_and_chunks,
-        filename=file.filename,
-        file_size=len(pdf_bytes),
-        user_id=user.user_id,
-        chunks=chunks,
-        total_pages=max(chunk.page_number for chunk in chunks)
-    )
-
-    return response
+    try:
+        response = await run_in_threadpool(
+            ingestion_service.store_document_and_chunks,
+            filename=file.filename,
+            file_size=len(pdf_bytes),
+            user_id=user.user_id,
+            chunks=chunks,
+            total_pages=max(chunk.page_number for chunk in chunks)
+        )
+        return response
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Gagal menyimpan dokumen ke database: {str(e)}"
+        )
 
 
 @router.get("", response_model=List[Dict[str, Any]])
-async def list_user_documents(user: UserPayload = Depends(get_current_user)) -> List[Dict[str, Any]]:
+async def list_user_documents(user: CurrentUserDep) -> List[Dict[str, Any]]:
     """Retrieves all uploaded PDF document metadata records owned by the authenticated user."""
     def fetch_docs():
         supabase = get_supabase_client()
@@ -78,7 +83,7 @@ async def list_user_documents(user: UserPayload = Depends(get_current_user)) -> 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: str,
-    user: UserPayload = Depends(get_current_user)
+    user: CurrentUserDep
 ) -> None:
     """Deletes a document and its associated vector chunks owned by the authenticated user."""
     def remove_doc():

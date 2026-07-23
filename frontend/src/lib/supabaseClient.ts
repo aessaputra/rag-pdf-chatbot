@@ -1,20 +1,17 @@
-/**
- * Supabase Browser Client Helper
- * Initializes browser-side client for Next.js App Router using @supabase/ssr.
- * Supports modern Publishable Key (NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) per @supabase/server & @supabase/ssr guidelines.
- */
-
 import { createBrowserClient } from '@supabase/ssr';
 
+let instance: ReturnType<typeof createBrowserClient> | null = null;
+
 export function createClient() {
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    'https://sgfhbxprnsolgcgzuymn.supabase.co';
+  if (instance) return instance;
 
-  const supabaseKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    'sb_publishable_lMDEZn1F3hJZa2jNKEXJvQ_sD04VImY';
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  if (!url || !key) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY harus di-set.');
+  }
+
+  instance = createBrowserClient(url, key);
+  return instance;
 }
