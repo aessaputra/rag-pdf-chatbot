@@ -1,30 +1,36 @@
 """
-App Configuration Module
+Configuration Module
 
-Defines application-wide settings using Pydantic BaseSettings, loading values from
-environment variables or .env file with default fallbacks.
+Loads and validates environment variables using Pydantic v2 BaseSettings.
+Supports modern Supabase key conventions (SUPABASE_SECRET_KEY) with legacy fallback choices.
 """
 
-from typing import Literal, Optional
-from pydantic import field_validator
+from functools import lru_cache
+from typing import Literal
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-SUPPORTED_LLM_PROVIDERS = ("gemini", "openai", "ollama")
 
 
 class Settings(BaseSettings):
-    """Application configuration settings schema and validator."""
+    """Application Settings Model."""
 
-    # Supabase Credentials
-    SUPABASE_URL: str = "https://placeholder.supabase.co"
-    SUPABASE_SERVICE_ROLE_KEY: str = "placeholder-key"
-    SUPABASE_JWT_SECRET: str = "placeholder-secret"
+    # Supabase Configuration
+    SUPABASE_URL: str = Field(..., alias="SUPABASE_URL")
+    SUPABASE_SECRET_KEY: str = Field(
+        ...,
+        validation_alias=AliasChoices("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY")
+    )
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(
+        "placeholder_service_role_key",
+        validation_alias=AliasChoices("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY")
+    )
+    SUPABASE_JWT_SECRET: str = Field(..., alias="SUPABASE_JWT_SECRET")
 
-    # LLM Provider Configurations
-    DEFAULT_LLM_PROVIDER: Literal["gemini", "openai", "ollama"] = "gemini"
-    GEMINI_API_KEY: Optional[str] = ""
-    OPENAI_API_KEY: Optional[str] = ""
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    # LLM Provider Configuration
+    DEFAULT_LLM_PROVIDER: Literal["gemini", "openai", "ollama"] = Field("gemini", alias="DEFAULT_LLM_PROVIDER")
+    GEMINI_API_KEY: str = Field("placeholder_gemini_key", alias="GEMINI_API_KEY")
+    OPENAI_API_KEY: str = Field("placeholder_openai_key", alias="OPENAI_API_KEY")
+    OLLAMA_BASE_URL: str = Field("http://localhost:11434", alias="OLLAMA_BASE_URL")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -32,16 +38,12 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    @field_validator("DEFAULT_LLM_PROVIDER")
-    @classmethod
-    def validate_llm_provider(cls, value: str) -> str:
-        """Ensures the configured default LLM provider is supported."""
-        normalized = value.lower().strip()
-        if normalized not in SUPPORTED_LLM_PROVIDERS:
-            raise ValueError(
-                f"Unsupported LLM provider '{value}'. Supported providers are: {SUPPORTED_LLM_PROVIDERS}"
-            )
-        return normalized
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Returns cached singleton Settings instance."""
+    return Settings()
 
 
-settings = Settings()
+# Singleton settings instance export
+settings = get_settings()

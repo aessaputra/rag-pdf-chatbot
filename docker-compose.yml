@@ -4,7 +4,7 @@
 # - Multi-container orchestration (Backend FastAPI + Frontend Next.js 15)
 # - Service discovery & dependency order via service_healthy condition
 # - Custom bridge network isolation (rag-network)
-# - Environment injection via env_file (Backend: service_role key, Frontend: anon key)
+# - Modern Supabase Publishable Key & Secret Key injection
 # ==============================================================================
 
 services:
@@ -41,7 +41,8 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY}}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}}
     depends_on:
       backend:
         condition: service_healthy
