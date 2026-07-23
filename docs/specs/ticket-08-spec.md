@@ -1,40 +1,44 @@
 # Ticket-08 Specification: Docker Integration & Full Stack Verification
 
 > **Reference Ticket:** [TICKET-08] (from `docs/TICKETS.md`)  
-> **Applied Skills:** `to-spec`, `docker-patterns`, `clean-code`  
+> **Applied Skills:** `to-spec`, `docker-patterns` (from `.agents/skills/docker-patterns/SKILL.md`), `clean-code`  
 > **Status:** Specification Complete (Ready for Implementation)  
 
 ---
 
 ## Problem Statement
 
-Sebagai pengembang dan pengoperasi sistem, kita membutuhkan konfigurasi kontainerisasi Docker (`Dockerfile` & `docker-compose.yml`) yang aman, efisien, dan siap produksi, serta dokumentasi panduan pengoperasian `README.md` yang lengkap.
+Sebagai pengembang dan pengoperasi sistem, kita membutuhkan konfigurasi kontainerisasi Docker (`Dockerfile`, `.dockerignore`, & `docker-compose.yml`) yang aman, efisien, dan siap produksi, serta dokumentasi panduan pengoperasian `README.md` yang lengkap.
 
-Tanpa konfigurasi kontainerisasi yang terstandar dan instruksi setup yang jelas, pengujian dan penyebaran (*deployment*) aplikasi full-stack RAG PDF Chatbot di lingkungan pengujian maupun produksi akan rentan terhadap inkonsistensi environment.
+Tanpa konfigurasi kontainerisasi yang terstandar mengikuti pola **`docker-patterns`** (penginstalan dependensi terpisah, eksekusi pengguna non-root, *pinned tags*, dan penyekapan jaringan *custom networks*), pengujian dan penyebaran aplikasi full-stack RAG PDF Chatbot akan rentan terhadap celah keamanan, *cache invalidation* berulang, dan masalah resolusi jaringan.
 
 ---
 
 ## Solution
 
-Menyusun file kontainerisasi `backend/Dockerfile`, `docker-compose.yml`, dan memperbarui `README.md`:
+Menyusun file kontainerisasi `backend/Dockerfile`, `backend/.dockerignore`, `docker-compose.yml`, dan memperbarui `README.md`:
 1. **Backend Dockerfile (`backend/Dockerfile`)**:
-   - Menggunakan base image ringan `python:3.12-slim`.
-   - Penginstalan dependensi teroptimasi (`pip install --no-cache-dir`).
-   - Mengaktifkan pengujian kesehatan kontainer (`HEALTHCHECK` pada `/health`).
-   - Eksekusi Uvicorn ASGI server pada port `8000` dengan bind `0.0.0.0`.
-2. **Docker Compose Configuration (`docker-compose.yml`)**:
-   - Mendefinisikan service `backend` terintegrasi dengan variabel lingkungan dari `.env`.
-   - Konfigurasi port mapping `8000:8000` dan healthcheck dependency.
-3. **Full-Stack Documentation (`README.md`)**:
-   - Panduan arsitektur sistem, langkah setup lokal dev, eksekusi migrasi Supabase SQL `docs/supabase_schema.sql`, dan perintah `docker compose up --build`.
+   - Menggunakan *pinned base image* `python:3.12-slim`.
+   - Mengikuti pola *Multi-Stage Build* (`deps` & `production`).
+   - Eksekusi sebagai pengguna non-root (`appuser` UID 1001).
+   - Fitur `HEALTHCHECK` otomatis yang memeriksa kesehatan endpoint `/health` (interval 30s, timeout 5s).
+   - Eksekusi Uvicorn ASGI server pada port `8000` (`0.0.0.0`).
+2. **Docker Ignore (`backend/.dockerignore`)**:
+   - Mengecualikan `venv`, `__pycache__`, `.git`, `.env`, dan `tests/` agar *build context* minimal & cepat.
+3. **Docker Compose Configuration (`docker-compose.yml`)**:
+   - Service `backend` terisolasi dengan *custom network* (`rag-network`).
+   - Variabel lingkungan ter-inject secara aman melalui `env_file: ./backend/.env` (tanpa *hardcoded secrets*).
+   - Konfigurasi port mapping `8000:8000` dan healthcheck condition.
+4. **Full-Stack Documentation (`README.md`)**:
+   - Panduan arsitektur sistem, skema SQL Supabase, instruksi dev lokal, dan eksekusi `docker compose up --build`.
 
 ---
 
 ## User Stories
 
-1. As a DevOps engineer, I want a multi-stage, production-ready `backend/Dockerfile` with a container health check, so that container orchestrators can monitor API status automatically.
-2. As a developer, I want to run `docker compose up --build`, so that the backend API starts in a reproducible containerized environment.
-3. As a project contributor, I want a detailed `README.md` with environment setup guides, so that I can onboard and run the full stack effortlessly.
+1. As a DevOps engineer, I want a non-root, multi-stage `backend/Dockerfile` with pinned base tags and health check monitoring following `docker-patterns`, so that container execution is secure and lightweight.
+2. As a developer, I want a clean `.dockerignore` and `docker-compose.yml`, so that `docker compose up --build` runs efficiently with zero secret leaks.
+3. As a project contributor, I want a comprehensive `README.md` explaining environment setup and full-stack execution, so that I can run the system effortlessly.
 
 ---
 
