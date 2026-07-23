@@ -82,7 +82,7 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-07] Premium Next.js UI Chat Interface & Citation Panel
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
   - `frontend/src/lib/api.ts`
   - `frontend/src/components/Sidebar.tsx`
