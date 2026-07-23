@@ -21,9 +21,10 @@ class LLMFactory:
         normalized_provider = provider.lower().strip()
 
         if normalized_provider == "openai":
+            api_key = settings.OPENAI_API_KEY or "mock-openai-key"
             return ChatOpenAI(
                 model="gpt-4o-mini",
-                api_key=settings.OPENAI_API_KEY,
+                api_key=api_key,
                 streaming=True
             )
         elif normalized_provider == "ollama":
@@ -32,9 +33,10 @@ class LLMFactory:
                 base_url=settings.OLLAMA_BASE_URL
             )
         else:  # Default: Google Gemini
+            api_key = settings.GEMINI_API_KEY or "mock-gemini-key"
             return ChatGoogleGenerativeAI(
                 model="gemini-1.5-flash",
-                google_api_key=settings.GEMINI_API_KEY,
+                google_api_key=api_key,
                 streaming=True
             )
 
@@ -44,9 +46,10 @@ class LLMFactory:
         normalized_provider = provider.lower().strip()
 
         if normalized_provider == "openai":
+            api_key = settings.OPENAI_API_KEY or "mock-openai-key"
             return OpenAIEmbeddings(
                 model="text-embedding-3-small",
-                api_key=settings.OPENAI_API_KEY
+                api_key=api_key
             )
         elif normalized_provider == "ollama":
             return OllamaEmbeddings(
@@ -54,7 +57,8 @@ class LLMFactory:
                 base_url=settings.OLLAMA_BASE_URL
             )
         else:  # Default: Google Gemini
+            api_key = settings.GEMINI_API_KEY or "mock-gemini-key"
             return GoogleGenerativeAIEmbeddings(
                 model="models/text-embedding-004",
-                google_api_key=settings.GEMINI_API_KEY
+                google_api_key=api_key
             )

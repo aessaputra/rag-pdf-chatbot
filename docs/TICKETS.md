@@ -43,7 +43,7 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-04] Multi-Provider LLM Factory & RAG Streaming Engine
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
   - `backend/app/services/llm_factory.py`
   - `backend/app/services/rag_service.py`
