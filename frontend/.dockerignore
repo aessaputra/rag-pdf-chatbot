@@ -1,0 +1,12 @@
+# Docker build ignore patterns for Frontend (from .agents/skills/docker-patterns/SKILL.md)
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.*
+.env.local
+Dockerfile*
+docker-compose*.yml
+README.md
+coverage

@@ -84,19 +84,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🐳 Docker Deployment
 
-To run the containerized backend with Docker Compose:
+To run the full-stack application (Backend FastAPI + Frontend Next.js 15) using Docker Compose:
 
 ```bash
-# Ensure backend/.env exists and is configured
+# 1. Ensure backend/.env exists and is configured
 cp backend/.env.example backend/.env
 
-# Build and start containers
+# 2. Build and start full-stack containers
 docker compose up --build -d
 
-# Verify container health check
+# 3. Verify backend container health check
 curl http://localhost:8000/health
 # Returns: {"status": "online"}
 ```
+
+Open [http://localhost:3000](http://localhost:3000) for the Next.js frontend and [http://localhost:8000/docs](http://localhost:8000/docs) for the FastAPI Swagger API documentation.
 
 ---
 
