@@ -1,10 +1,10 @@
 # ==============================================================================
 # Full-Stack Docker Compose Setup for RAG PDF Chatbot
-# Follows .agents/skills/docker-patterns/SKILL.md best practices:
+# Follows .agents/skills/docker-patterns/SKILL.md & /supabase best practices:
 # - Multi-container orchestration (Backend FastAPI + Frontend Next.js 15)
 # - Service discovery & dependency order via service_healthy condition
 # - Custom bridge network isolation (rag-network)
-# - Zero hardcoded secrets (environment injected via env_file & env vars)
+# - Environment injection via env_file (Backend: service_role key, Frontend: anon key)
 # ==============================================================================
 
 services:
@@ -36,8 +36,10 @@ services:
     container_name: rag_pdf_frontend
     ports:
       - "3000:3000"
+    env_file:
+      - ./frontend/.env
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     depends_on:
