@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, FileText, Page, X } from 'lucide-react';
+import { BookOpen, FileText, X } from 'lucide-react';
 import type { Citation } from '@/types';
 
 interface CitationPanelProps {
