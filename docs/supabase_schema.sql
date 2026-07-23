@@ -51,23 +51,41 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON public.chat_messages(
 CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding_hnsw 
 ON public.document_chunks USING hnsw (embedding vector_cosine_ops);
 
--- Row Level Security (RLS) Policies (Optimized with Cached auth.uid())
+-- Row Level Security (RLS) Policies (Optimized with Cached auth.uid() & TO authenticated)
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.document_chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can manage their documents" 
-ON public.documents FOR ALL USING ((select auth.uid()) = user_id);
+ON public.documents FOR ALL 
+TO authenticated 
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can manage their chunks" 
-ON public.document_chunks FOR ALL USING ((select auth.uid()) = user_id);
+ON public.document_chunks FOR ALL 
+TO authenticated 
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can manage their chat sessions" 
-ON public.chat_sessions FOR ALL USING ((select auth.uid()) = user_id);
+ON public.chat_sessions FOR ALL 
+TO authenticated 
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can manage their chat messages" 
-ON public.chat_messages FOR ALL USING (
+ON public.chat_messages FOR ALL 
+TO authenticated 
+USING (
+    EXISTS (
+        SELECT 1 FROM public.chat_sessions 
+        WHERE id = chat_messages.session_id 
+        AND user_id = (select auth.uid())
+    )
+)
+WITH CHECK (
     EXISTS (
         SELECT 1 FROM public.chat_sessions 
         WHERE id = chat_messages.session_id 

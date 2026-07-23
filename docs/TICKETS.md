@@ -5,14 +5,14 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-01] Supabase Database Migration & Backend Core Setup
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
   - `docs/supabase_schema.sql`
+  - `docs/specs/ticket-01-spec.md`
   - `backend/requirements.txt`
   - `backend/.env.example`
   - `backend/app/config.py`
   - `backend/app/database.py`
-  - `backend/tests/conftest.py`
   - `backend/tests/test_config.py`
 - **Description**: Menyiapkan skema SQL Supabase (`pgvector` & RLS), membuat file konfigurasi pydantic backend, dan menuliskan test verifikasi konfigurasi.
 - **Dependencies**: None
