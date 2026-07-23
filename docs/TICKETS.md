@@ -67,10 +67,14 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-06] Frontend Next.js 15 Setup & Supabase Auth Client
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
   - `frontend/package.json`
+  - `frontend/tsconfig.json`
+  - `frontend/src/types/index.ts`
   - `frontend/src/lib/supabaseClient.ts`
+  - `frontend/src/app/globals.css`
+  - `frontend/src/app/layout.tsx`
   - `frontend/src/app/login/page.tsx`
 - **Description**: Menginisialisasi Next.js 15, Tailwind CSS v4, `@supabase/ssr`, dan membuat halaman Login/Register.
 - **Dependencies**: TICKET-01
