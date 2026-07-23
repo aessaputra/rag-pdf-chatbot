@@ -1,9 +1,9 @@
 # ==============================================================================
-# Multi-Stage Build Dockerfile for Next.js 15 Frontend
-# Follows .agents/skills/docker-patterns/SKILL.md best practices:
+# Multi-Stage Build Dockerfile for Next.js 15 Standalone Frontend
+# Follows .agents/skills/docker-patterns/SKILL.md & Code Review best practices:
 # - Stage 1 (deps): Install npm dependencies
-# - Stage 2 (build): Build Next.js application
-# - Stage 3 (production): Non-root user execution, minimal node-alpine runtime
+# - Stage 2 (build): Build Next.js application with output: 'standalone'
+# - Stage 3 (production): Minimal node-alpine runtime running node server.js
 # ==============================================================================
 
 # Stage 1: Dependencies
@@ -20,20 +20,20 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Stage 3: Minimal Production Image
+# Stage 3: Minimal Production Standalone Image
 FROM node:22-alpine AS production
 WORKDIR /app
 
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000
 
 # Create non-root user and group
 RUN addgroup -g 1001 -S appgroup && adduser -S appuser -u 1001 -G appgroup
 
-COPY --from=build --chown=appuser:appgroup /app/node_modules ./node_modules
-COPY --from=build --chown=appuser:appgroup /app/package.json ./package.json
-COPY --from=build --chown=appuser:appgroup /app/.next ./.next
 COPY --from=build --chown=appuser:appgroup /app/public ./public
+COPY --from=build --chown=appuser:appgroup /app/.next/standalone ./
+COPY --from=build --chown=appuser:appgroup /app/.next/static ./.next/static
 
 USER appuser
 
@@ -42,4 +42,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:3000/ || exit 1
 
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]
