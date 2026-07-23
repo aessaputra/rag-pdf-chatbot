@@ -60,9 +60,14 @@ export default function LoginPage() {
         }
       }
     } catch (err: any) {
+      console.error('Supabase Auth error details:', err);
+      let errMsg = err.message || 'Terjadi kesalahan otentikasi. Silakan coba lagi.';
+      if (errMsg.includes('Failed to fetch')) {
+        errMsg = 'Gagal terhubung ke Supabase Cloud. Silakan periksa koneksi internet Anda atau pastikan ekstensi pembatas iklan (AdBlock/CORS) dimatikan.';
+      }
       setAuthState({
         status: 'error',
-        message: err.message || 'Terjadi kesalahan otentikasi. Silakan coba lagi.',
+        message: errMsg,
       });
     }
   };
@@ -98,10 +103,10 @@ export default function LoginPage() {
               setMode('signin');
               setAuthState({ status: 'idle' });
             }}
-            className={`py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === 'signin'
-                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             Masuk Akun
@@ -112,57 +117,61 @@ export default function LoginPage() {
               setMode('signup');
               setAuthState({ status: 'idle' });
             }}
-            className={`py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === 'signup'
-                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             Daftar Baru
           </button>
         </div>
 
-        {/* Error Feedback Banner */}
+        {/* Error Notification Alert */}
         {authState.status === 'error' && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 text-sm">
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            <div>{authState.message}</div>
+          <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-3 animate-in fade-in duration-200">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">{authState.message}</div>
           </div>
         )}
 
-        {/* Success Feedback Banner */}
+        {/* Success Notification Alert */}
         {authState.status === 'success' && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3 text-emerald-300 text-sm">
-            <Sparkles className="w-5 h-5 text-emerald-400 shrink-0" />
-            <div>Otentikasi berhasil! Mengalihkan ke dashboard...</div>
+          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-start gap-3 animate-in fade-in duration-200">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              {mode === 'signup'
+                ? 'Pendaftaran akun berhasil! Mengalihkan ke Dashboard...'
+                : 'Otentikasi berhasil! Mengalihkan ke Dashboard...'}
+            </div>
           </div>
         )}
 
         {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
               Alamat Email
             </label>
             <div className="relative">
-              <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="w-full glass-input pl-11 pr-4 py-3 rounded-xl text-sm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
               Kata Sandi
             </label>
             <div className="relative">
-              <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
@@ -170,7 +179,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full glass-input pl-11 pr-4 py-3 rounded-xl text-sm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs"
               />
             </div>
           </div>
@@ -178,22 +187,24 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={authState.status === 'loading'}
-            className="w-full mt-6 py-3.5 px-4 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {authState.status === 'loading' ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Memproses Otentikasi...</span>
             ) : (
               <>
-                {mode === 'signin' ? 'Masuk Sekarang' : 'Buat Akun Baru'}
+                <span>{mode === 'signin' ? 'Masuk Sekarang' : 'Daftar Akun Baru'}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
-        {/* Footer note */}
-        <div className="mt-8 text-center text-xs text-slate-500">
-          Dilindungi oleh Supabase Auth & Row Level Security (RLS)
+        {/* Footer info */}
+        <div className="mt-8 text-center border-t border-slate-800/80 pt-4">
+          <p className="text-[11px] text-slate-400">
+            Dilindungi oleh Supabase Auth & Row Level Security (RLS)
+          </p>
         </div>
       </div>
     </div>
