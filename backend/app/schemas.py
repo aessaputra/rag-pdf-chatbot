@@ -5,8 +5,8 @@ Defines Data Transfer Objects (DTOs) and Pydantic models for API request/respons
 """
 
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserPayload(BaseModel):
@@ -35,4 +35,24 @@ class ChatMessageResponse(BaseModel):
     sender: str
     content: str
     citations: List[Citation] = []
+    created_at: datetime
+
+
+class DocumentChunkDTO(BaseModel):
+    """DTO representing a single parsed document chunk ready for embedding."""
+
+    content: str
+    page_number: int
+    filename: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class DocumentUploadResponse(BaseModel):
+    """Response returned upon successful PDF ingestion and vector storage."""
+
+    document_id: str
+    filename: str
+    file_size: int
+    total_pages: int
+    total_chunks: int
     created_at: datetime

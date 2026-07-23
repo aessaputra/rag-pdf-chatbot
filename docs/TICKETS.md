@@ -31,9 +31,10 @@ Dokumen ini berisi daftar tiket tugas (*work tickets*) yang diturunkan dari `doc
 ---
 
 ### [TICKET-03] PDF Document Ingestion & Supabase Vector Store Service
-- **Status**: ⏳ TODO
+- **Status**: ✅ COMPLETED
 - **Target Files**:
   - `backend/app/schemas.py`
+  - `backend/app/services/llm_factory.py`
   - `backend/app/services/ingestion_service.py`
   - `backend/tests/test_ingestion.py`
 - **Description**: Membangun parser PDF, text chunker (`RecursiveCharacterTextSplitter`), dan pengunggah embeddings ke Supabase vector table.
