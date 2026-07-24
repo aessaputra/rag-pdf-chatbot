@@ -167,7 +167,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = public, extensions, pg_temp
+SET search_path = 'public', 'extensions', 'pg_temp'
 AS $$
 BEGIN
     RETURN QUERY

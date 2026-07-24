@@ -35,9 +35,11 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        NEXT_PUBLIC_SUPABASE_URL: "https://sgfhbxprnsolgcgzuymn.supabase.co"
-        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_lMDEZn1F3hJZa2jNKEXJvQ_sD04VImY"
-        NEXT_PUBLIC_API_URL: "http://localhost:8000"
+        # These are injected at build time for Next.js static bundle embedding.
+        # Values are read from the frontend/.env file — never hardcode secrets here.
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: rag_pdf_frontend
     ports:
       - "3000:3000"

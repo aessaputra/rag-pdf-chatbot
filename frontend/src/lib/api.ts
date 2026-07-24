@@ -3,16 +3,24 @@ import { createClient } from '@/lib/supabaseClient';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-async function freshAccessToken(): Promise<string | null> {
+/**
+ * Retrieves a fresh access token from the Supabase session and returns
+ * the Authorization headers for API requests.
+ *
+ * Falls back to the provided token if session refresh fails.
+ */
+async function getAuthHeaders(fallbackToken?: string): Promise<Record<string, string>> {
   const { data } = await createClient().auth.getSession();
-  return data.session?.access_token ?? null;
+  const token = data.session?.access_token ?? fallbackToken;
+
+  if (!token) {
+    throw new Error('Sesi login telah berakhir. Silakan login kembali.');
+  }
+
+  return { Authorization: `Bearer ${token}` };
 }
 
-function resolveToken(fallback: string, fresh: string | null): string {
-  return fresh || fallback;
-}
-
-async function safeErrorDetail(response: Response, fallback: string): Promise<string> {
+async function extractErrorDetail(response: Response, fallback: string): Promise<string> {
   try {
     const text = await response.text();
     if (!text.trim()) return `Error HTTP ${response.status}: ${fallback}`;
@@ -27,10 +35,6 @@ async function safeErrorDetail(response: Response, fallback: string): Promise<st
   } catch {
     return `Error HTTP ${response.status}: ${fallback}`;
   }
-}
-
-function authHeaders(token: string): Record<string, string> {
-  return { Authorization: `Bearer ${token}` };
 }
 
 function isNetworkError(message: string): boolean {
@@ -54,11 +58,11 @@ export async function fetchSSEStream(
   callbacks: SSEStreamCallbacks
 ): Promise<void> {
   try {
-    const activeToken = resolveToken(token, await freshAccessToken());
+    const headers = await getAuthHeaders(token);
 
     const response = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders(activeToken) },
+      headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify({
         query,
         provider,
@@ -67,7 +71,7 @@ export async function fetchSSEStream(
     });
 
     if (!response.ok) {
-      callbacks.onError(await safeErrorDetail(response, 'Gagal mengambil jawaban AI.'));
+      callbacks.onError(await extractErrorDetail(response, 'Gagal mengambil jawaban AI.'));
       return;
     }
 
@@ -123,18 +127,18 @@ function parseSSEEvent(block: string, callbacks: SSEStreamCallbacks) {
 
 export async function uploadDocument(file: File, token: string): Promise<ApiResponse<any>> {
   try {
-    const activeToken = resolveToken(token, await freshAccessToken());
+    const headers = await getAuthHeaders(token);
     const formData = new FormData();
     formData.append('file', file);
 
     const response = await fetch(`${API_BASE}/api/documents/upload`, {
       method: 'POST',
-      headers: authHeaders(activeToken),
+      headers,
       body: formData,
     });
 
     if (!response.ok) {
-      return { success: false, data: null, error: await safeErrorDetail(response, 'Gagal mengunggah PDF.') };
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengunggah PDF.') };
     }
 
     return { success: true, data: await response.json(), error: null };
@@ -149,14 +153,12 @@ export async function uploadDocument(file: File, token: string): Promise<ApiResp
 
 export async function listDocuments(token: string): Promise<ApiResponse<DocumentItem[]>> {
   try {
-    const activeToken = resolveToken(token, await freshAccessToken());
+    const headers = await getAuthHeaders(token);
 
-    const response = await fetch(`${API_BASE}/api/documents`, {
-      headers: authHeaders(activeToken),
-    });
+    const response = await fetch(`${API_BASE}/api/documents`, { headers });
 
     if (!response.ok) {
-      return { success: false, data: null, error: await safeErrorDetail(response, 'Gagal mengambil daftar dokumen.') };
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil daftar dokumen.') };
     }
 
     return { success: true, data: await response.json(), error: null };
@@ -167,15 +169,15 @@ export async function listDocuments(token: string): Promise<ApiResponse<Document
 
 export async function deleteDocument(documentId: string, token: string): Promise<ApiResponse<boolean>> {
   try {
-    const activeToken = resolveToken(token, await freshAccessToken());
+    const headers = await getAuthHeaders(token);
 
     const response = await fetch(`${API_BASE}/api/documents/${documentId}`, {
       method: 'DELETE',
-      headers: authHeaders(activeToken),
+      headers,
     });
 
     if (!response.ok) {
-      return { success: false, data: null, error: await safeErrorDetail(response, 'Gagal menghapus dokumen.') };
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menghapus dokumen.') };
     }
 
     return { success: true, data: true, error: null };

@@ -14,18 +14,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application Settings Model."""
 
-    # Modern Supabase Configuration
+    # Supabase Configuration
     SUPABASE_URL: str = Field(..., alias="SUPABASE_URL")
     SUPABASE_SECRET_KEY: str = Field(
         ...,
-        validation_alias=AliasChoices("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY")
-    )
-    SUPABASE_SERVICE_ROLE_KEY: str = Field(
-        "placeholder_service_role_key",
-        validation_alias=AliasChoices("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY")
+        validation_alias=AliasChoices("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"),
     )
     SUPABASE_JWKS_URL: Optional[str] = Field(None, alias="SUPABASE_JWKS_URL")
     SUPABASE_JWT_SECRET: str = Field("placeholder_jwt_secret", alias="SUPABASE_JWT_SECRET")
+    SUPABASE_JWT_AUDIENCE: str = Field("authenticated", alias="SUPABASE_JWT_AUDIENCE")
 
     # LLM Provider Configuration
     DEFAULT_LLM_PROVIDER: Literal["gemini", "openai", "ollama"] = Field("gemini", alias="DEFAULT_LLM_PROVIDER")
@@ -36,7 +33,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore"
+        extra="ignore",
     )
 
 
