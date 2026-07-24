@@ -12,50 +12,46 @@ export default function CitationPanel({ citation, onClose }: CitationPanelProps)
   if (!citation) return null;
 
   return (
-    <div className="w-80 glass-panel border-l border-slate-800/80 p-5 flex flex-col h-screen shrink-0 animate-in slide-in-from-right duration-200">
+    <div className="w-[320px] bg-[#09090b] border-l border-[#232326] p-4 flex flex-col h-screen shrink-0 animate-in slide-in-from-right duration-200 z-20">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800/80">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-cyan-400" /> Detail Sitasi PDF
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#232326]">
+        <h3 className="text-xs font-semibold text-[#f4f4f5] flex items-center gap-1.5">
+          <BookOpen className="w-3.5 h-3.5 text-[#a1a1aa]" /> Detail Sitasi PDF
         </h3>
         <button
           type="button"
           onClick={onClose}
-          className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+          className="p-1 rounded text-[#a1a1aa] hover:text-[#f4f4f5] hover:bg-[#18181b] transition-colors"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Metadata Badges */}
-      <div className="space-y-3 mb-6">
-        <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-            <FileText className="w-4 h-4 text-indigo-400" />
-          </div>
+      {/* Metadata Info */}
+      <div className="space-y-2 mb-4">
+        <div className="p-2.5 rounded-lg bg-[#121215] border border-[#232326] flex items-center gap-2.5">
+          <FileText className="w-4 h-4 text-[#a1a1aa] shrink-0" />
           <div className="truncate">
-            <div className="text-[10px] uppercase font-semibold text-slate-400">Dokumen Sumber</div>
-            <div className="text-xs font-medium text-slate-200 truncate">{citation.filename}</div>
+            <div className="text-[9px] uppercase font-mono text-[#71717a]">Dokumen Sumber</div>
+            <div className="text-xs font-medium text-[#f4f4f5] truncate">{citation.filename}</div>
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-cyan-400">Hal</span>
-          </div>
+        <div className="p-2.5 rounded-lg bg-[#121215] border border-[#232326] flex items-center gap-2.5">
+          <span className="text-xs font-mono text-[#a1a1aa] shrink-0">Hal</span>
           <div>
-            <div className="text-[10px] uppercase font-semibold text-slate-400">Nomor Halaman PDF</div>
-            <div className="text-xs font-medium text-slate-200">Halaman {citation.page_number}</div>
+            <div className="text-[9px] uppercase font-mono text-[#71717a]">Halaman PDF</div>
+            <div className="text-xs font-medium font-mono text-[#f4f4f5]">Halaman {citation.page_number}</div>
           </div>
         </div>
       </div>
 
-      {/* Content Snippet */}
+      {/* Excerpt Monospace Box */}
       <div className="flex-1 flex flex-col min-h-0">
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        <label className="block text-[10px] font-mono text-[#71717a] uppercase tracking-wider mb-1.5">
           Kutipan Konteks Teks
         </label>
-        <div className="flex-1 p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-300 text-xs leading-relaxed overflow-y-auto font-mono whitespace-pre-wrap">
+        <div className="flex-1 p-3 rounded-lg bg-[#121215] border border-[#232326] text-[#a1a1aa] text-xs leading-relaxed overflow-y-auto font-mono whitespace-pre-wrap selection:bg-[#27272a]">
           {citation.content}
         </div>
       </div>

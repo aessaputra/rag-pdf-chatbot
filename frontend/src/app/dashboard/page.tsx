@@ -11,7 +11,6 @@ import type { ChatMessage, Citation, DocumentItem, EmbeddingConfig, ProviderConf
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 import Sidebar from '@/components/Sidebar';
-import DocumentManager from '@/components/DocumentManager';
 import ChatWindow from '@/components/ChatWindow';
 import CitationPanel from '@/components/CitationPanel';
 
@@ -54,7 +53,6 @@ export default function DashboardPage() {
       setUser(createUserPayload(authUser.id, authUser.email));
       setToken(session.access_token);
 
-      // Fetch documents, provider configs, and embedding configs in parallel
       const [docsRes, provRes, embRes] = await Promise.all([
         listDocuments(session.access_token),
         listProviderConfigs(session.access_token),
@@ -103,7 +101,7 @@ export default function DashboardPage() {
   }, []);
 
   const handleUploadDocument = useCallback(async (file: File) => {
-    if (!token) throw new Error('Sesi login telah berakhir. Silakan login kembali.');
+    if (!token) throw new Error('Sesi login telah berakhir.');
 
     const res = await uploadDocument(file, token);
     if (!res.success) throw new Error(res.error || 'Gagal mengunggah dokumen.');
@@ -160,18 +158,16 @@ export default function DashboardPage() {
   }, [token, provider, documents, updateAssistantMessage]);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#09090b] text-[#f4f4f5]">
       <Sidebar
         user={user}
         provider={provider}
         providerConfigs={providerConfigs}
+        documents={documents}
+        hasCredentials={hasCredentials}
         onProviderChange={setProvider}
         onNewChat={handleNewChat}
         onLogout={handleLogout}
-      />
-      <DocumentManager
-        documents={documents}
-        hasCredentials={hasCredentials}
         onUpload={handleUploadDocument}
         onDelete={handleDeleteDocument}
       />
