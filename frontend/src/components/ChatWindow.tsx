@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, Bot, Send, Sparkles, User } from 'lucide-react';
+import Link from 'next/link';
+import { AlertCircle, BookOpen, Bot, Lock, Send, Settings, Sparkles, User } from 'lucide-react';
 import type { ChatMessage, Citation } from '@/types';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  hasCredentials?: boolean;
   onSendMessage: (query: string) => Promise<void>;
   onSelectCitation: (citation: Citation) => void;
 }
@@ -14,6 +16,7 @@ interface ChatWindowProps {
 export default function ChatWindow({
   messages,
   isStreaming,
+  hasCredentials = true,
   onSendMessage,
   onSelectCitation,
 }: ChatWindowProps) {
@@ -30,7 +33,7 @@ export default function ChatWindow({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputQuery.trim() || isStreaming) return;
+    if (!hasCredentials || !inputQuery.trim() || isStreaming) return;
     const query = inputQuery;
     setInputQuery('');
     await onSendMessage(query);
@@ -40,7 +43,27 @@ export default function ChatWindow({
     <div className="flex-1 flex flex-col h-screen bg-slate-950/40 relative z-10">
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-        {messages.length === 0 ? (
+        {/* Prominent Hard Block Callout Banner if no credentials */}
+        {!hasCredentials ? (
+          <div className="h-full flex flex-col items-center justify-center text-center p-8">
+            <div className="w-16 h-16 rounded-2xl bg-amber-950/60 border border-amber-800/80 flex items-center justify-center shadow-xl shadow-amber-900/20 mb-6">
+              <Lock className="w-8 h-8 text-amber-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-3 flex items-center justify-center gap-2">
+              Konfigurasi AI Provider Diperlukan <Sparkles className="w-5 h-5 text-amber-400" />
+            </h2>
+            <p className="text-sm text-slate-300 max-w-md mb-6 leading-relaxed">
+              Anda belum mengonfigurasi API Key untuk Provider AI atau Model Embedding. Silakan atur kunci API Anda di menu Settings untuk memulai percakapan RAG PDF Chatbot.
+            </p>
+            <Link
+              href="/dashboard/settings"
+              className="py-3 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium text-sm transition-all shadow-lg shadow-emerald-600/25 flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Buka Menu Settings Sekarang</span>
+            </Link>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-4">
               <Bot className="w-8 h-8 text-white" />
@@ -117,14 +140,18 @@ export default function ChatWindow({
             type="text"
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
-            disabled={isStreaming}
-            placeholder="Ketik pertanyaan tentang dokumen PDF Anda..."
-            className="flex-1 glass-input py-3.5 px-5 rounded-2xl text-sm"
+            disabled={!hasCredentials || isStreaming}
+            placeholder={
+              !hasCredentials
+                ? 'Silakan konfigurasi Provider AI di menu Settings terlebih dahulu...'
+                : 'Ketik pertanyaan tentang dokumen PDF Anda...'
+            }
+            className="flex-1 glass-input py-3.5 px-5 rounded-2xl text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             type="submit"
-            disabled={isStreaming || !inputQuery.trim()}
-            className="py-3.5 px-5 rounded-2xl font-medium text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2 disabled:opacity-40 cursor-pointer"
+            disabled={!hasCredentials || isStreaming || !inputQuery.trim()}
+            className="py-3.5 px-5 rounded-2xl font-medium text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isStreaming ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -1,17 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertCircle, FileCheck, FileText, Trash2, UploadCloud } from 'lucide-react';
+import Link from 'next/link';
+import { AlertCircle, FileCheck, FileText, Lock, Settings, Trash2, UploadCloud } from 'lucide-react';
 import type { DocumentItem } from '@/types';
 
 interface DocumentManagerProps {
   documents: DocumentItem[];
+  hasCredentials?: boolean;
   onUpload: (file: File) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
 export default function DocumentManager({
   documents,
+  hasCredentials = true,
   onUpload,
   onDelete,
 }: DocumentManagerProps) {
@@ -20,6 +23,10 @@ export default function DocumentManager({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleFileChange = async (file: File | null) => {
+    if (!hasCredentials) {
+      setErrorMessage('Silakan atur AI Provider & Model Embedding di Settings sebelum mengunggah PDF.');
+      return;
+    }
     if (!file) return;
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       setErrorMessage('Hanya file berformat PDF (.pdf) yang diperbolehkan.');
@@ -40,6 +47,10 @@ export default function DocumentManager({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (!hasCredentials) {
+      setErrorMessage('Silakan atur AI Provider & Model Embedding di Settings sebelum mengunggah PDF.');
+      return;
+    }
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileChange(e.dataTransfer.files[0]);
     }
@@ -66,36 +77,49 @@ export default function DocumentManager({
       <div
         onDragOver={(e) => {
           e.preventDefault();
-          setIsDragging(true);
+          if (hasCredentials) setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        className={`p-6 rounded-2xl border-2 border-dashed transition-all text-center flex flex-col items-center justify-center cursor-pointer mb-4 ${
-          isDragging
-            ? 'border-cyan-400 bg-cyan-500/10 scale-[0.99]'
-            : 'border-slate-700/80 hover:border-indigo-500/80 bg-slate-900/40 hover:bg-slate-900/80'
+        className={`p-6 rounded-2xl border-2 border-dashed transition-all text-center flex flex-col items-center justify-center mb-4 ${
+          !hasCredentials
+            ? 'border-slate-800 bg-slate-950/60 opacity-60 cursor-not-allowed'
+            : isDragging
+            ? 'border-cyan-400 bg-cyan-500/10 scale-[0.99] cursor-pointer'
+            : 'border-slate-700/80 hover:border-indigo-500/80 bg-slate-900/40 hover:bg-slate-900/80 cursor-pointer'
         }`}
       >
         <input
           type="file"
           accept=".pdf"
-          disabled={isUploading}
+          disabled={!hasCredentials || isUploading}
           onChange={(e) => e.target.files && handleFileChange(e.target.files[0])}
           className="hidden"
           id="pdf-upload-input"
         />
-        <label htmlFor="pdf-upload-input" className="cursor-pointer flex flex-col items-center">
+        <label
+          htmlFor="pdf-upload-input"
+          className={`flex flex-col items-center ${!hasCredentials ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+        >
           <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-3">
-            {isUploading ? (
+            {!hasCredentials ? (
+              <Lock className="w-6 h-6 text-amber-400" />
+            ) : isUploading ? (
               <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
             ) : (
               <UploadCloud className="w-6 h-6 text-indigo-400" />
             )}
           </div>
           <span className="text-xs font-medium text-slate-200 mb-1">
-            {isUploading ? 'Memproses PDF & Embeddings...' : 'Klik / Tarik PDF ke Sini'}
+            {!hasCredentials
+              ? 'Upload PDF Terkunci'
+              : isUploading
+              ? 'Memproses PDF & Embeddings...'
+              : 'Klik / Tarik PDF ke Sini'}
           </span>
-          <span className="text-[10px] text-slate-400">Mendukung file PDF hingga 25MB</span>
+          <span className="text-[10px] text-slate-400">
+            {!hasCredentials ? 'Atur API Key di Settings untuk membuka' : 'Mendukung file PDF hingga 25MB'}
+          </span>
         </label>
       </div>
 
@@ -104,6 +128,24 @@ export default function DocumentManager({
         <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Hard Block Warning Box if no credentials */}
+      {!hasCredentials && (
+        <div className="mb-4 p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-300 text-xs space-y-1.5">
+          <p className="font-semibold text-amber-200 flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-amber-400" /> Konfigurasi Diperlukan
+          </p>
+          <p className="text-[11px] text-amber-300/80 leading-relaxed">
+            Anda belum mengonfigurasi AI Provider / Embedding Model.
+          </p>
+          <Link
+            href="/dashboard/settings"
+            className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:underline font-medium"
+          >
+            <Settings className="w-3.5 h-3.5" /> Buka Menu Settings →
+          </Link>
         </div>
       )}
 

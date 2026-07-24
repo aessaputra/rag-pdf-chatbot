@@ -13,12 +13,11 @@ from app.services.rag_service import RAGService
 
 def test_format_context_prompt_should_include_page_numbers_and_content():
     """Verify that RAGService formats retrieved vector chunks into structured context."""
-    rag_service = RAGService(provider="gemini")
+    rag_service = RAGService(user_id="12345678-1234-1234-1234-123456789012", provider="gemini")
     mock_chunks = [
         {"content": "First chunk content about RAG.", "metadata": {"filename": "doc1.pdf", "page_number": 2}},
         {"content": "Second chunk content about Supabase.", "metadata": {"filename": "doc2.pdf", "page_number": 5}}
     ]
-
     prompt = rag_service.format_context_prompt(query="What is RAG?", chunks=mock_chunks)
 
     assert "First chunk content about RAG." in prompt
@@ -29,7 +28,7 @@ def test_format_context_prompt_should_include_page_numbers_and_content():
 
 def test_extract_citations_should_return_valid_citation_dtos():
     """Verify that extract_citations builds valid Citation DTO objects."""
-    rag_service = RAGService(provider="gemini")
+    rag_service = RAGService(user_id="12345678-1234-1234-1234-123456789012", provider="gemini")
     mock_chunks = [
         {"content": "Sample content snippet for testing citation extractions.", "metadata": {"filename": "paper.pdf", "page_number": 12}}
     ]
@@ -46,7 +45,8 @@ def test_extract_citations_should_return_valid_citation_dtos():
 @pytest.mark.asyncio
 async def test_generate_rag_stream_emits_valid_sse_events():
     """Verify that generate_rag_stream yields SSE-formatted events for citations and tokens."""
-    rag_service = RAGService(provider="gemini")
+    rag_service = RAGService(user_id="12345678-1234-1234-1234-123456789012", provider="gemini")
+
     
     # Mock LLM instance using MagicMock to support astream generator mocking
     mock_llm = MagicMock()

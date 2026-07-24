@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabaseClient';
-import { deleteDocument, fetchSSEStream, listDocuments, uploadDocument } from '@/lib/api';
-import type { ChatMessage, Citation, DocumentItem, UserPayload } from '@/types';
+import {
+  deleteDocument, fetchSSEStream, getEmbeddingConfig, listDocuments,
+  listProviderConfigs, uploadDocument
+} from '@/lib/api';
+import type { ChatMessage, Citation, DocumentItem, EmbeddingConfig, ProviderConfig, UserPayload } from '@/types';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 import Sidebar from '@/components/Sidebar';
@@ -27,15 +30,19 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserPayload | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [provider, setProvider] = useState('gemini');
+  const [providerConfigs, setProviderConfigs] = useState<ProviderConfig[]>([]);
+  const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
 
+  const hasCredentials = providerConfigs.length > 0 && embeddingConfig !== null;
+
   useEffect(() => {
     let mounted = true;
 
-    async function initializeAuth() {
+    async function initializeDashboard() {
       const { data: { user: authUser }, error } = await supabase.auth.getUser();
       if (error || !authUser) { router.push('/login'); return; }
 
@@ -47,13 +54,29 @@ export default function DashboardPage() {
       setUser(createUserPayload(authUser.id, authUser.email));
       setToken(session.access_token);
 
-      const docsRes = await listDocuments(session.access_token);
-      if (docsRes.success && docsRes.data && mounted) {
-        setDocuments(docsRes.data);
+      // Fetch documents, provider configs, and embedding configs in parallel
+      const [docsRes, provRes, embRes] = await Promise.all([
+        listDocuments(session.access_token),
+        listProviderConfigs(session.access_token),
+        getEmbeddingConfig(session.access_token),
+      ]);
+
+      if (!mounted) return;
+
+      if (docsRes.success && docsRes.data) setDocuments(docsRes.data);
+      if (provRes.success && provRes.data) {
+        setProviderConfigs(provRes.data);
+        const defaultConfig = provRes.data.find((c) => c.is_default);
+        if (defaultConfig) {
+          setProvider(defaultConfig.provider);
+        } else if (provRes.data.length > 0) {
+          setProvider(provRes.data[0].provider);
+        }
       }
+      if (embRes.success && embRes.data) setEmbeddingConfig(embRes.data);
     }
 
-    initializeAuth();
+    initializeDashboard();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (!mounted) return;
@@ -141,18 +164,21 @@ export default function DashboardPage() {
       <Sidebar
         user={user}
         provider={provider}
+        providerConfigs={providerConfigs}
         onProviderChange={setProvider}
         onNewChat={handleNewChat}
         onLogout={handleLogout}
       />
       <DocumentManager
         documents={documents}
+        hasCredentials={hasCredentials}
         onUpload={handleUploadDocument}
         onDelete={handleDeleteDocument}
       />
       <ChatWindow
         messages={messages}
         isStreaming={isStreaming}
+        hasCredentials={hasCredentials}
         onSendMessage={handleSendMessage}
         onSelectCitation={setSelectedCitation}
       />

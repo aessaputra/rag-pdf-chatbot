@@ -26,8 +26,8 @@ async def stream_chat_response(
     """
     Submits a RAG query and streams Server-Sent Events (SSE) tokens and citations in real time.
     """
-    provider = request.provider or "gemini"
-    rag_service = RAGService(provider=provider)
+    rag_service = RAGService(user_id=user.user_id, provider=request.provider)
+    await run_in_threadpool(rag_service.initialize_user_models)
 
     return StreamingResponse(
         rag_service.generate_rag_stream(
@@ -37,6 +37,7 @@ async def stream_chat_response(
         ),
         media_type="text/event-stream",
     )
+
 
 
 @router.get("/sessions", response_model=List[Dict[str, Any]])

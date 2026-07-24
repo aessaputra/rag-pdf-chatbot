@@ -1,4 +1,6 @@
-import type { ApiResponse, Citation, DocumentItem } from '@/types';
+import type { ApiResponse, Citation, DocumentItem, ProviderConfig, EmbeddingConfig, EmbeddingConfigSavePayload, EmbeddingPreset } from '@/types';
+
+
 import { createClient } from '@/lib/supabaseClient';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -185,3 +187,142 @@ export async function deleteDocument(documentId: string, token: string): Promise
     return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
   }
 }
+
+// --- Provider Configs API ---
+
+export async function listProviderConfigs(token: string): Promise<ApiResponse<ProviderConfig[]>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/settings/providers`, { headers });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil daftar provider.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function createProviderConfig(
+  payload: import('@/types').ProviderConfigCreatePayload,
+  token: string
+): Promise<ApiResponse<ProviderConfig>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/settings/providers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menambahkan provider.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function updateProviderConfig(
+  id: string,
+  payload: import('@/types').ProviderConfigUpdatePayload,
+  token: string
+): Promise<ApiResponse<ProviderConfig>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/settings/providers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal memperbarui provider.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function deleteProviderConfig(id: string, token: string): Promise<ApiResponse<boolean>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/settings/providers/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menghapus provider.') };
+    }
+
+    return { success: true, data: true, error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+// --- Embedding Config API ---
+
+export async function listEmbeddingPresets(): Promise<ApiResponse<EmbeddingPreset[]>> {
+  try {
+    const response = await fetch(`${API_BASE}/api/settings/embedding/presets`);
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil preset embedding.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function getEmbeddingConfig(token: string): Promise<ApiResponse<EmbeddingConfig | null>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/settings/embedding`, { headers });
+
+    if (response.status === 404) {
+      return { success: true, data: null, error: null };
+    }
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil konfigurasi embedding.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function saveEmbeddingConfig(
+  payload: EmbeddingConfigSavePayload,
+  token: string
+): Promise<ApiResponse<EmbeddingConfig>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/settings/embedding`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menyimpan konfigurasi embedding.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+

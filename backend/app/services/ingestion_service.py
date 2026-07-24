@@ -94,10 +94,23 @@ class PDFIngestionService:
         doc_response = supabase.table("documents").insert(doc_data).execute()
         document_id = doc_response.data[0]["id"]
 
-        # 2. Generate Embeddings for all chunks
-        embeddings_model = LLMFactory.get_embeddings(provider)
+        # 2. Fetch User Embedding Config & Generate Embeddings
+        embedding_res = (
+            supabase.table("user_embedding_configs")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if not embedding_res.data:
+            raise ValueError("Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings.")
+
+        embedding_config = embedding_res.data[0]
+        embeddings_model = LLMFactory.get_embeddings_for_config(embedding_config)
+
         chunk_texts = [chunk.content for chunk in chunks]
         vector_embeddings = embeddings_model.embed_documents(chunk_texts)
+
 
         # 3. Prepare Batch Records for document_chunks
         chunk_records = []
@@ -116,6 +129,9 @@ class PDFIngestionService:
             batch = chunk_records[i : i + batch_size]
             supabase.table("document_chunks").insert(batch).execute()
 
+        # 5. Auto-lock user's embedding model choice after first document ingestion
+        supabase.table("user_embedding_configs").update({"locked": True}).eq("user_id", user_id).execute()
+
         return DocumentUploadResponse(
             document_id=document_id,
             filename=filename,
@@ -124,3 +140,4 @@ class PDFIngestionService:
             total_chunks=len(chunks),
             created_at=datetime.now(timezone.utc)
         )
+

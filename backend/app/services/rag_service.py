@@ -2,11 +2,13 @@
 RAG Service Module
 
 Implements Retrieval-Augmented Generation (RAG) by fetching relevant document chunks from
-Supabase vector store, formatting context prompts, and streaming Server-Sent Events (SSE).
+Supabase vector store using user's BYOK embedding configuration, formatting context prompts,
+and streaming Server-Sent Events (SSE).
 """
 
 import json
 from typing import Any, AsyncGenerator, Dict, List, Optional
+from fastapi import HTTPException, status
 
 from app.database import get_supabase_client
 from app.schemas import Citation
@@ -16,10 +18,70 @@ from app.services.llm_factory import LLMFactory
 class RAGService:
     """Service managing RAG context retrieval, prompt construction, and SSE token streaming."""
 
-    def __init__(self, provider: str = "gemini"):
-        self.provider = provider
-        self.llm = LLMFactory.get_llm(provider)
-        self.embeddings_model = LLMFactory.get_embeddings(provider)
+    def __init__(self, user_id: str, provider: Optional[str] = None):
+        self.user_id = user_id
+        self.provider_param = provider
+        self.llm: Any = None
+        self.embeddings_model: Any = None
+
+    def initialize_user_models(self) -> None:
+        """
+        Retrieves user's active ProviderConfig and EmbeddingConfig from database
+        and initializes dynamic LLM and Embeddings model instances.
+        Raises HTTP 403 Forbidden if user lacks configured credentials.
+        """
+        supabase = get_supabase_client()
+
+        # 1. Fetch User Provider Config
+        provider_records = []
+        if self.provider_param:
+            matched_res = (
+                supabase.table("user_provider_configs")
+                .select("*")
+                .eq("user_id", self.user_id)
+                .eq("provider", self.provider_param)
+                .execute()
+            )
+            provider_records = matched_res.data if matched_res.data else []
+
+        if not provider_records:
+            # Fallback to user's default provider or latest created config
+            fallback_res = (
+                supabase.table("user_provider_configs")
+                .select("*")
+                .eq("user_id", self.user_id)
+                .order("is_default", desc=True)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            provider_records = fallback_res.data if fallback_res.data else []
+
+        if not provider_records:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Konfigurasi AI Provider belum diatur. Silakan tambahkan API key Anda di menu Settings."
+            )
+
+        provider_config = provider_records[0]
+        self.llm = LLMFactory.get_llm_for_config(provider_config)
+
+        # 2. Fetch User Embedding Config
+        embedding_res = (
+            supabase.table("user_embedding_configs")
+            .select("*")
+            .eq("user_id", self.user_id)
+            .execute()
+        )
+
+        if not embedding_res.data:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings."
+            )
+
+        embedding_config = embedding_res.data[0]
+        self.embeddings_model = LLMFactory.get_embeddings_for_config(embedding_config)
 
     def retrieve_relevant_chunks(
         self,
@@ -31,10 +93,12 @@ class RAGService:
         """
         Fetches vector-similar document_chunks from Supabase filtered by user_id.
         """
+        if not self.embeddings_model:
+            self.initialize_user_models()
+
         supabase = get_supabase_client()
         query_embedding = self.embeddings_model.embed_query(query)
 
-        # Call PostgreSQL HNSW Vector Cosine Distance Similarity Search RPC
         rpc_params = {
             "query_embedding": query_embedding,
             "match_count": top_k,
@@ -100,6 +164,10 @@ class RAGService:
         Frame 2..N: event: token (JSON object with streaming token)
         Frame Final: event: done
         """
+        if not self.llm or not self.embeddings_model:
+            if mock_retrieved_chunks is None:
+                self.initialize_user_models()
+
         # 1. Retrieve or use provided chunks
         chunks = (
             mock_retrieved_chunks

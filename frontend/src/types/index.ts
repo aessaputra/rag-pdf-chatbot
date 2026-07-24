@@ -41,3 +41,66 @@ export interface ChatMessage {
   readonly citations?: readonly Citation[];
   readonly created_at: string;
 }
+
+export type ProviderType = 'gemini' | 'openai' | 'openrouter' | 'openai_compatible';
+
+export interface ProviderConfig {
+  readonly id: string;
+  readonly user_id: string;
+  readonly provider: ProviderType;
+  readonly display_name: string | null;
+  readonly api_key_masked: string;
+  readonly base_url: string | null;
+  readonly model_name: string | null;
+  readonly is_default: boolean;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface ProviderConfigCreatePayload {
+  readonly provider: ProviderType;
+  readonly api_key: string;
+  readonly display_name?: string;
+  readonly base_url?: string;
+  readonly model_name?: string;
+  readonly is_default?: boolean;
+}
+
+export interface ProviderConfigUpdatePayload {
+  readonly display_name?: string;
+  readonly api_key?: string;
+  readonly base_url?: string;
+  readonly model_name?: string;
+  readonly is_default?: boolean;
+}
+
+export interface EmbeddingPreset {
+  readonly id: string;
+  readonly name: string;
+  readonly provider: string;
+  readonly model_name: string;
+  readonly embedding_dimensions: number;
+  readonly description: string;
+}
+
+export interface EmbeddingConfig {
+  readonly user_id: string;
+  readonly provider: string;
+  readonly api_key_masked: string;
+  readonly base_url: string | null;
+  readonly model_name: string;
+  readonly embedding_dimensions: number;
+  readonly locked: boolean;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface EmbeddingConfigSavePayload {
+  readonly provider: string;
+  readonly api_key?: string;
+  readonly base_url?: string;
+  readonly model_name: string;
+  readonly embedding_dimensions: number;
+}
+
+
