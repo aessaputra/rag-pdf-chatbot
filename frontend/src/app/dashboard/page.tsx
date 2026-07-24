@@ -51,10 +51,12 @@ export default function DashboardPage() {
   }, []);
 
   const loadSessionMessages = useCallback(async (sessionId: string, accessToken: string) => {
+    setActiveSessionId(sessionId);
     const res = await getSessionMessages(sessionId, accessToken);
     if (res.success && res.data) {
       setMessages(res.data);
-      setActiveSessionId(sessionId);
+    } else {
+      console.error('Gagal memuat pesan sesi:', res.error);
     }
   }, []);
 

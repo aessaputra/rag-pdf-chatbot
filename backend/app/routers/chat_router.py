@@ -5,7 +5,8 @@ Handles RAG query SSE streaming responses and conversation session history.
 Follows FastAPI best practices (Annotated dependencies, explicit router tags).
 """
 
-from typing import List, Optional
+import json
+from typing import Any, List, Optional
 from fastapi import APIRouter, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
@@ -21,6 +22,33 @@ from app.schemas import (
 from app.services.rag_service import RAGService
 
 router = APIRouter()
+
+
+def parse_citations(citations_raw: Any) -> List[Citation]:
+    """Safely parses raw JSONB citations data into a list of Citation DTOs."""
+    if not citations_raw:
+        return []
+    if isinstance(citations_raw, str):
+        try:
+            citations_raw = json.loads(citations_raw)
+        except Exception:
+            return []
+    if isinstance(citations_raw, list):
+        parsed = []
+        for item in citations_raw:
+            if isinstance(item, dict):
+                try:
+                    parsed.append(
+                        Citation(
+                            filename=str(item.get("filename", "Doc")),
+                            page_number=int(item.get("page_number", 1)),
+                            content=str(item.get("content", "")),
+                        )
+                    )
+                except Exception:
+                    pass
+        return parsed
+    return []
 
 
 @router.post("/stream")
@@ -96,7 +124,7 @@ async def list_session_messages(
                 user_id=str(r["user_id"]),
                 sender=r["sender"],
                 content=r["content"],
-                citations=[Citation(**c) for c in (r.get("citations") or [])],
+                citations=parse_citations(r.get("citations")),
                 created_at=str(r["created_at"]),
             )
             for r in records
