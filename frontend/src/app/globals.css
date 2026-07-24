@@ -1,36 +1,57 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), 'SF Mono', 'JetBrains Mono', monospace;
+  --font-serif: var(--font-newsreader), 'Newsreader', 'Playfair Display', Georgia, serif;
+}
+
 @layer base {
   :root {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
+    --bg-canvas: #09090b;
+    --surface-card: #121215;
+    --border-subtle: #232326;
   }
 
   body {
-    background-color: #030712;
-    color: #f3f4f6;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-canvas);
+    color: #f4f4f5;
+    font-family: var(--font-sans);
   }
 }
 
-/* Custom Glassmorphism & UI Utilities */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(51, 65, 85, 0.6);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+/* Minimalist Editorial Utilities */
+.minimal-card {
+  background-color: #121215;
+  border: 1px solid #232326;
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
 }
 
-.glass-input {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.8);
-  color: #f8fafc;
-  transition: all 0.2s ease-in-out;
+.minimal-input {
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  color: #fafafa;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.glass-input:focus {
+.minimal-input:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+  border-color: #52525b;
+  box-shadow: 0 0 0 2px rgba(161, 161, 170, 0.2);
 }
+
+.minimal-button-primary {
+  background-color: #fafafa;
+  color: #09090b;
+  font-weight: 500;
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+.minimal-button-primary:hover:not(:disabled) {
+  background-color: #e4e4e7;
+}
+
+.minimal-button-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+

@@ -1,5 +1,22 @@
 import type { Metadata } from 'next';
+import { Geist, Geist_Mono, Newsreader } from 'next/font/google';
 import './globals.css';
+
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+});
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
+const newsreader = Newsreader({
+  variable: '--font-newsreader',
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+});
 
 export const metadata: Metadata = {
   title: 'RAG PDF Chatbot | Intelligent AI Document Assistant',
@@ -12,11 +29,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
-        <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] pointer-events-none z-0" />
+    <html
+      lang="id"
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} dark`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen font-sans bg-[#0c0c0d] text-[#f4f4f5] antialiased selection:bg-[#27272a] selection:text-[#fafafa]">
         <main className="relative z-10">{children}</main>
       </body>
     </html>
   );
 }
+

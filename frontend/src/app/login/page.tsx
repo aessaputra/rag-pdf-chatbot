@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowRight, FileText, Lock, Mail, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabaseClient';
 import type { AuthState } from '@/types';
 
@@ -11,6 +11,29 @@ function toUserFriendlyError(message: string): string {
     return 'Gagal terhubung ke Supabase Cloud. Periksa koneksi internet atau matikan ekstensi AdBlock/CORS.';
   }
   return message;
+}
+
+// Hoisted static component to prevent re-creation on render (rerender-no-inline-components)
+interface AuthTabButtonProps {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+function AuthTabButton({ active, onClick, children }: AuthTabButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full py-2 px-3 text-xs font-medium rounded-md transition-all duration-150 ${
+        active
+          ? 'bg-[#27272a] text-[#fafafa] shadow-sm'
+          : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#18181b]'
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
 export default function LoginPage() {
@@ -24,6 +47,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Early exit pattern (js-early-exit)
     if (!email || !password) return;
 
     setAuthState({ status: 'loading' });
@@ -62,80 +87,87 @@ export default function LoginPage() {
     setAuthState({ status: 'idle' });
   };
 
-  const tabClass = (active: boolean) =>
-    `py-2 text-xs font-semibold rounded-lg transition-all ${
-      active
-        ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md'
-        : 'text-slate-400 hover:text-slate-200'
-    }`;
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 translate-y-1/2 w-96 h-96 bg-cyan-600/15 blur-3xl rounded-full pointer-events-none" />
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#09090b] text-[#f4f4f5]">
+      {/* Structural ambient light - subtle, low-opacity warm gradient (minimalist-ui directive) */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(39,39,42,0.35),transparent_70%)] pointer-events-none z-0" />
 
-      <div className="w-full max-w-md glass-panel p-8 rounded-2xl relative z-10">
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-lg shadow-indigo-500/30 mb-4">
-            <FileText className="w-7 h-7 text-white" />
+      <div className="w-full max-w-md minimal-card p-6 sm:p-8 rounded-xl relative z-10">
+        {/* Header with Editorial Typography */}
+        <div className="flex flex-col items-start mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border border-[#27272a] bg-[#18181b] text-zinc-400">
+              v1.0 &bull; Supabase RLS
+            </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            RAG PDF Chatbot <Sparkles className="w-5 h-5 text-cyan-400" />
+
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-white leading-tight">
+            {mode === 'signin' ? 'Masuk ke akun Anda' : 'Buat akun baru'}
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
             {mode === 'signin'
-              ? 'Masuk untuk mengelola dokumen PDF & percakapan AI Anda'
-              : 'Daftar akun baru untuk mulai tanya jawab dokumen PDF'}
+              ? 'Kelola dokumen PDF & percakapan tanya-jawab berbasis AI.'
+              : 'Daftar untuk mengakses asisten dokumen PDF cerdas.'}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 p-1 mb-6 rounded-xl bg-slate-900/80 border border-slate-800">
-          <button type="button" onClick={() => switchMode('signin')} className={tabClass(mode === 'signin')}>
+        {/* Segmented Mode Switcher */}
+        <div className="grid grid-cols-2 p-1 mb-6 rounded-lg bg-[#18181b] border border-[#27272a]">
+          <AuthTabButton active={mode === 'signin'} onClick={() => switchMode('signin')}>
             Masuk Akun
-          </button>
-          <button type="button" onClick={() => switchMode('signup')} className={tabClass(mode === 'signup')}>
+          </AuthTabButton>
+          <AuthTabButton active={mode === 'signup'} onClick={() => switchMode('signup')}>
             Daftar Baru
-          </button>
+          </AuthTabButton>
         </div>
 
-        {authState.status === 'error' && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-3 animate-in fade-in duration-200">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <div className="leading-relaxed">{authState.message}</div>
+        {/* Status Alerts using Muted Pastels (minimalist-ui directive & explicit ternary rendering) */}
+        {authState.status === 'error' ? (
+          <div className="mb-5 p-3.5 rounded-lg bg-[#2a1618] border border-[#451a1d] text-[#f87171] text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-[#f87171] shrink-0 mt-0.5" />
+            <div className="leading-normal font-sans">{authState.message}</div>
           </div>
-        )}
+        ) : null}
 
-        {authState.status === 'success' && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-start gap-3 animate-in fade-in duration-200">
-            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <div>
+        {authState.status === 'success' ? (
+          <div className="mb-5 p-3.5 rounded-lg bg-[#132719] border border-[#1a3d24] text-[#4ade80] text-xs flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-[#4ade80] shrink-0 mt-0.5" />
+            <div className="leading-normal font-sans">
               {mode === 'signup'
-                ? 'Pendaftaran akun berhasil! Mengalihkan ke Dashboard...'
-                : 'Otentikasi berhasil! Mengalihkan ke Dashboard...'}
+                ? 'Pendaftaran akun berhasil. Mengalihkan ke Dashboard...'
+                : 'Otentikasi berhasil. Mengalihkan ke Dashboard...'}
             </div>
           </div>
-        )}
+        ) : null}
 
+        {/* Authentication Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Alamat Email</label>
+            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+              Alamat Email
+            </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg minimal-input text-xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Kata Sandi</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-zinc-300">
+                Kata Sandi
+              </label>
+              <span className="font-mono text-[10px] text-zinc-500">Min. 6 karakter</span>
+            </div>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
@@ -143,7 +175,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg minimal-input text-xs"
               />
             </div>
           </div>
@@ -151,25 +183,37 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={authState.status === 'loading'}
-            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-2 py-2.5 px-4 rounded-lg minimal-button-primary text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {authState.status === 'loading' ? (
-              <span>Memproses Otentikasi...</span>
+              <span className="flex items-center gap-2">
+                <span className="w-3.5 h-3.5 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+                Memproses...
+              </span>
             ) : (
               <>
-                <span>{mode === 'signin' ? 'Masuk Sekarang' : 'Daftar Akun Baru'}</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>{mode === 'signin' ? 'Masuk Sekarang' : 'Daftar Akun'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}
           </button>
         </form>
 
-        <div className="mt-8 text-center border-t border-slate-800/80 pt-4">
-          <p className="text-[11px] text-slate-400">
-            Dilindungi oleh Supabase Auth & Row Level Security (RLS)
-          </p>
+        {/* Footer info & shortcut micro-UI */}
+        <div className="mt-6 pt-4 border-t border-[#232326] flex items-center justify-between text-[11px] text-zinc-500">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
+            <span>Terproteksi Supabase Auth</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span>Tekan</span>
+            <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400">
+              Enter ↵
+            </kbd>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
