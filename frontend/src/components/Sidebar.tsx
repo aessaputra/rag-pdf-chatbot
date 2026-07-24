@@ -151,21 +151,25 @@ export default function Sidebar({
       </div>
 
       {/* Footer Account & Settings Action Bar */}
-      <div className="pt-3 border-t border-subtle">
-        {/* Unified Profile Card with Inline Quick Actions */}
+      <div className="pt-3 border-t border-subtle space-y-2">
+        {/* Row 1: Theme Switcher */}
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] font-mono text-muted uppercase tracking-wider">TEMA</span>
+          <ThemeToggle compact />
+        </div>
+
+        {/* Row 2: User Profile Card with Settings & Logout */}
         <div className="flex items-center justify-between p-2 rounded-md bg-surface-card border border-subtle gap-2">
           <div className="flex items-center min-w-0 gap-2 flex-1">
-            <div className="w-6 h-6 rounded-full bg-surface-card-hover border border-subtle flex items-center justify-center text-[10px] font-mono font-medium text-primary shrink-0">
+            <div className="w-6.5 h-6.5 rounded-full bg-surface-card-hover border border-subtle flex items-center justify-center text-[10px] font-mono font-medium text-primary shrink-0">
               {(user?.email?.[0] || 'U').toUpperCase()}
             </div>
-            <span className="text-xs font-mono text-secondary truncate" title={user?.email || 'Pengguna'}>
+            <span className="text-xs font-mono text-secondary truncate min-w-0" title={user?.email || 'Pengguna'}>
               {user?.email || 'Pengguna'}
             </span>
           </div>
 
-          <div className="flex items-center gap-0.5 shrink-0">
-            <ThemeToggle compact />
-            
+          <div className="flex items-center gap-1 shrink-0">
             <Link
               href="/dashboard/settings"
               title="Pengaturan"
@@ -180,7 +184,7 @@ export default function Sidebar({
               onClick={onLogout}
               title="Keluar"
               aria-label="Keluar"
-              className="p-1.5 text-muted hover:text-rose-500 hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400"
+              className="p-1.5 text-muted hover:text-rose-500 hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
