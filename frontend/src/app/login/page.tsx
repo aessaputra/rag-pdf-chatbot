@@ -102,14 +102,16 @@ export default function LoginPage() {
         ) : null}
 
         {/* Authentication Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
           <div>
             <label htmlFor="auth-email" className="block font-mono text-[11px] uppercase tracking-wider text-zinc-400 mb-1.5">
               EMAIL
             </label>
             <input
               id="auth-email"
+              name="email"
               type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -124,7 +126,9 @@ export default function LoginPage() {
             </label>
             <input
               id="auth-password"
+              name="password"
               type="password"
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               required
               minLength={6}
               value={password}
