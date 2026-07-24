@@ -98,6 +98,23 @@ export default function ChatWindow({
             <h2 className="text-2xl font-serif text-primary tracking-tight">
               Tanyakan tentang dokumen Anda.
             </h2>
+            {activeDocumentCount === 0 && (
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <p className="text-xs text-muted">
+                  Belum ada dokumen aktif.
+                </p>
+                {onOpenDocumentModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenDocumentModal}
+                    className="py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Kelola Dokumen</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           messages.map((msg, index) => (
@@ -160,20 +177,6 @@ export default function ChatWindow({
 
       {/* Input Prompt Box - Unified Compound Bar */}
       <div className="p-4 border-t border-subtle bg-canvas">
-        {hasCredentials && activeDocumentCount === 0 && (
-          <div className="max-w-3xl mx-auto mb-2.5 px-3 py-2 rounded-lg bg-zinc-900/80 border border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
-            <span>Belum ada dokumen aktif.</span>
-            {onOpenDocumentModal && (
-              <button
-                type="button"
-                onClick={onOpenDocumentModal}
-                className="text-zinc-200 hover:text-white underline font-medium text-[11px] cursor-pointer"
-              >
-                Kelola Dokumen
-              </button>
-            )}
-          </div>
-        )}
         <form
           onSubmit={handleSubmit}
           className="max-w-3xl mx-auto flex items-center gap-2 p-1.5 pl-3 rounded-xl bg-surface-card border border-subtle focus-within:ring-2 focus-within:ring-zinc-400/50 focus-within:border-zinc-400 transition-all duration-150 shadow-2xs"
