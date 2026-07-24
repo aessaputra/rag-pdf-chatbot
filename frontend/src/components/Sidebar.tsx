@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Bot, FileText, LogOut, Plus, Settings } from 'lucide-react';
+import { FileText, LogOut, Plus, Settings } from 'lucide-react';
 import type { DocumentItem, ProviderConfig, UserPayload } from '@/types';
 import DocumentManager from './DocumentManager';
 
@@ -33,28 +33,25 @@ export default function Sidebar({
   const hasConfigs = providerConfigs.length > 0;
 
   return (
-    <aside aria-label="Navigasi Utama" className="w-[280px] h-screen bg-[#09090b] flex flex-col justify-between p-4 border-r border-[#232326] shrink-0 select-none">
+    <aside aria-label="Navigasi Utama" className="w-[260px] h-screen bg-[#09090b] flex flex-col justify-between p-4 border-r border-[#232326] shrink-0 select-none">
       <div className="flex flex-col flex-1 min-h-0 space-y-4">
         {/* Branding Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[#232326]">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-[#18181b] border border-[#27272a] flex items-center justify-center">
+            <div className="w-6 h-6 rounded bg-[#18181b] border border-[#27272a] flex items-center justify-center">
               <FileText className="w-3.5 h-3.5 text-[#fafafa]" aria-hidden="true" />
             </div>
-            <span className="text-sm font-semibold text-[#f4f4f5] tracking-tight">
+            <span className="text-xs font-semibold text-[#f4f4f5] tracking-tight font-serif">
               RAG PDF
             </span>
           </div>
-          <span className="text-[10px] font-mono text-[#a1a1aa] px-1.5 py-0.5 rounded bg-[#18181b] border border-[#27272a]">
-            v1.0
-          </span>
         </div>
 
         {/* New Chat Button */}
         <button
           type="button"
           onClick={onNewChat}
-          className="w-full minimal-button-primary py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[#52525b]"
+          className="w-full minimal-button-primary py-2 px-3 rounded-md text-xs flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#52525b]"
         >
           <Plus className="w-3.5 h-3.5" aria-hidden="true" />
           <span>Percakapan Baru</span>
@@ -62,15 +59,15 @@ export default function Sidebar({
 
         {/* AI Provider Selector */}
         <div className="space-y-1.5">
-          <label htmlFor="sidebar-provider-select" className="block text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wider flex items-center gap-1.5">
-            <Bot className="w-3 h-3 text-[#a1a1aa]" aria-hidden="true" /> Provider AI
+          <label htmlFor="sidebar-provider-select" className="block text-[10px] font-mono text-[#71717a] uppercase tracking-wider">
+            PROVIDER AI
           </label>
           {hasConfigs ? (
             <select
               id="sidebar-provider-select"
               value={provider}
               onChange={(e) => onProviderChange(e.target.value)}
-              className="minimal-input w-full py-1.5 px-2.5 rounded-lg text-xs font-medium cursor-pointer focus-visible:ring-2 focus-visible:ring-[#52525b]"
+              className="minimal-input w-full py-1.5 px-2 rounded-md text-xs font-medium cursor-pointer focus-visible:ring-2 focus-visible:ring-[#52525b]"
             >
               {providerConfigs.map((config) => (
                 <option key={config.id} value={config.provider} className="bg-[#121215] text-[#f4f4f5]">
@@ -79,10 +76,9 @@ export default function Sidebar({
               ))}
             </select>
           ) : (
-            <div className="p-2.5 rounded-lg bg-[#451a03]/30 border border-[#78350f]/50 text-[#fde68a] text-xs space-y-1">
-              <p className="font-medium text-[11px]">Belum Ada Provider AI</p>
-              <Link href="/dashboard/settings" className="text-[10px] text-[#fde68a] hover:underline block pt-0.5 focus-visible:ring-2 focus-visible:ring-[#52525b] rounded">
-                Atur Kunci API di Settings →
+            <div className="p-2 rounded-md bg-[#121215] border border-[#232326] text-xs">
+              <Link href="/dashboard/settings" className="text-[11px] text-zinc-400 hover:text-white hover:underline block focus-visible:ring-2 focus-visible:ring-[#52525b]">
+                Atur kunci API di Settings &rarr;
               </Link>
             </div>
           )}
@@ -103,28 +99,23 @@ export default function Sidebar({
       <div className="pt-3 border-t border-[#232326] space-y-2">
         <Link
           href="/dashboard/settings"
-          className="w-full py-2 px-2.5 rounded-lg bg-[#121215] hover:bg-[#18181b] border border-[#232326] text-[#a1a1aa] hover:text-[#f4f4f5] text-xs font-medium transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-[#52525b]"
+          className="w-full py-2 px-2.5 rounded-md bg-[#121215] hover:bg-[#18181b] border border-[#232326] text-zinc-400 hover:text-white text-xs font-medium transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-[#52525b]"
         >
           <Settings className="w-3.5 h-3.5" aria-hidden="true" />
-          <span>Pengaturan AI &amp; BYOK</span>
+          <span>Pengaturan</span>
         </Link>
 
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#121215] border border-[#232326]">
-          <div className="truncate mr-2">
-            <div className="text-xs font-medium text-[#f4f4f5] truncate">
-              {user?.email || 'Pengguna'}
-            </div>
-            <div className="text-[10px] font-mono text-[#a1a1aa] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" /> Terautentikasi
-            </div>
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-[#121215] border border-[#232326]">
+          <div className="text-xs font-mono text-zinc-300 truncate mr-2">
+            {user?.email || 'Pengguna'}
           </div>
 
           <button
             type="button"
             onClick={onLogout}
-            title="Keluar dari Akun"
-            aria-label="Keluar dari Akun"
-            className="p-1 text-[#a1a1aa] hover:text-rose-400 rounded transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b]"
+            title="Keluar"
+            aria-label="Keluar"
+            className="p-1 text-zinc-400 hover:text-rose-400 rounded transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b]"
           >
             <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
@@ -133,3 +124,4 @@ export default function Sidebar({
     </aside>
   );
 }
+

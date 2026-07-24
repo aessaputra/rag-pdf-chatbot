@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertCircle, FileCheck, FileText, Trash2, UploadCloud } from 'lucide-react';
+import { AlertCircle, FileCheck, Trash2, UploadCloud } from 'lucide-react';
 import type { DocumentItem } from '@/types';
 
 interface DocumentManagerProps {
@@ -23,12 +23,12 @@ export default function DocumentManager({
 
   const handleFileChange = async (file: File | null) => {
     if (!hasCredentials) {
-      setErrorMessage('Atur Provider AI & Embedding di Settings terlebih dahulu.');
+      setErrorMessage('Atur provider AI di Settings terlebih dahulu.');
       return;
     }
     if (!file) return;
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMessage('Hanya berkas berformat PDF (.pdf) yang diperbolehkan.');
+      setErrorMessage('Hanya berkas berformat PDF yang diperbolehkan.');
       return;
     }
 
@@ -61,8 +61,8 @@ export default function DocumentManager({
   return (
     <section aria-label="Pengelola Dokumen PDF" className="flex-1 flex flex-col min-h-0 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wider flex items-center gap-1.5">
-          <FileText className="w-3 h-3 text-[#a1a1aa]" aria-hidden="true" /> Berkas PDF ({documents.length})
+        <span className="text-[10px] font-mono text-[#71717a] uppercase tracking-wider">
+          BERKAS PDF ({documents.length})
         </span>
       </div>
 
@@ -74,7 +74,7 @@ export default function DocumentManager({
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        className={`p-3 rounded-lg border border-dashed text-center flex flex-col items-center justify-center transition-colors ${
+        className={`p-3 rounded-md border border-dashed text-center flex flex-col items-center justify-center transition-colors ${
           !hasCredentials
             ? 'border-[#232326] bg-[#121215]/40 opacity-50 cursor-not-allowed'
             : isDragging
@@ -97,48 +97,47 @@ export default function DocumentManager({
           {isUploading ? (
             <div className="w-4 h-4 border-2 border-[#fafafa] border-t-transparent rounded-full animate-spin my-1" aria-label="Mengunggah berkas…" />
           ) : (
-            <UploadCloud className="w-4 h-4 text-[#a1a1aa] mb-1" aria-hidden="true" />
+            <UploadCloud className="w-4 h-4 text-zinc-400 mb-1" aria-hidden="true" />
           )}
-          <span className="text-[11px] font-medium text-[#f4f4f5]">
-            {!hasCredentials ? 'Unggah Terkunci' : isUploading ? 'Memproses PDF…' : 'Unggah Berkas PDF'}
+          <span className="text-xs font-medium text-white">
+            {!hasCredentials ? 'Unggah Terkunci' : isUploading ? 'Memproses PDF…' : 'Unggah PDF'}
           </span>
-          <span className="text-[9px] text-[#a1a1aa]">Ukuran maksimum 25 MB</span>
+          <span className="text-[10px] font-mono text-zinc-500 mt-0.5">Maks 25 MB</span>
         </label>
       </div>
 
       {errorMessage && (
-        <div role="alert" className="p-2 rounded bg-rose-950/40 border border-rose-800/50 text-rose-300 text-[10px] flex items-center gap-1.5">
-          <AlertCircle className="w-3 h-3 shrink-0 text-rose-400" aria-hidden="true" />
-          <span>{errorMessage}</span>
+        <div role="alert" className="p-2 rounded bg-[#2a1618] border border-[#451a1d] text-[#f87171] text-xs leading-normal">
+          {errorMessage}
         </div>
       )}
 
       {/* Document List */}
       <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
         {documents.length === 0 ? (
-          <div className="text-center py-6 text-[#71717a] text-[11px]">
-            Belum ada berkas PDF diunggah.
+          <div className="text-center py-6 text-zinc-600 text-xs font-mono">
+            Kosong
           </div>
         ) : (
           documents.map((doc) => (
             <div
               key={doc.id}
-              className="p-2 rounded-lg bg-[#121215] border border-[#232326] hover:border-[#27272a] flex items-center justify-between group transition-colors"
+              className="p-2 rounded-md bg-[#121215] border border-[#232326] hover:border-[#27272a] flex items-center justify-between group transition-colors"
             >
               <div className="flex items-center gap-2 truncate mr-1">
                 <FileCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" aria-hidden="true" />
                 <div className="truncate">
-                  <div className="text-[11px] font-medium text-[#f4f4f5] truncate">{doc.filename}</div>
-                  <div className="text-[9px] font-mono text-[#a1a1aa]">{formatFileSize(doc.file_size)}</div>
+                  <div className="text-xs font-medium text-white truncate">{doc.filename}</div>
+                  <div className="text-[9px] font-mono text-zinc-500">{formatFileSize(doc.file_size)}</div>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => onDelete(doc.id)}
-                title={`Hapus berkas ${doc.filename}`}
-                aria-label={`Hapus berkas ${doc.filename}`}
-                className="p-1 text-[#71717a] hover:text-rose-400 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-[#52525b]"
+                title={`Hapus ${doc.filename}`}
+                aria-label={`Hapus ${doc.filename}`}
+                className="p-1 text-zinc-500 hover:text-rose-400 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-[#52525b]"
               >
                 <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
@@ -149,3 +148,4 @@ export default function DocumentManager({
     </section>
   );
 }
+
