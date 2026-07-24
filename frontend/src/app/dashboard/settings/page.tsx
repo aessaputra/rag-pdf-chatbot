@@ -668,7 +668,7 @@ export default function SettingsPage() {
               >
                 {presets.map((preset) => (
                   <option key={preset.id} value={preset.id} className="bg-[#121215] text-white">
-                    {preset.name} ({preset.embedding_dimensions}d) - {preset.description}
+                    {preset.name}
                   </option>
                 ))}
                 <option value="custom" className="bg-[#121215] text-white">Custom Model</option>

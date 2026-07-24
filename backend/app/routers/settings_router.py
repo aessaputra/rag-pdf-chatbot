@@ -209,11 +209,11 @@ async def delete_provider_config(
 RECOMMENDED_EMBEDDING_PRESETS: List[EmbeddingPresetDTO] = [
     EmbeddingPresetDTO(
         id="gemini-embedding-001",
-        name="Google Gemini Embedding (768d)",
+        name="Google Gemini (768d)",
         provider="gemini",
         model_name="models/gemini-embedding-001",
         embedding_dimensions=768,
-        description="Rekomendasi Default. Gratis di tier Google Gemini API."
+        description="Default"
     ),
     EmbeddingPresetDTO(
         id="openai-text-embedding-3-small-1536",
@@ -221,7 +221,7 @@ RECOMMENDED_EMBEDDING_PRESETS: List[EmbeddingPresetDTO] = [
         provider="openai",
         model_name="text-embedding-3-small",
         embedding_dimensions=1536,
-        description="Performa tinggi dan efisien ($0.02/1M tokens)."
+        description="Standard"
     ),
     EmbeddingPresetDTO(
         id="openai-text-embedding-3-small-768",
@@ -229,7 +229,7 @@ RECOMMENDED_EMBEDDING_PRESETS: List[EmbeddingPresetDTO] = [
         provider="openai",
         model_name="text-embedding-3-small",
         embedding_dimensions=768,
-        description="Kompatibel dengan dimensi 768d."
+        description="MRL Sliced"
     ),
     EmbeddingPresetDTO(
         id="openai-text-embedding-3-large-3072",
@@ -237,7 +237,7 @@ RECOMMENDED_EMBEDDING_PRESETS: List[EmbeddingPresetDTO] = [
         provider="openai",
         model_name="text-embedding-3-large",
         embedding_dimensions=3072,
-        description="Akurasi tertinggi untuk RAG kompleks ($0.13/1M tokens)."
+        description="High Precision"
     ),
 ]
 
