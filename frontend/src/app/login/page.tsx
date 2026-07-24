@@ -42,12 +42,7 @@ export default function LoginPage() {
           status: 'success',
           user: { user_id: data.user.id, email: data.user.email || email, role: 'authenticated' },
         });
-
-        if (mode === 'signup') {
-          setTimeout(() => router.push('/dashboard'), 1000);
-        } else {
-          router.push('/dashboard');
-        }
+        router.push('/dashboard');
       }
     } catch (err: any) {
       console.error('Auth error:', err);
@@ -103,14 +98,6 @@ export default function LoginPage() {
         {authState.status === 'error' ? (
           <div className="p-3 rounded-md bg-[#2a1618] border border-[#451a1d] text-[#f87171] text-xs leading-normal">
             {authState.message}
-          </div>
-        ) : null}
-
-        {authState.status === 'success' ? (
-          <div className="p-3 rounded-md bg-[#132719] border border-[#1a3d24] text-[#4ade80] text-xs leading-normal">
-            {mode === 'signup'
-              ? 'Pendaftaran berhasil. Mengalihkan...'
-              : 'Otentikasi berhasil. Mengalihkan...'}
           </div>
         ) : null}
 
