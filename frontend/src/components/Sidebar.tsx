@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { FileText, LogOut, MessageSquare, Plus, Settings, Trash2 } from 'lucide-react';
 import type { ChatSession, DocumentItem, ProviderConfig, UserPayload } from '@/types';
-import DocumentManager from './DocumentManager';
 import { ThemeToggle } from './ThemeToggle';
 
 interface SidebarProps {
@@ -19,8 +18,8 @@ interface SidebarProps {
   onSelectSession?: (sessionId: string) => void;
   onDeleteSession?: (sessionId: string) => void;
   onLogout: () => void;
-  onUpload: (file: File) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onUpload?: (file: File) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   onOpenDocumentModal?: () => void;
 }
 
@@ -37,11 +36,9 @@ export default function Sidebar({
   onSelectSession,
   onDeleteSession,
   onLogout,
-  onUpload,
-  onDelete,
   onOpenDocumentModal,
 }: SidebarProps) {
-  const hasConfigs = providerConfigs.length > 0;
+  const activeDocCount = documents.filter((d) => (d.is_active ?? true) && d.status === 'ready').length;
 
   return (
     <aside
@@ -76,17 +73,22 @@ export default function Sidebar({
             <button
               type="button"
               onClick={onOpenDocumentModal}
-              className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center justify-center gap-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center justify-between cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
             >
-              <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Dokumen</span>
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Dokumen</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
+                {activeDocCount} Aktif
+              </span>
             </button>
           )}
         </div>
 
         {/* Chat Sessions History Section */}
         {sessions.length > 0 ? (
-          <div className="space-y-1.5 max-h-[140px] flex flex-col min-h-0">
+          <div className="flex-1 space-y-1.5 flex flex-col min-h-0 pt-2 border-t border-subtle">
             <div className="text-[10px] font-mono text-muted uppercase tracking-wider px-1">
               PERCAKAPAN ({sessions.length})
             </div>
@@ -126,17 +128,6 @@ export default function Sidebar({
             </div>
           </div>
         ) : null}
-
-        {/* Embedded Document Manager Section */}
-        <div className="flex-1 flex flex-col min-h-0 pt-2 border-t border-subtle">
-          <DocumentManager
-            documents={documents}
-            hasCredentials={hasCredentials}
-            onUpload={onUpload}
-            onDelete={onDelete}
-            onOpenModal={onOpenDocumentModal}
-          />
-        </div>
       </div>
 
       {/* Footer Account & Settings Action Bar */}
