@@ -92,17 +92,14 @@ export default function ChatWindow({
           </div>
         ) : messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-20">
-            <div className="p-3 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
-              <Sparkles className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <h2 className="text-2xl font-serif text-primary tracking-tight">
-              Tanyakan tentang dokumen Anda.
-            </h2>
-            {activeDocumentCount === 0 && (
-              <div className="mt-3 flex flex-col items-center gap-2">
-                <p className="text-xs text-muted">
+            {activeDocumentCount === 0 ? (
+              <>
+                <div className="p-3 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
+                  <FileText className="w-6 h-6" aria-hidden="true" />
+                </div>
+                <h2 className="text-2xl font-serif text-primary tracking-tight mb-4">
                   Belum ada dokumen aktif.
-                </p>
+                </h2>
                 {onOpenDocumentModal && (
                   <button
                     type="button"
@@ -113,7 +110,16 @@ export default function ChatWindow({
                     <span>Kelola Dokumen</span>
                   </button>
                 )}
-              </div>
+              </>
+            ) : (
+              <>
+                <div className="p-3 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
+                  <Sparkles className="w-6 h-6" aria-hidden="true" />
+                </div>
+                <h2 className="text-2xl font-serif text-primary tracking-tight">
+                  Tanyakan tentang dokumen Anda.
+                </h2>
+              </>
             )}
           </div>
         ) : (
