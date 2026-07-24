@@ -228,6 +228,10 @@ export default function DashboardPage() {
     );
   }, [token, provider, documents, activeSessionId, updateAssistantMessage, reloadSessions]);
 
+  const handleDocumentsUpdated = useCallback(() => {
+    if (token) reloadDocuments(token);
+  }, [token, reloadDocuments]);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-canvas text-primary transition-colors duration-150">
       <Sidebar
@@ -268,7 +272,8 @@ export default function DashboardPage() {
           isOpen={isDocModalOpen}
           onClose={() => setIsDocModalOpen(false)}
           token={token}
-          onDocumentsUpdated={() => reloadDocuments(token)}
+          documents={documents}
+          onDocumentsUpdated={handleDocumentsUpdated}
         />
       )}
     </div>

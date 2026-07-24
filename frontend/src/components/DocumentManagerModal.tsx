@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   FileText,
@@ -13,7 +13,6 @@ import {
 import { DocumentItem } from '@/types';
 import {
   uploadDocument,
-  listDocuments,
   deleteDocument,
   toggleDocumentActive,
   getDocumentPreviewUrl,
@@ -23,43 +22,23 @@ interface DocumentManagerModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly token: string;
-  readonly onDocumentsUpdated?: () => void;
+  readonly documents: DocumentItem[];
+  readonly onDocumentsUpdated: () => void;
 }
 
 export default function DocumentManagerModal({
   isOpen,
   onClose,
   token,
+  documents,
   onDocumentsUpdated,
 }: DocumentManagerModalProps) {
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [actionDocId, setActionDocId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const fetchDocuments = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
-    const res = await listDocuments(token);
-    setLoading(false);
-    if (res.success && res.data) {
-      setDocuments(res.data);
-      onDocumentsUpdated?.();
-    } else if (res.error) {
-      setError(res.error);
-    }
-  }, [token, onDocumentsUpdated]);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchDocuments();
-    }
-  }, [isOpen, fetchDocuments]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -90,7 +69,7 @@ export default function DocumentManagerModal({
     setUploading(false);
 
     if (res.success) {
-      fetchDocuments();
+      onDocumentsUpdated();
     } else {
       setError(res.error || 'Gagal mengunggah berkas.');
     }
@@ -119,21 +98,12 @@ export default function DocumentManagerModal({
     setActionDocId(doc.id);
     setError(null);
 
-    // Optimistic UI update
-    setDocuments((prev) =>
-      prev.map((d) => (d.id === doc.id ? { ...d, is_active: newStatus } : d))
-    );
-
     const res = await toggleDocumentActive(doc.id, newStatus, token);
     setActionDocId(null);
 
     if (res.success) {
-      onDocumentsUpdated?.();
+      onDocumentsUpdated();
     } else {
-      // Revert optimistic update
-      setDocuments((prev) =>
-        prev.map((d) => (d.id === doc.id ? { ...d, is_active: !newStatus } : d))
-      );
       setError(res.error || 'Gagal mengubah status dokumen.');
     }
   };
@@ -160,8 +130,7 @@ export default function DocumentManagerModal({
     setDeletingId(null);
 
     if (res.success) {
-      setDocuments((prev) => prev.filter((d) => d.id !== docId));
-      onDocumentsUpdated?.();
+      onDocumentsUpdated();
     } else {
       setError(res.error || 'Gagal menghapus dokumen.');
     }
@@ -252,11 +221,7 @@ export default function DocumentManagerModal({
               DAFTAR DOKUMEN ({documents.length})
             </h3>
 
-            {loading && documents.length === 0 ? (
-              <div className="flex justify-center items-center py-10">
-                <Loader2 className="w-6 h-6 text-muted animate-spin" />
-              </div>
-            ) : documents.length === 0 ? (
+            {documents.length === 0 ? (
               <div className="text-center py-8 text-xs text-muted border border-subtle rounded-lg">
                 Belum ada dokumen yang diunggah.
               </div>
