@@ -1,18 +1,25 @@
 """
 Document Router Module
 
-Handles PDF document uploads, text extraction & chunk vectorization, listing documents, and deletion.
+Handles PDF document uploads, text extraction & chunk vectorization,
+listing documents, toggling RAG active status, preview URLs, and deletion.
 Follows FastAPI best practices (Annotated dependencies, explicit response models, run_in_threadpool).
 """
 
-from typing import Any, Dict, List
+from typing import List
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 
 from app.auth import CurrentUserDep
 from app.database import get_supabase_client
-from app.schemas import DocumentUploadResponse
+from app.schemas import (
+    DocumentItemResponse,
+    DocumentPreviewResponse,
+    DocumentToggleRequest,
+    DocumentUploadResponse,
+)
 from app.services.ingestion_service import PDFIngestionService
+from app.services.storage_service import StorageService
 
 router = APIRouter()
 
@@ -24,7 +31,8 @@ async def upload_pdf_document(
 ) -> DocumentUploadResponse:
     """
     Uploads and ingests a PDF document.
-    Validates file extension, parses text per page, generates vector embeddings, and stores in Supabase.
+    Validates file extension, parses text per page, generates vector embeddings,
+    uploads PDF to Supabase Storage, and stores vectors in Supabase PostgreSQL.
     Runs CPU/IO heavy tasks in threadpool to prevent blocking the event loop.
     """
     if not file.filename or not file.filename.lower().endswith(".pdf"):
@@ -51,7 +59,7 @@ async def upload_pdf_document(
             detail="Could not extract readable text from PDF."
         )
 
-    # Run Supabase vector storage in threadpool
+    # Run Supabase vector storage + file upload in threadpool
     try:
         response = await run_in_threadpool(
             ingestion_service.store_document_and_chunks,
@@ -59,7 +67,8 @@ async def upload_pdf_document(
             file_size=len(pdf_bytes),
             user_id=user.user_id,
             chunks=chunks,
-            total_pages=max(chunk.page_number for chunk in chunks)
+            total_pages=max(chunk.page_number for chunk in chunks),
+            pdf_bytes=pdf_bytes,
         )
         return response
     except Exception as e:
@@ -69,25 +78,129 @@ async def upload_pdf_document(
         )
 
 
-@router.get("", response_model=List[Dict[str, Any]])
-async def list_user_documents(user: CurrentUserDep) -> List[Dict[str, Any]]:
+@router.get("", response_model=List[DocumentItemResponse])
+async def list_user_documents(user: CurrentUserDep) -> List[DocumentItemResponse]:
     """Retrieves all uploaded PDF document metadata records owned by the authenticated user."""
     def fetch_docs():
         supabase = get_supabase_client()
-        res = supabase.table("documents").select("id, filename, file_size, created_at").eq("user_id", user.user_id).execute()
+        res = (
+            supabase.table("documents")
+            .select("id, filename, file_size, total_pages, file_path, is_active, status, created_at")
+            .eq("user_id", user.user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
         return res.data if res.data else []
 
-    return await run_in_threadpool(fetch_docs)
+    data = await run_in_threadpool(fetch_docs)
+    return [DocumentItemResponse(**doc) for doc in data]
+
+
+@router.patch("/{document_id}/toggle", response_model=DocumentItemResponse)
+async def toggle_document_active(
+    document_id: str,
+    body: DocumentToggleRequest,
+    user: CurrentUserDep,
+) -> DocumentItemResponse:
+    """Toggles a document's RAG active status (Aktif vs Off)."""
+    def do_toggle():
+        supabase = get_supabase_client()
+        res = (
+            supabase.table("documents")
+            .update({"is_active": body.is_active})
+            .eq("id", document_id)
+            .eq("user_id", user.user_id)
+            .execute()
+        )
+        if not res.data:
+            return None
+        return res.data[0]
+
+    result = await run_in_threadpool(do_toggle)
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+    return DocumentItemResponse(**result)
+
+
+@router.get("/{document_id}/preview", response_model=DocumentPreviewResponse)
+async def get_document_preview(
+    document_id: str,
+    user: CurrentUserDep,
+) -> DocumentPreviewResponse:
+    """Generates a temporary signed URL (1 hour) for previewing a stored PDF."""
+    def fetch_and_sign():
+        supabase = get_supabase_client()
+        res = (
+            supabase.table("documents")
+            .select("id, file_path")
+            .eq("id", document_id)
+            .eq("user_id", user.user_id)
+            .execute()
+        )
+        if not res.data:
+            return None, None
+        doc = res.data[0]
+        file_path = doc.get("file_path")
+        if not file_path:
+            return doc, None
+        signed_url = StorageService.create_signed_url(file_path)
+        return doc, signed_url
+
+    doc, signed_url = await run_in_threadpool(fetch_and_sign)
+    if doc is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )
+    if signed_url is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF file not available in storage."
+        )
+    return DocumentPreviewResponse(document_id=document_id, signed_url=signed_url)
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: str,
-    user: CurrentUserDep
+    user: CurrentUserDep,
 ) -> None:
-    """Deletes a document and its associated vector chunks owned by the authenticated user."""
+    """
+    Hard-deletes a document: removes the PDF from Supabase Storage
+    and deletes the database record (cascading vector chunk deletion).
+    """
     def remove_doc():
         supabase = get_supabase_client()
-        supabase.table("documents").delete().eq("id", document_id).eq("user_id", user.user_id).execute()
+        # Fetch file_path before deletion
+        res = (
+            supabase.table("documents")
+            .select("id, file_path")
+            .eq("id", document_id)
+            .eq("user_id", user.user_id)
+            .execute()
+        )
+        if not res.data:
+            return False
 
-    await run_in_threadpool(remove_doc)
+        file_path = res.data[0].get("file_path")
+
+        # Delete from storage first
+        if file_path:
+            try:
+                StorageService.delete_file(file_path)
+            except Exception:
+                pass  # Proceed with DB deletion even if storage cleanup fails
+
+        # Delete from database (cascades to document_chunks)
+        supabase.table("documents").delete().eq("id", document_id).eq("user_id", user.user_id).execute()
+        return True
+
+    found = await run_in_threadpool(remove_doc)
+    if not found:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found."
+        )

@@ -76,61 +76,88 @@ class PDFIngestionService:
         user_id: str,
         chunks: List[DocumentChunkDTO],
         total_pages: int,
+        pdf_bytes: bytes,
         provider: str = "gemini",
         batch_size: int = 100
     ) -> DocumentUploadResponse:
         """
-        Inserts document record and batch-inserts vector chunks into Supabase PostgreSQL.
+        Inserts document record, uploads PDF to storage, and batch-inserts vector chunks.
+
+        On failure during embedding or chunk insertion, cleans up the storage file
+        and removes the document record to prevent orphaned data.
         """
+        from app.services.storage_service import StorageService
+
         supabase = get_supabase_client()
 
-        # 1. Insert Document record
+        # 1. Insert Document record with status='processing'
         doc_data = {
             "user_id": user_id,
             "filename": filename,
             "file_size": file_size,
-            "total_pages": total_pages
+            "total_pages": total_pages,
+            "status": "processing",
+            "is_active": True,
         }
         doc_response = supabase.table("documents").insert(doc_data).execute()
         document_id = doc_response.data[0]["id"]
 
-        # 2. Fetch User Embedding Config & Generate Embeddings
-        embedding_res = (
-            supabase.table("user_embedding_configs")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
-        )
+        # 2. Upload PDF bytes to Supabase Storage
+        try:
+            file_path = StorageService.upload_file(user_id, document_id, pdf_bytes)
+        except Exception:
+            # Rollback: delete the document record
+            supabase.table("documents").delete().eq("id", document_id).eq("user_id", user_id).execute()
+            raise
 
-        if not embedding_res.data:
-            raise ValueError("Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings.")
+        # 3. Update document with file_path
+        supabase.table("documents").update({"file_path": file_path}).eq("id", document_id).execute()
 
-        embedding_config = embedding_res.data[0]
-        embeddings_model = LLMFactory.get_embeddings_for_config(embedding_config)
+        # 4. Fetch User Embedding Config & Generate Embeddings
+        try:
+            embedding_res = (
+                supabase.table("user_embedding_configs")
+                .select("*")
+                .eq("user_id", user_id)
+                .execute()
+            )
 
-        chunk_texts = [chunk.content for chunk in chunks]
-        vector_embeddings = embeddings_model.embed_documents(chunk_texts)
+            if not embedding_res.data:
+                raise ValueError("Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings.")
 
+            embedding_config = embedding_res.data[0]
+            embeddings_model = LLMFactory.get_embeddings_for_config(embedding_config)
 
-        # 3. Prepare Batch Records for document_chunks
-        chunk_records = []
-        for chunk, embedding_vector in zip(chunks, vector_embeddings):
-            chunk_records.append({
-                "document_id": document_id,
-                "user_id": user_id,
-                "content": chunk.content,
-                "page_number": chunk.page_number,
-                "metadata": chunk.metadata,
-                "embedding": embedding_vector
-            })
+            chunk_texts = [chunk.content for chunk in chunks]
+            vector_embeddings = embeddings_model.embed_documents(chunk_texts)
 
-        # 4. Perform Batch Insert (Supabase Data Access Best Practice)
-        for i in range(0, len(chunk_records), batch_size):
-            batch = chunk_records[i : i + batch_size]
-            supabase.table("document_chunks").insert(batch).execute()
+            # 5. Prepare Batch Records for document_chunks
+            chunk_records = []
+            for chunk, embedding_vector in zip(chunks, vector_embeddings):
+                chunk_records.append({
+                    "document_id": document_id,
+                    "user_id": user_id,
+                    "content": chunk.content,
+                    "page_number": chunk.page_number,
+                    "metadata": chunk.metadata,
+                    "embedding": embedding_vector
+                })
 
-        # 5. Auto-lock user's embedding model choice after first document ingestion
-        supabase.table("user_embedding_configs").update({"locked": True}).eq("user_id", user_id).execute()
+            # 6. Perform Batch Insert (Supabase Data Access Best Practice)
+            for i in range(0, len(chunk_records), batch_size):
+                batch = chunk_records[i : i + batch_size]
+                supabase.table("document_chunks").insert(batch).execute()
+
+            # 7. Auto-lock user's embedding model choice after first document ingestion
+            supabase.table("user_embedding_configs").update({"locked": True}).eq("user_id", user_id).execute()
+
+            # 8. Mark document as ready
+            supabase.table("documents").update({"status": "ready"}).eq("id", document_id).execute()
+
+        except Exception:
+            # Rollback: update status to failed
+            supabase.table("documents").update({"status": "failed"}).eq("id", document_id).execute()
+            raise
 
         return DocumentUploadResponse(
             document_id=document_id,
@@ -140,4 +167,5 @@ class PDFIngestionService:
             total_chunks=len(chunks),
             created_at=datetime.now(timezone.utc)
         )
+
 

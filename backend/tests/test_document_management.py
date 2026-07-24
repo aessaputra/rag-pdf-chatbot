@@ -1,0 +1,223 @@
+"""
+Tests for Document Management endpoints and StorageService.
+Covers toggle, preview, delete, and schema serialization.
+"""
+
+from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.auth import get_current_user
+from app.main import app
+from app.schemas import (
+    DocumentItemResponse,
+    DocumentPreviewResponse,
+    DocumentToggleRequest,
+)
+
+client = TestClient(app)
+
+MOCK_USER_ID = "11111111-2222-3333-4444-555555555555"
+MOCK_DOC_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+MOCK_FILE_PATH = f"{MOCK_USER_ID}/{MOCK_DOC_ID}.pdf"
+
+
+def mock_user():
+    from app.schemas import UserPayload
+    return UserPayload(
+        user_id=MOCK_USER_ID,
+        email="testuser@example.com",
+        role="authenticated",
+    )
+
+
+# --- Schema DTO Tests ---
+
+
+def test_document_item_response_serialization():
+    """Verify DocumentItemResponse serializes all document management fields."""
+    dto = DocumentItemResponse(
+        id=MOCK_DOC_ID,
+        filename="report.pdf",
+        file_size=102400,
+        total_pages=5,
+        file_path=MOCK_FILE_PATH,
+        is_active=True,
+        status="ready",
+        created_at=datetime(2026, 7, 24, tzinfo=timezone.utc),
+    )
+    data = dto.model_dump()
+    assert data["id"] == MOCK_DOC_ID
+    assert data["is_active"] is True
+    assert data["status"] == "ready"
+    assert data["file_path"] == MOCK_FILE_PATH
+
+
+def test_document_toggle_request_validation():
+    """Verify DocumentToggleRequest accepts boolean is_active."""
+    req = DocumentToggleRequest(is_active=False)
+    assert req.is_active is False
+
+
+def test_document_preview_response_defaults():
+    """Verify DocumentPreviewResponse has default expires_in of 3600."""
+    resp = DocumentPreviewResponse(
+        document_id=MOCK_DOC_ID,
+        signed_url="https://example.com/signed",
+    )
+    assert resp.expires_in == 3600
+
+
+# --- API Endpoint Tests ---
+
+
+@patch("app.routers.document_router.get_supabase_client")
+def test_list_documents_returns_items(mock_get_supabase):
+    """Verify GET /api/documents returns list of DocumentItemResponse."""
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = MagicMock(
+        data=[
+            {
+                "id": MOCK_DOC_ID,
+                "filename": "report.pdf",
+                "file_size": 102400,
+                "total_pages": 5,
+                "file_path": MOCK_FILE_PATH,
+                "is_active": True,
+                "status": "ready",
+                "created_at": "2026-07-24T00:00:00+00:00",
+            }
+        ]
+    )
+
+    app.dependency_overrides[get_current_user] = mock_user
+    try:
+        response = client.get("/api/documents")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == MOCK_DOC_ID
+        assert data[0]["is_active"] is True
+        assert data[0]["status"] == "ready"
+    finally:
+        app.dependency_overrides.clear()
+
+
+@patch("app.routers.document_router.get_supabase_client")
+def test_toggle_document_active(mock_get_supabase):
+    """Verify PATCH /api/documents/{id}/toggle updates is_active and returns document."""
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_supabase.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[
+            {
+                "id": MOCK_DOC_ID,
+                "filename": "report.pdf",
+                "file_size": 102400,
+                "total_pages": 5,
+                "file_path": MOCK_FILE_PATH,
+                "is_active": False,
+                "status": "ready",
+                "created_at": "2026-07-24T00:00:00+00:00",
+            }
+        ]
+    )
+
+    app.dependency_overrides[get_current_user] = mock_user
+    try:
+        response = client.patch(
+            f"/api/documents/{MOCK_DOC_ID}/toggle",
+            json={"is_active": False},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["is_active"] is False
+    finally:
+        app.dependency_overrides.clear()
+
+
+@patch("app.routers.document_router.get_supabase_client")
+def test_toggle_document_not_found(mock_get_supabase):
+    """Verify PATCH /api/documents/{id}/toggle returns 404 for non-existent document."""
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_supabase.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
+
+    app.dependency_overrides[get_current_user] = mock_user
+    try:
+        response = client.patch(
+            f"/api/documents/{MOCK_DOC_ID}/toggle",
+            json={"is_active": True},
+        )
+        assert response.status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+@patch("app.routers.document_router.StorageService")
+@patch("app.routers.document_router.get_supabase_client")
+def test_delete_document_with_storage_cleanup(mock_get_supabase, mock_storage_cls):
+    """Verify DELETE /api/documents/{id} deletes from storage and database."""
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[{"id": MOCK_DOC_ID, "file_path": MOCK_FILE_PATH}]
+    )
+
+    app.dependency_overrides[get_current_user] = mock_user
+    try:
+        response = client.delete(f"/api/documents/{MOCK_DOC_ID}")
+        assert response.status_code == 204
+        mock_storage_cls.delete_file.assert_called_once_with(MOCK_FILE_PATH)
+    finally:
+        app.dependency_overrides.clear()
+
+
+@patch("app.routers.document_router.get_supabase_client")
+def test_delete_document_not_found(mock_get_supabase):
+    """Verify DELETE /api/documents/{id} returns 404 for non-existent document."""
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
+
+    app.dependency_overrides[get_current_user] = mock_user
+    try:
+        response = client.delete(f"/api/documents/{MOCK_DOC_ID}")
+        assert response.status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+@patch("app.routers.document_router.StorageService")
+@patch("app.routers.document_router.get_supabase_client")
+def test_preview_document_returns_signed_url(mock_get_supabase, mock_storage_cls):
+    """Verify GET /api/documents/{id}/preview returns signed URL."""
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[{"id": MOCK_DOC_ID, "file_path": MOCK_FILE_PATH}]
+    )
+    mock_storage_cls.create_signed_url.return_value = "https://storage.example.com/signed-url"
+
+    app.dependency_overrides[get_current_user] = mock_user
+    try:
+        response = client.get(f"/api/documents/{MOCK_DOC_ID}/preview")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["signed_url"] == "https://storage.example.com/signed-url"
+        assert data["document_id"] == MOCK_DOC_ID
+    finally:
+        app.dependency_overrides.clear()

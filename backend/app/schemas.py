@@ -59,6 +59,33 @@ class DocumentUploadResponse(BaseModel):
     created_at: datetime
 
 
+class DocumentItemResponse(BaseModel):
+    """Response DTO for a document in the user's knowledge base."""
+
+    id: str
+    filename: str
+    file_size: int
+    total_pages: int
+    file_path: Optional[str] = None
+    is_active: bool = True
+    status: str = "ready"
+    created_at: datetime
+
+
+class DocumentToggleRequest(BaseModel):
+    """Payload for toggling a document's RAG active status."""
+
+    is_active: bool
+
+
+class DocumentPreviewResponse(BaseModel):
+    """Response DTO containing a temporary signed URL for PDF preview."""
+
+    document_id: str
+    signed_url: str
+    expires_in: int = 3600
+
+
 class ChatSessionResponse(BaseModel):
     """Response DTO for a chat session thread."""
 
