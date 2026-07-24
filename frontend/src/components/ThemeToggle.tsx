@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 
-export function ThemeToggle({ className = '' }: { className?: string }) {
+export function ThemeToggle({ className = '', compact = false }: { className?: string; compact?: boolean }) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -18,9 +18,9 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
         className={`inline-flex items-center gap-0.5 rounded-lg border border-subtle bg-surface-card p-0.5 ${className}`}
         aria-hidden="true"
       >
-        <div className="h-7 w-7 rounded-md bg-transparent" />
-        <div className="h-7 w-7 rounded-md bg-transparent" />
-        <div className="h-7 w-7 rounded-md bg-transparent" />
+        <div className="h-6 w-6 rounded-md bg-transparent" />
+        <div className="h-6 w-6 rounded-md bg-transparent" />
+        <div className="h-6 w-6 rounded-md bg-transparent" />
       </div>
     );
   }
@@ -45,16 +45,19 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
             key={opt.id}
             type="button"
             onClick={() => setTheme(opt.id)}
+            title={`Mode ${opt.label}`}
             aria-label={`Pilih mode ${opt.label.toLowerCase()}`}
             aria-pressed={isActive}
-            className={`relative flex h-7 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-zinc-400 ${
+            className={`relative flex items-center justify-center rounded-md transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-zinc-400 ${
+              compact ? 'h-6 w-6 p-1' : 'h-7 px-2 gap-1.5 text-xs font-medium'
+            } ${
               isActive
                 ? 'bg-surface-card-hover text-primary shadow-xs font-semibold'
                 : 'text-muted hover:text-primary hover:bg-surface-card-hover/50'
             }`}
           >
-            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline font-sans">{opt.label}</span>
+            <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {!compact && <span className="hidden sm:inline font-sans">{opt.label}</span>}
           </button>
         );
       })}

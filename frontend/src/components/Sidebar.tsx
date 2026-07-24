@@ -150,35 +150,41 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Footer Navigation, Theme Switcher & Account */}
-      <div className="pt-3 border-t border-subtle space-y-2">
-        {/* Theme Switcher in Sidebar */}
-        <div className="px-0.5">
-          <ThemeToggle className="w-full justify-around" />
-        </div>
-
-        <Link
-          href="/dashboard/settings"
-          className="w-full py-2 px-2.5 rounded-md bg-surface-card hover:bg-surface-card-hover border border-subtle text-secondary hover:text-primary text-xs font-medium transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-zinc-400"
-        >
-          <Settings className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
-          <span>Pengaturan</span>
-        </Link>
-
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-surface-card border border-subtle">
-          <div className="text-xs font-mono text-secondary truncate mr-2">
-            {user?.email || 'Pengguna'}
+      {/* Footer Account & Settings Action Bar */}
+      <div className="pt-3 border-t border-subtle">
+        {/* Unified Profile Card with Inline Quick Actions */}
+        <div className="flex items-center justify-between p-2 rounded-md bg-surface-card border border-subtle gap-2">
+          <div className="flex items-center min-w-0 gap-2 flex-1">
+            <div className="w-6 h-6 rounded-full bg-surface-card-hover border border-subtle flex items-center justify-center text-[10px] font-mono font-medium text-primary shrink-0">
+              {(user?.email?.[0] || 'U').toUpperCase()}
+            </div>
+            <span className="text-xs font-mono text-secondary truncate" title={user?.email || 'Pengguna'}>
+              {user?.email || 'Pengguna'}
+            </span>
           </div>
 
-          <button
-            type="button"
-            onClick={onLogout}
-            title="Keluar"
-            aria-label="Keluar"
-            className="p-1 text-muted hover:text-rose-500 rounded transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400"
-          >
-            <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <ThemeToggle compact />
+            
+            <Link
+              href="/dashboard/settings"
+              title="Pengaturan"
+              aria-label="Pengaturan"
+              className="p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400"
+            >
+              <Settings className="w-3.5 h-3.5" aria-hidden="true" />
+            </Link>
+
+            <button
+              type="button"
+              onClick={onLogout}
+              title="Keluar"
+              aria-label="Keluar"
+              className="p-1.5 text-muted hover:text-rose-500 hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400"
+            >
+              <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>
