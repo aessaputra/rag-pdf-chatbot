@@ -136,32 +136,45 @@ export default function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Prompt Box */}
+      {/* Input Prompt Box - Unified Compound Bar */}
       <div className="p-4 border-t border-subtle bg-canvas">
-        <form onSubmit={handleSubmit} className="flex gap-2 items-center max-w-3xl mx-auto">
-          {/* Integrated AI Provider Selector Chip */}
+        <form
+          onSubmit={handleSubmit}
+          className="max-w-3xl mx-auto flex items-center gap-2 p-1.5 pl-3 rounded-xl bg-surface-card border border-subtle focus-within:ring-2 focus-within:ring-zinc-400/50 focus-within:border-zinc-400 transition-all duration-150 shadow-2xs"
+        >
+          {/* Integrated AI Model Selector Chip */}
           {providerConfigs && providerConfigs.length > 0 ? (
-            <div className="relative shrink-0">
+            <div className="relative flex items-center shrink-0 border-r border-subtle pr-2.5 mr-0.5">
               <label htmlFor="chat-provider-select" className="sr-only">
                 Pilih Provider AI
               </label>
-              <select
-                id="chat-provider-select"
-                value={provider}
-                onChange={(e) => onProviderChange?.(e.target.value)}
-                disabled={isStreaming}
-                aria-label="Pilih Provider AI"
-                className="minimal-input py-2.5 px-3 rounded-md text-xs font-mono font-medium cursor-pointer bg-surface-card hover:bg-surface-card-hover border border-subtle text-primary focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:opacity-50"
-              >
-                {providerConfigs.map((config) => (
-                  <option key={config.id} value={config.provider} className="bg-surface-card text-primary font-sans">
-                    {config.display_name || config.provider.toUpperCase()} {config.is_default ? '(Default)' : ''}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-1.5 text-muted hover:text-primary transition-colors">
+                <Sparkles className="w-3.5 h-3.5 shrink-0 text-muted" aria-hidden="true" />
+                <select
+                  id="chat-provider-select"
+                  value={provider}
+                  onChange={(e) => onProviderChange?.(e.target.value)}
+                  disabled={isStreaming}
+                  aria-label="Pilih Provider AI"
+                  className="bg-transparent text-xs font-mono font-medium text-secondary hover:text-primary cursor-pointer border-none outline-none focus:outline-none appearance-none pr-4 py-1"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%3C787774' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right center',
+                    backgroundSize: '12px',
+                  }}
+                >
+                  {providerConfigs.map((config) => (
+                    <option key={config.id} value={config.provider} className="bg-surface-card text-primary font-sans">
+                      {config.display_name || config.provider.toUpperCase()} {config.is_default ? '(Default)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           ) : null}
 
+          {/* Borderless Text Input */}
           <label htmlFor="chat-input-field" className="sr-only">
             Pertanyaan tentang dokumen PDF
           </label>
@@ -176,18 +189,20 @@ export default function ChatWindow({
                 ? 'Konfigurasi provider AI di Pengaturan terlebih dahulu…'
                 : 'Tanyakan sesuatu…'
             }
-            className="flex-1 minimal-input py-2.5 px-4 rounded-md text-xs placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-zinc-400 disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+            className="flex-1 bg-transparent border-none text-xs text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed min-w-0 py-1.5 px-1 font-sans"
           />
+
+          {/* Integrated Send Button */}
           <button
             type="submit"
             aria-label="Kirim Pertanyaan"
             disabled={!hasCredentials || isStreaming || !inputQuery.trim()}
-            className="minimal-button-primary p-2.5 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 cursor-pointer"
+            className="minimal-button-primary w-8 h-8 rounded-lg flex items-center justify-center shrink-0 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             {isStreaming ? (
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-label="Mengirim…" />
+              <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" aria-label="Mengirim…" />
             ) : (
-              <ArrowUp className="w-4 h-4" aria-hidden="true" />
+              <ArrowUp className="w-3.5 h-3.5" aria-hidden="true" />
             )}
           </button>
         </form>
