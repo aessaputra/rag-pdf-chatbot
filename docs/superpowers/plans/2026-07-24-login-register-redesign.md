@@ -1,3 +1,37 @@
+# Redesign Login & Register Utilitarian Minimalist Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Redesign `frontend/src/app/login/page.tsx` into an ultra-minimalist, cardless, zero-clutter authentication page following `/minimalist-ui`, `/redesign-existing-projects`, `/web-design-guidelines`, `/supabase`, and `/vercel-react-best-practices`.
+
+**Architecture:** Refactor `LoginPage` component into a single-column, cardless document-style layout (`max-w-sm`). Strip decorative badges, subtitles, input icons, and footers. Maintain Supabase Auth client logic, memoizing the client instance and using strict TypeScript typing with Vercel React performance patterns.
+
+**Tech Stack:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, `@supabase/ssr`, `@supabase/supabase-js`.
+
+## Global Constraints
+
+- **Language & UX Copy**: Indonesian, super direct, single-word headers (`Masuk` / `Daftar`, `EMAIL`, `KATA SANDI`). Zero marketing fluff or unnecessary badges.
+- **Cardless Layout**: No outer container card box, no drop shadows. Form content centered on dark canvas (`#09090b`).
+- **No Input Icons**: Pure text inputs with subtle 1px border (`#232326`) and crisp focus ring (`#52525b`).
+- **Conditional Rendering**: Explicit ternary operators (`authState.status === 'error' ? ... : null`).
+- **Performance**: `js-early-exit` on missing email/password, `useMemo` for Supabase client creation.
+
+---
+
+### Task 1: Refactor `LoginPage` UI & UX Copy in `frontend/src/app/login/page.tsx`
+
+**Files:**
+- Modify: `frontend/src/app/login/page.tsx:1-220`
+
+**Interfaces:**
+- Consumes: `@/lib/supabaseClient`, `@/types` (`AuthState`)
+- Produces: Redesigned `LoginPage` component with cardless minimalist design and zero UX copy clutter.
+
+- [ ] **Step 1: Update `LoginPage` component code in `frontend/src/app/login/page.tsx`**
+
+Replace the contents of `frontend/src/app/login/page.tsx` with the zero-clutter cardless utilitarian implementation:
+
+```tsx
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -166,5 +200,17 @@ export default function LoginPage() {
     </div>
   );
 }
+```
 
+- [ ] **Step 2: Run frontend type checking & build verification**
 
+Run command:
+`cd frontend && npm run build`
+
+Expected Output: Clean Next.js 15 build with 0 TypeScript compilation errors and successful route generation for `/login`.
+
+- [ ] **Step 3: Commit changes to Git**
+
+Run command:
+`git add frontend/src/app/login/page.tsx docs/superpowers/specs/2026-07-24-login-register-redesign-design.md docs/superpowers/plans/2026-07-24-login-register-redesign.md`
+`git commit -m "feat(auth): redesign login & register page into cardless utilitarian minimalist UI"`
