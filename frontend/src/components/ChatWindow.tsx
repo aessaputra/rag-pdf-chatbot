@@ -11,7 +11,6 @@ import {
   Lock,
   Settings,
   Sparkles,
-  User,
 } from 'lucide-react';
 import type { ChatMessage, Citation, ProviderConfig } from '@/types';
 
@@ -141,9 +140,13 @@ export default function ChatWindow({
   }, [inputQuery]);
 
   const activeConfig = providerConfigs.find((c) => c.provider === provider) || providerConfigs[0];
-  const activeLabel = activeConfig
-    ? `${activeConfig.display_name || activeConfig.provider.toUpperCase()}${activeConfig.is_default ? ' (Default)' : ''}`
-    : provider?.toUpperCase() || 'Pilih Provider';
+  const formatProviderLabel = (cfg?: ProviderConfig) => {
+    if (!cfg) return provider?.toUpperCase() || 'Pilih Provider';
+    if (cfg.display_name) return cfg.display_name;
+    const name = cfg.provider;
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  };
+  const activeLabel = formatProviderLabel(activeConfig);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -182,32 +185,20 @@ export default function ChatWindow({
       {/* Sleek Top Navigation Header Bar */}
       <header className="h-13 border-b border-subtle bg-canvas/80 backdrop-blur-xs flex items-center justify-between px-6 shrink-0 z-20 select-none">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-500" aria-hidden="true" />
-            <span className="text-xs font-semibold text-primary font-serif">Chat RAG</span>
-          </div>
+          <span className="text-xs font-semibold text-primary font-serif">Percakapan</span>
 
           {/* Active Document Status Indicator */}
           {hasCredentials && (
             <button
               type="button"
               onClick={onOpenDocumentModal}
-              className="px-2 py-0.5 rounded-full bg-surface-card hover:bg-surface-card-hover border border-subtle text-[11px] font-mono text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-0.5 rounded-full bg-surface-card hover:bg-surface-card-hover border border-subtle text-[11px] font-mono text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <span className={`w-1.5 h-1.5 rounded-full ${activeDocumentCount > 0 ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
               <span>{activeDocumentCount} Dokumen Aktif</span>
             </button>
           )}
         </div>
-
-        {/* Quick Settings Shortcut */}
-        <Link
-          href="/dashboard/settings"
-          className="text-xs font-mono text-muted hover:text-primary transition-colors flex items-center gap-1"
-        >
-          <Settings className="w-3.5 h-3.5" />
-          <span>Pengaturan</span>
-        </Link>
       </header>
 
       {/* Messages Scroll Area */}
@@ -257,7 +248,7 @@ export default function ChatWindow({
               </>
             ) : (
               <>
-                <div className="p-3.5 rounded-full bg-surface-card border border-subtle mb-4 text-emerald-500">
+                <div className="p-3.5 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
                   <Sparkles className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <h2 className="text-2xl font-serif font-semibold text-primary tracking-tight mb-2">
@@ -292,60 +283,42 @@ export default function ChatWindow({
                 msg.sender === 'user' ? 'items-end' : 'items-start'
               }`}
             >
-              {/* Message Header Label */}
-              <div className="text-[10px] font-mono text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                {msg.sender === 'user' ? (
-                  <span className="flex items-center gap-1 text-muted">
-                    <User className="w-3 h-3" aria-hidden="true" />
-                    <span>ANDA</span>
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-emerald-500 font-semibold">
-                    <Bot className="w-3 h-3" aria-hidden="true" />
-                    <span>ASISTEN AI</span>
-                  </span>
-                )}
-              </div>
-
-              {/* Message Bubble Container */}
-              <div
-                className={`text-xs leading-relaxed ${
-                  msg.sender === 'user'
-                    ? 'p-3.5 rounded-xl bg-surface-card-hover border border-subtle text-primary max-w-lg shadow-2xs font-sans'
-                    : 'w-full p-4 rounded-xl bg-surface-card/60 border border-subtle text-primary shadow-2xs font-sans'
-                }`}
-              >
-                {msg.sender === 'user' ? (
+              {/* Message Content Area */}
+              {msg.sender === 'user' ? (
+                <div className="p-3.5 rounded-xl bg-surface-card-hover border border-subtle text-primary max-w-lg shadow-2xs font-sans text-xs leading-relaxed">
                   <div className="whitespace-pre-wrap">{msg.content}</div>
-                ) : (
-                  <FormattedMessage content={msg.content} />
-                )}
-
-                {/* Structured Source Citations Badges */}
-                {msg.citations && msg.citations.length > 0 ? (
-                  <div className="mt-4 pt-3 border-t border-subtle space-y-2">
-                    <div className="text-[10px] font-mono text-muted uppercase tracking-wider flex items-center gap-1">
-                      <FileText className="w-3 h-3 text-muted" />
-                      <span>SUMBER SITASI ({msg.citations.length})</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {msg.citations.map((c, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => onSelectCitation(c)}
-                          aria-label={`Buka sitasi ${c.filename} halaman ${c.page_number}`}
-                          className="py-1 px-2.5 rounded-md bg-surface-card hover:bg-surface-card-hover border border-subtle text-secondary hover:text-primary text-[11px] font-mono transition-colors flex items-center gap-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
-                        >
-                          <FileText className="w-3 h-3 text-emerald-500" aria-hidden="true" />
-                          <span className="font-medium">Hal {c.page_number}</span>
-                          <span className="text-muted text-[10px] truncate max-w-[120px]">({c.filename})</span>
-                        </button>
-                      ))}
-                    </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 w-full">
+                  <div className="w-6 h-6 rounded bg-surface-card border border-subtle flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
                   </div>
-                ) : null}
-              </div>
+                  <div className="flex-1 min-w-0 p-4 rounded-xl bg-surface-card/60 border border-subtle text-primary shadow-2xs font-sans">
+                    <FormattedMessage content={msg.content} />
+
+                    {/* Source Citations Horizontal Strip */}
+                    {msg.citations && msg.citations.length > 0 ? (
+                      <div className="mt-4 pt-3 border-t border-subtle">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {msg.citations.map((c, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => onSelectCitation(c)}
+                              aria-label={`Buka sitasi ${c.filename} halaman ${c.page_number}`}
+                              className="py-1 px-2.5 rounded-md bg-surface-card hover:bg-surface-card-hover border border-subtle text-secondary hover:text-primary text-[11px] font-mono transition-colors flex items-center gap-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
+                            >
+                              <FileText className="w-3 h-3 text-muted" aria-hidden="true" />
+                              <span className="font-medium">Hal {c.page_number}</span>
+                              <span className="text-muted text-[10px] truncate max-w-[120px]">({c.filename})</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
             </article>
           ))
         )}
@@ -387,7 +360,7 @@ export default function ChatWindow({
                   </div>
                   {providerConfigs.map((config) => {
                     const isSelected = config.provider === provider;
-                    const label = `${config.display_name || config.provider.toUpperCase()}${config.is_default ? ' (Default)' : ''}`;
+                    const label = formatProviderLabel(config);
                     return (
                       <button
                         key={config.id}
@@ -429,7 +402,7 @@ export default function ChatWindow({
             placeholder={
               !hasCredentials
                 ? 'Konfigurasi provider AI di Pengaturan terlebih dahulu…'
-                : 'Tanyakan sesuatu… (Tekan Enter untuk mengirim)'
+                : 'Tanyakan sesuatu…'
             }
             className="flex-1 bg-transparent border-none text-xs text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed min-w-0 py-1.5 px-1 font-sans resize-none max-h-36 overflow-y-auto leading-relaxed"
           />
