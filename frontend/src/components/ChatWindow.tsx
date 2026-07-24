@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUp, Bot, FileText, Lock, Settings, Sparkles } from 'lucide-react';
-import type { ChatMessage, Citation } from '@/types';
+import type { ChatMessage, Citation, ProviderConfig } from '@/types';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
   isStreaming: boolean;
   hasCredentials?: boolean;
+  provider?: string;
+  providerConfigs?: ProviderConfig[];
+  onProviderChange?: (provider: string) => void;
   onSendMessage: (query: string) => Promise<void>;
   onSelectCitation: (citation: Citation) => void;
 }
@@ -17,6 +20,9 @@ export default function ChatWindow({
   messages,
   isStreaming,
   hasCredentials = true,
+  provider,
+  providerConfigs = [],
+  onProviderChange,
   onSendMessage,
   onSelectCitation,
 }: ChatWindowProps) {
@@ -133,6 +139,29 @@ export default function ChatWindow({
       {/* Input Prompt Box */}
       <div className="p-4 border-t border-subtle bg-canvas">
         <form onSubmit={handleSubmit} className="flex gap-2 items-center max-w-3xl mx-auto">
+          {/* Integrated AI Provider Selector Chip */}
+          {providerConfigs && providerConfigs.length > 0 ? (
+            <div className="relative shrink-0">
+              <label htmlFor="chat-provider-select" className="sr-only">
+                Pilih Provider AI
+              </label>
+              <select
+                id="chat-provider-select"
+                value={provider}
+                onChange={(e) => onProviderChange?.(e.target.value)}
+                disabled={isStreaming}
+                aria-label="Pilih Provider AI"
+                className="minimal-input py-2.5 px-3 rounded-md text-xs font-mono font-medium cursor-pointer bg-surface-card hover:bg-surface-card-hover border border-subtle text-primary focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:opacity-50"
+              >
+                {providerConfigs.map((config) => (
+                  <option key={config.id} value={config.provider} className="bg-surface-card text-primary font-sans">
+                    {config.display_name || config.provider.toUpperCase()} {config.is_default ? '(Default)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
           <label htmlFor="chat-input-field" className="sr-only">
             Pertanyaan tentang dokumen PDF
           </label>
@@ -147,13 +176,13 @@ export default function ChatWindow({
                 ? 'Konfigurasi provider AI di Pengaturan terlebih dahulu…'
                 : 'Tanyakan sesuatu…'
             }
-            className="flex-1 minimal-input py-2.5 px-4 rounded-md text-xs placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-zinc-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 minimal-input py-2.5 px-4 rounded-md text-xs placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-zinc-400 disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
           />
           <button
             type="submit"
             aria-label="Kirim Pertanyaan"
             disabled={!hasCredentials || isStreaming || !inputQuery.trim()}
-            className="minimal-button-primary p-2.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400"
+            className="minimal-button-primary p-2.5 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 cursor-pointer"
           >
             {isStreaming ? (
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-label="Mengirim…" />

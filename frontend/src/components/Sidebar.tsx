@@ -112,33 +112,6 @@ export default function Sidebar({
           </div>
         ) : null}
 
-        {/* AI Provider Selector */}
-        <div className="space-y-1.5">
-          <label htmlFor="sidebar-provider-select" className="block text-[10px] font-mono text-muted uppercase tracking-wider">
-            PROVIDER AI
-          </label>
-          {hasConfigs ? (
-            <select
-              id="sidebar-provider-select"
-              value={provider}
-              onChange={(e) => onProviderChange(e.target.value)}
-              className="minimal-input w-full py-1.5 px-2 rounded-md text-xs font-medium cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
-            >
-              {providerConfigs.map((config) => (
-                <option key={config.id} value={config.provider} className="bg-surface-card text-primary">
-                  {config.display_name || config.provider.toUpperCase()} {config.is_default ? '(Default)' : ''}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="p-2 rounded-md bg-surface-card border border-subtle text-xs">
-              <Link href="/dashboard/settings" className="text-[11px] text-muted hover:text-primary hover:underline block focus-visible:ring-2 focus-visible:ring-zinc-400">
-                Atur kunci API di Settings &rarr;
-              </Link>
-            </div>
-          )}
-        </div>
-
         {/* Embedded Document Manager Section */}
         <div className="flex-1 flex flex-col min-h-0 pt-2 border-t border-subtle">
           <DocumentManager

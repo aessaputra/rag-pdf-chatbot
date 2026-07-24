@@ -241,6 +241,9 @@ export default function DashboardPage() {
         messages={messages}
         isStreaming={isStreaming}
         hasCredentials={hasCredentials}
+        provider={provider}
+        providerConfigs={providerConfigs}
+        onProviderChange={setProvider}
         onSendMessage={handleSendMessage}
         onSelectCitation={setSelectedCitation}
       />
