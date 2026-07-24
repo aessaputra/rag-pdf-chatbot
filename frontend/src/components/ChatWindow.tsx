@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, BookOpen, Bot, Lock, Send, Settings, Sparkles, User } from 'lucide-react';
+import { ArrowUp, BookOpen, Lock, Settings } from 'lucide-react';
 import type { ChatMessage, Citation } from '@/types';
 
 interface ChatWindowProps {
@@ -40,79 +40,72 @@ export default function ChatWindow({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-slate-950/40 relative z-10">
+    <div className="flex-1 flex flex-col h-screen bg-[#09090b] relative z-10">
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-        {/* Prominent Hard Block Callout Banner if no credentials */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {!hasCredentials ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-16 h-16 rounded-2xl bg-amber-950/60 border border-amber-800/80 flex items-center justify-center shadow-xl shadow-amber-900/20 mb-6">
-              <Lock className="w-8 h-8 text-amber-400" />
+            <div className="w-12 h-12 rounded-xl bg-[#121215] border border-[#232326] flex items-center justify-center mb-4">
+              <Lock className="w-5 h-5 text-amber-400" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-3 flex items-center justify-center gap-2">
-              Konfigurasi AI Provider Diperlukan <Sparkles className="w-5 h-5 text-amber-400" />
+            <h2 className="text-lg font-medium text-[#f4f4f5] mb-2 font-serif italic">
+              Konfigurasi AI Provider Diperlukan
             </h2>
-            <p className="text-sm text-slate-300 max-w-md mb-6 leading-relaxed">
-              Anda belum mengonfigurasi API Key untuk Provider AI atau Model Embedding. Silakan atur kunci API Anda di menu Settings untuk memulai percakapan RAG PDF Chatbot.
+            <p className="text-xs text-[#a1a1aa] max-w-sm mb-5 leading-relaxed">
+              Silakan atur API Key AI Provider atau Model Embedding di menu Settings terlebih dahulu.
             </p>
             <Link
               href="/dashboard/settings"
-              className="py-3 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium text-sm transition-all shadow-lg shadow-emerald-600/25 flex items-center gap-2"
+              className="minimal-button-primary py-2 px-4 rounded-lg text-xs font-medium flex items-center gap-1.5"
             >
-              <Settings className="w-4 h-4" />
-              <span>Buka Menu Settings Sekarang</span>
+              <Settings className="w-3.5 h-3.5" />
+              <span>Buka Menu Settings</span>
             </Link>
           </div>
         ) : messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-4">
-              <Bot className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-              Apa yang ingin Anda ketahui dari PDF Anda? <Sparkles className="w-5 h-5 text-cyan-400" />
+          <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-xl mx-auto">
+            <h2 className="text-2xl font-serif italic text-[#f4f4f5] mb-3 tracking-tight">
+              Apa yang ingin Anda telusuri dari dokumen PDF Anda?
             </h2>
-            <p className="text-sm text-slate-400 max-w-md">
-              Unggah dokumen PDF di panel sebelah kiri, lalu ajukan pertanyaan. AI akan mencari konteks dan memberikan jawaban beserta sitasi nomor halaman.
+            <p className="text-xs text-[#a1a1aa] leading-relaxed mb-6">
+              Unggah dokumen PDF di panel sebelah kiri, lalu ajukan pertanyaan. Asisten AI akan menganalisis dan menampilkan jawaban beserta nomor halaman sitasi secara presisi.
             </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-[10px] font-mono px-2 py-1 rounded bg-[#121215] border border-[#232326] text-[#a1a1aa]">
+                <kbd className="font-sans font-semibold">Shift</kbd> + <kbd className="font-sans font-semibold">Enter</kbd> untuk baris baru
+              </span>
+            </div>
           </div>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex gap-4 ${
-                msg.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
             >
-              {msg.sender === 'assistant' && (
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
-                  <Bot className="w-4 h-4" />
-                </div>
-              )}
-
               <div
-                className={`max-w-2xl rounded-2xl p-4 text-sm leading-relaxed ${
+                className={`max-w-2xl rounded-xl p-4 text-xs leading-relaxed ${
                   msg.sender === 'user'
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-none shadow-lg shadow-indigo-600/20'
-                    : 'glass-panel text-slate-100 rounded-tl-none'
+                    ? 'bg-[#18181b] border border-[#27272a] text-[#f4f4f5]'
+                    : 'bg-[#121215] border border-[#232326] text-[#f4f4f5]'
                 }`}
               >
                 <div className="whitespace-pre-wrap">{msg.content}</div>
 
                 {/* Citation Badges */}
                 {msg.citations && msg.citations.length > 0 && (
-                  <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 w-full mb-1 flex items-center gap-1">
-                      <BookOpen className="w-3 h-3 text-cyan-400" /> Sumber Referensi:
+                  <div className="mt-3 pt-2.5 border-t border-[#232326] flex flex-wrap gap-1.5">
+                    <span className="text-[10px] font-medium text-[#a1a1aa] w-full mb-1 flex items-center gap-1">
+                      <BookOpen className="w-3 h-3 text-[#a1a1aa]" /> Sumber Referensi:
                     </span>
                     {msg.citations.map((c, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => onSelectCitation(c)}
-                        className="py-1 px-2.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+                        className="py-1 px-2 rounded-md bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
-                        <span>📄 {c.filename}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-indigo-500/30 text-[10px] font-bold text-white">
+                        <span className="truncate max-w-[140px]">{c.filename}</span>
+                        <span className="px-1 py-0.2 rounded bg-[#27272a] text-[9px] font-mono text-[#a1a1aa]">
                           Hal {c.page_number}
                         </span>
                       </button>
@@ -120,22 +113,15 @@ export default function ChatWindow({
                   </div>
                 )}
               </div>
-
-              {msg.sender === 'user' && (
-                <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 shrink-0">
-                  <User className="w-4 h-4" />
-                </div>
-              )}
             </div>
           ))
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input Prompt Box */}
-      <div className="p-4 border-t border-slate-800/80 glass-panel">
-        <form onSubmit={handleSubmit} className="flex gap-2 items-center max-w-4xl mx-auto">
+      <div className="p-4 border-t border-[#232326] bg-[#09090b]">
+        <form onSubmit={handleSubmit} className="flex gap-2 items-center max-w-3xl mx-auto">
           <input
             type="text"
             value={inputQuery}
@@ -143,23 +129,20 @@ export default function ChatWindow({
             disabled={!hasCredentials || isStreaming}
             placeholder={
               !hasCredentials
-                ? 'Silakan konfigurasi Provider AI di menu Settings terlebih dahulu...'
+                ? 'Konfigurasi Provider AI di Settings terlebih dahulu...'
                 : 'Ketik pertanyaan tentang dokumen PDF Anda...'
             }
-            className="flex-1 glass-input py-3.5 px-5 rounded-2xl text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 minimal-input py-2.5 px-4 rounded-xl text-xs disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             type="submit"
             disabled={!hasCredentials || isStreaming || !inputQuery.trim()}
-            className="py-3.5 px-5 rounded-2xl font-medium text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="minimal-button-primary p-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isStreaming ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[#09090b] border-t-transparent rounded-full animate-spin" />
             ) : (
-              <>
-                <span>Kirim</span>
-                <Send className="w-4 h-4" />
-              </>
+              <ArrowUp className="w-4 h-4" />
             )}
           </button>
         </form>
