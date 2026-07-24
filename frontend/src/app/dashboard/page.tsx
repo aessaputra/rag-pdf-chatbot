@@ -196,11 +196,15 @@ export default function DashboardPage() {
 
     let accumulatedTokens = '';
 
+    const activeDocIds = documents
+      .filter((d) => (d.is_active ?? true) && d.status === 'ready')
+      .map((d) => d.id);
+
     await fetchSSEStream(
       query,
       token,
       provider,
-      documents.map((d) => d.id),
+      activeDocIds,
       {
         onSession: (sessId) => {
           setActiveSessionId(sessId);

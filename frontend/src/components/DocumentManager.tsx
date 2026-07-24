@@ -9,6 +9,7 @@ interface DocumentManagerProps {
   hasCredentials?: boolean;
   onUpload: (file: File) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onOpenModal?: () => void;
 }
 
 export default function DocumentManager({
@@ -16,6 +17,7 @@ export default function DocumentManager({
   hasCredentials = true,
   onUpload,
   onDelete,
+  onOpenModal,
 }: DocumentManagerProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -64,6 +66,15 @@ export default function DocumentManager({
         <span className="text-[10px] font-mono text-muted uppercase tracking-wider">
           BERKAS PDF ({documents.length})
         </span>
+        {onOpenModal && (
+          <button
+            type="button"
+            onClick={onOpenModal}
+            className="text-[10px] font-mono text-muted hover:text-primary transition-colors underline cursor-pointer"
+          >
+            Kelola
+          </button>
+        )}
       </div>
 
       {/* Drag & Drop Upload Zone */}
@@ -102,7 +113,7 @@ export default function DocumentManager({
           <span className="text-xs font-medium text-primary">
             {!hasCredentials ? 'Unggah Terkunci' : isUploading ? 'Memproses PDF…' : 'Unggah PDF'}
           </span>
-          <span className="text-[10px] font-mono text-muted mt-0.5">Maks 25 MB</span>
+          <span className="text-[10px] font-mono text-muted mt-0.5">Maks 50 MB</span>
         </label>
       </div>
 
@@ -119,30 +130,47 @@ export default function DocumentManager({
             Kosong
           </div>
         ) : (
-          documents.map((doc) => (
-            <div
-              key={doc.id}
-              className="p-2 rounded-md bg-surface-card border border-subtle hover:border-zinc-400 flex items-center justify-between group transition-colors"
-            >
-              <div className="flex items-center gap-2 truncate mr-1">
-                <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" aria-hidden="true" />
-                <div className="truncate">
-                  <div className="text-xs font-medium text-primary truncate">{doc.filename}</div>
-                  <div className="text-[9px] font-mono text-muted">{formatFileSize(doc.file_size)}</div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onDelete(doc.id)}
-                title={`Hapus ${doc.filename}`}
-                aria-label={`Hapus ${doc.filename}`}
-                className="p-1 text-muted hover:text-rose-500 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-zinc-400"
+          documents.map((doc) => {
+            const isActive = doc.is_active ?? true;
+            return (
+              <div
+                key={doc.id}
+                onClick={onOpenModal}
+                className="p-2 rounded-md bg-surface-card border border-subtle hover:border-zinc-400 flex items-center justify-between group transition-colors cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </div>
-          ))
+                <div className="flex items-center gap-2 truncate mr-1">
+                  <FileCheck
+                    className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-500' : 'text-zinc-500'}`}
+                    aria-hidden="true"
+                  />
+                  <div className="truncate">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-medium text-primary truncate">{doc.filename}</span>
+                      {!isActive && (
+                        <span className="text-[9px] font-mono font-semibold px-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                          OFF
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[9px] font-mono text-muted">{formatFileSize(doc.file_size)}</div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(doc.id);
+                  }}
+                  title={`Hapus ${doc.filename}`}
+                  aria-label={`Hapus ${doc.filename}`}
+                  className="p-1 text-muted hover:text-rose-500 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-zinc-400"
+                >
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })
         )}
       </div>
     </section>

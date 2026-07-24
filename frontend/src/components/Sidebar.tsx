@@ -134,6 +134,7 @@ export default function Sidebar({
             hasCredentials={hasCredentials}
             onUpload={onUpload}
             onDelete={onDelete}
+            onOpenModal={onOpenDocumentModal}
           />
         </div>
       </div>
