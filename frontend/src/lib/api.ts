@@ -12,14 +12,15 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
  * Falls back to the provided token if session refresh fails.
  */
 async function getAuthHeaders(fallbackToken?: string): Promise<Record<string, string>> {
-  const { data } = await createClient().auth.getSession();
-  const token = data.session?.access_token ?? fallbackToken;
-
-  if (!token) {
-    throw new Error('Sesi login telah berakhir. Silakan login kembali.');
+  if (fallbackToken) {
+    return { Authorization: `Bearer ${fallbackToken}` };
   }
-
-  return { Authorization: `Bearer ${token}` };
+  try {
+    const { data } = await createClient().auth.getSession();
+    const token = data.session?.access_token;
+    if (token) return { Authorization: `Bearer ${token}` };
+  } catch (err) {}
+  throw new Error('Sesi login telah berakhir. Silakan login kembali.');
 }
 
 async function extractErrorDetail(response: Response, fallback: string): Promise<string> {

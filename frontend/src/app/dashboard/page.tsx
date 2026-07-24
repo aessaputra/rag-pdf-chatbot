@@ -51,6 +51,7 @@ export default function DashboardPage() {
   }, []);
 
   const loadSessionMessages = useCallback(async (sessionId: string, accessToken: string) => {
+    if (!sessionId || !accessToken) return;
     setActiveSessionId(sessionId);
     const res = await getSessionMessages(sessionId, accessToken);
     if (res.success && res.data) {
