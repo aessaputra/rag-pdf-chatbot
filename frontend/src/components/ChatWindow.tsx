@@ -9,22 +9,26 @@ interface ChatWindowProps {
   messages: ChatMessage[];
   isStreaming: boolean;
   hasCredentials?: boolean;
+  activeDocumentCount?: number;
   provider?: string;
   providerConfigs?: ProviderConfig[];
   onProviderChange?: (provider: string) => void;
   onSendMessage: (query: string) => Promise<void>;
   onSelectCitation: (citation: Citation) => void;
+  onOpenDocumentModal?: () => void;
 }
 
 export default function ChatWindow({
   messages,
   isStreaming,
   hasCredentials = true,
+  activeDocumentCount = 0,
   provider,
   providerConfigs = [],
   onProviderChange,
   onSendMessage,
   onSelectCitation,
+  onOpenDocumentModal,
 }: ChatWindowProps) {
   const [inputQuery, setInputQuery] = useState('');
   const [isProviderOpen, setIsProviderOpen] = useState(false);
@@ -156,6 +160,20 @@ export default function ChatWindow({
 
       {/* Input Prompt Box - Unified Compound Bar */}
       <div className="p-4 border-t border-subtle bg-canvas">
+        {hasCredentials && activeDocumentCount === 0 && (
+          <div className="max-w-3xl mx-auto mb-2.5 px-3 py-2 rounded-lg bg-zinc-900/80 border border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
+            <span>Belum ada dokumen aktif.</span>
+            {onOpenDocumentModal && (
+              <button
+                type="button"
+                onClick={onOpenDocumentModal}
+                className="text-zinc-200 hover:text-white underline font-medium text-[11px] cursor-pointer"
+              >
+                Kelola Dokumen
+              </button>
+            )}
+          </div>
+        )}
         <form
           onSubmit={handleSubmit}
           className="max-w-3xl mx-auto flex items-center gap-2 p-1.5 pl-3 rounded-xl bg-surface-card border border-subtle focus-within:ring-2 focus-within:ring-zinc-400/50 focus-within:border-zinc-400 transition-all duration-150 shadow-2xs"

@@ -21,6 +21,7 @@ interface SidebarProps {
   onLogout: () => void;
   onUpload: (file: File) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onOpenDocumentModal?: () => void;
 }
 
 export default function Sidebar({
@@ -38,6 +39,7 @@ export default function Sidebar({
   onLogout,
   onUpload,
   onDelete,
+  onOpenDocumentModal,
 }: SidebarProps) {
   const hasConfigs = providerConfigs.length > 0;
 
@@ -59,15 +61,28 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* New Chat Button */}
-        <button
-          type="button"
-          onClick={onNewChat}
-          className="w-full minimal-button-primary py-2 px-3 rounded-md text-xs flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
-        >
-          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-          <span>Percakapan Baru</span>
-        </button>
+        {/* Action Buttons: New Chat & Manage Documents */}
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={onNewChat}
+            className="w-full minimal-button-primary py-2 px-3 rounded-md text-xs flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
+          >
+            <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Percakapan Baru</span>
+          </button>
+
+          {onOpenDocumentModal && (
+            <button
+              type="button"
+              onClick={onOpenDocumentModal}
+              className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center justify-center gap-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
+            >
+              <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Dokumen</span>
+            </button>
+          )}
+        </div>
 
         {/* Chat Sessions History Section */}
         {sessions.length > 0 ? (

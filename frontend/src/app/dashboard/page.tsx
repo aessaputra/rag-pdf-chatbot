@@ -14,6 +14,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import Sidebar from '@/components/Sidebar';
 import ChatWindow from '@/components/ChatWindow';
 import CitationPanel from '@/components/CitationPanel';
+import DocumentManagerModal from '@/components/DocumentManagerModal';
 
 function createUserPayload(id: string, email: string | undefined): UserPayload {
   return { user_id: id, email: email || '', role: 'authenticated' };
@@ -38,8 +39,12 @@ export default function DashboardPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
 
   const hasCredentials = providerConfigs.length > 0 && embeddingConfig !== null;
+  const activeDocumentCount = useMemo(() => {
+    return documents.filter((d) => (d.is_active ?? true) && d.status !== 'failed').length;
+  }, [documents]);
 
   const reloadSessions = useCallback(async (accessToken: string) => {
     const res = await listChatSessions(accessToken);
@@ -236,21 +241,32 @@ export default function DashboardPage() {
         onLogout={handleLogout}
         onUpload={handleUploadDocument}
         onDelete={handleDeleteDocument}
+        onOpenDocumentModal={() => setIsDocModalOpen(true)}
       />
       <ChatWindow
         messages={messages}
         isStreaming={isStreaming}
         hasCredentials={hasCredentials}
+        activeDocumentCount={activeDocumentCount}
         provider={provider}
         providerConfigs={providerConfigs}
         onProviderChange={setProvider}
         onSendMessage={handleSendMessage}
         onSelectCitation={setSelectedCitation}
+        onOpenDocumentModal={() => setIsDocModalOpen(true)}
       />
       <CitationPanel
         citation={selectedCitation}
         onClose={() => setSelectedCitation(null)}
       />
+      {token && (
+        <DocumentManagerModal
+          isOpen={isDocModalOpen}
+          onClose={() => setIsDocModalOpen(false)}
+          token={token}
+          onDocumentsUpdated={() => reloadDocuments(token)}
+        />
+      )}
     </div>
   );
 }
