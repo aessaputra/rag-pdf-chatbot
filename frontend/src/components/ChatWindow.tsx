@@ -190,41 +190,31 @@ export default function ChatWindow({
     <main aria-label="Ruang Percakapan Chat" className="flex-1 flex flex-col h-screen bg-canvas text-primary relative z-10 transition-colors duration-150">
       {/* Sleek Document-First RAG Context Header Bar */}
       <header className="h-13 border-b border-subtle bg-canvas/80 backdrop-blur-xs flex items-center justify-between px-6 shrink-0 z-20 select-none">
-        <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <FileText className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
-            {primaryDoc ? (
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-semibold font-serif text-primary truncate max-w-[280px]" title={primaryDoc.filename}>
-                  {primaryDoc.filename}
-                </span>
-                {extraDocsCount > 0 && (
-                  <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle shrink-0">
-                    +{extraDocsCount} Berkas
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-xs font-medium text-amber-500 font-serif">
-                Belum Ada Sumber PDF
-              </span>
-            )}
-          </div>
-
-          {/* Interactive RAG Status Badge Pill */}
-          {hasCredentials && (
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <FileText className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
+          {primaryDoc ? (
             <button
               type="button"
               onClick={onOpenDocumentModal}
-              className={`px-2.5 py-0.5 rounded-full border text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeDocs.length > 0
-                  ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20'
-                  : 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20'
-              }`}
-              title="Kelola Dokumen RAG"
+              className="flex items-center gap-2 min-w-0 text-left hover:opacity-80 transition-opacity cursor-pointer group"
+              title="Klik untuk mengelola dokumen"
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${activeDocs.length > 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span>{activeDocs.length > 0 ? 'AKTIF' : '+ Tambah'}</span>
+              <span className="text-xs font-semibold font-serif text-primary truncate max-w-[320px]">
+                {primaryDoc.filename}
+              </span>
+              {extraDocsCount > 0 && (
+                <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle shrink-0">
+                  +{extraDocsCount} Berkas
+                </span>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenDocumentModal}
+              className="text-xs font-medium text-amber-500 font-serif hover:underline cursor-pointer"
+            >
+              Belum Ada Sumber PDF
             </button>
           )}
         </div>
