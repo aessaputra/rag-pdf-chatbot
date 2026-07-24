@@ -34,6 +34,13 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
+export interface ChatSession {
+  readonly id: string;
+  readonly user_id: string;
+  readonly title: string;
+  readonly created_at: string;
+}
+
 export interface ChatMessage {
   readonly id: string;
   readonly sender: 'user' | 'assistant';

@@ -46,6 +46,7 @@ function isNetworkError(message: string): boolean {
 // --- SSE Stream ---
 
 export interface SSEStreamCallbacks {
+  onSession?: (sessionId: string) => void;
   onCitations: (citations: Citation[]) => void;
   onToken: (token: string) => void;
   onComplete: () => void;
@@ -57,7 +58,8 @@ export async function fetchSSEStream(
   token: string,
   provider: string,
   documentIds: string[] | undefined,
-  callbacks: SSEStreamCallbacks
+  callbacks: SSEStreamCallbacks,
+  sessionId?: string
 ): Promise<void> {
   try {
     const headers = await getAuthHeaders(token);
@@ -69,6 +71,7 @@ export async function fetchSSEStream(
         query,
         provider,
         document_ids: documentIds?.length ? documentIds : undefined,
+        session_id: sessionId || undefined,
       }),
     });
 
@@ -110,7 +113,13 @@ async function consumeSSEStream(response: Response, callbacks: SSEStreamCallback
 
 function parseSSEEvent(block: string, callbacks: SSEStreamCallbacks) {
   try {
-    if (block.startsWith('event: citations')) {
+    if (block.startsWith('event: session')) {
+      const json = block.replace('event: session\ndata: ', '').trim();
+      if (json && callbacks.onSession) {
+        const data = JSON.parse(json);
+        if (data.session_id) callbacks.onSession(data.session_id);
+      }
+    } else if (block.startsWith('event: citations')) {
       const json = block.replace('event: citations\ndata: ', '').trim();
       if (json) callbacks.onCitations(JSON.parse(json));
     } else if (block.startsWith('event: token')) {
@@ -122,6 +131,67 @@ function parseSSEEvent(block: string, callbacks: SSEStreamCallbacks) {
     }
   } catch (err) {
     console.error('SSE parse error:', err);
+  }
+}
+
+// --- Chat Sessions API ---
+
+export async function listChatSessions(token: string): Promise<ApiResponse<import('@/types').ChatSession[]>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/chat/sessions`, { headers });
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil riwayat sesi.') };
+    }
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function getSessionMessages(sessionId: string, token: string): Promise<ApiResponse<import('@/types').ChatMessage[]>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}/messages`, { headers });
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil pesan percakapan.') };
+    }
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function createChatSession(token: string, title?: string): Promise<ApiResponse<import('@/types').ChatSession>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/chat/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({ title }),
+    });
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal membuat sesi percakapan baru.') };
+    }
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function deleteChatSession(sessionId: string, token: string): Promise<ApiResponse<boolean>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menghapus sesi percakapan.') };
+    }
+    return { success: true, data: true, error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
   }
 }
 

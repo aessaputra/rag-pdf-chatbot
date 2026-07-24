@@ -156,17 +156,37 @@ class RAGService:
         query: str,
         user_id: str,
         document_ids: Optional[List[str]] = None,
+        session_id: Optional[str] = None,
         mock_retrieved_chunks: Optional[List[Dict[str, Any]]] = None
     ) -> AsyncGenerator[str, None]:
         """
         Yields Server-Sent Events (SSE) formatted text chunks.
-        Frame 1: event: citations (JSON array of source citations)
-        Frame 2..N: event: token (JSON object with streaming token)
+        Frame 1: event: session (JSON object with active session_id)
+        Frame 2: event: citations (JSON array of source citations)
+        Frame 3..N: event: token (JSON object with streaming token)
         Frame Final: event: done
         """
         if not self.llm or not self.embeddings_model:
             if mock_retrieved_chunks is None:
                 self.initialize_user_models()
+
+        # Auto-create or resolve active session_id
+        active_session_id = session_id
+        try:
+            supabase = get_supabase_client()
+            if not active_session_id:
+                title = query[:30] + ("…" if len(query) > 30 else "")
+                sess_res = supabase.table("chat_sessions").insert({
+                    "user_id": user_id,
+                    "title": title,
+                }).execute()
+                if sess_res.data:
+                    active_session_id = str(sess_res.data[0]["id"])
+        except Exception:
+            pass  # Fallback if DB operation fails in mock environments
+
+        if active_session_id:
+            yield f"event: session\ndata: {json.dumps({'session_id': active_session_id})}\n\n"
 
         # 1. Retrieve or use provided chunks
         chunks = (
@@ -180,9 +200,12 @@ class RAGService:
         citations_json = [c.model_dump() for c in citations]
         yield f"event: citations\ndata: {json.dumps(citations_json)}\n\n"
 
+        full_response = ""
+
         # 3. Format Context Prompt & Stream Tokens
         if not chunks:
             no_info_msg = "Maaf, tidak ditemukan dokumen PDF yang relevan untuk menjawab pertanyaan ini."
+            full_response = no_info_msg
             yield f"event: token\ndata: {json.dumps({'token': no_info_msg})}\n\n"
         else:
             prompt = self.format_context_prompt(query, chunks)
@@ -191,7 +214,32 @@ class RAGService:
             async for chunk in self.llm.astream(prompt):
                 token_content = chunk.content if hasattr(chunk, "content") else str(chunk)
                 if token_content:
+                    full_response += token_content
                     yield f"event: token\ndata: {json.dumps({'token': token_content})}\n\n"
 
+        # Save user message and assistant message to Supabase chat_messages
+        if active_session_id and full_response:
+            try:
+                supabase = get_supabase_client()
+                supabase.table("chat_messages").insert([
+                    {
+                        "session_id": active_session_id,
+                        "user_id": user_id,
+                        "sender": "user",
+                        "content": query,
+                        "citations": [],
+                    },
+                    {
+                        "session_id": active_session_id,
+                        "user_id": user_id,
+                        "sender": "assistant",
+                        "content": full_response,
+                        "citations": citations_json,
+                    }
+                ]).execute()
+            except Exception:
+                pass  # Fallback if DB insert fails in mock tests
+
         # 4. Yield Final Done SSE Event Frame
-        yield f"event: done\ndata: {json.dumps({'status': 'completed'})}\n\n"
+        yield f"event: done\ndata: {json.dumps({'status': 'completed', 'session_id': active_session_id})}\n\n"
+

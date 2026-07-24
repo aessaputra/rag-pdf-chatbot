@@ -59,12 +59,22 @@ class DocumentUploadResponse(BaseModel):
     created_at: datetime
 
 
+class ChatSessionResponse(BaseModel):
+    """Response DTO for a chat session thread."""
+
+    id: str
+    user_id: str
+    title: str
+    created_at: datetime
+
+
 class ChatQueryRequest(BaseModel):
     """Payload for submitting a RAG query to the streaming endpoint."""
 
     query: str = Field(..., min_length=1, description="User question prompt")
     provider: Optional[str] = Field("gemini", description="LLM provider name: gemini, openai, or ollama")
     document_ids: Optional[List[str]] = Field(None, description="Optional document ID filters")
+    session_id: Optional[str] = Field(None, description="Optional chat session ID")
 
 
 # --- BYOK User Settings Schemas ---

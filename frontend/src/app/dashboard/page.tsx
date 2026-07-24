@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabaseClient';
 import {
-  deleteDocument, fetchSSEStream, getEmbeddingConfig, listDocuments,
+  createChatSession, deleteChatSession, deleteDocument, fetchSSEStream,
+  getEmbeddingConfig, getSessionMessages, listChatSessions, listDocuments,
   listProviderConfigs, uploadDocument
 } from '@/lib/api';
-import type { ChatMessage, Citation, DocumentItem, EmbeddingConfig, ProviderConfig, UserPayload } from '@/types';
+import type { ChatMessage, ChatSession, Citation, DocumentItem, EmbeddingConfig, ProviderConfig, UserPayload } from '@/types';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 import Sidebar from '@/components/Sidebar';
@@ -32,11 +33,30 @@ export default function DashboardPage() {
   const [providerConfigs, setProviderConfigs] = useState<ProviderConfig[]>([]);
   const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
 
   const hasCredentials = providerConfigs.length > 0 && embeddingConfig !== null;
+
+  const reloadSessions = useCallback(async (accessToken: string) => {
+    const res = await listChatSessions(accessToken);
+    if (res.success && res.data) {
+      setSessions(res.data);
+      return res.data;
+    }
+    return [];
+  }, []);
+
+  const loadSessionMessages = useCallback(async (sessionId: string, accessToken: string) => {
+    const res = await getSessionMessages(sessionId, accessToken);
+    if (res.success && res.data) {
+      setMessages(res.data);
+      setActiveSessionId(sessionId);
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -53,10 +73,11 @@ export default function DashboardPage() {
       setUser(createUserPayload(authUser.id, authUser.email));
       setToken(session.access_token);
 
-      const [docsRes, provRes, embRes] = await Promise.all([
+      const [docsRes, provRes, embRes, sessRes] = await Promise.all([
         listDocuments(session.access_token),
         listProviderConfigs(session.access_token),
         getEmbeddingConfig(session.access_token),
+        listChatSessions(session.access_token),
       ]);
 
       if (!mounted) return;
@@ -72,6 +93,12 @@ export default function DashboardPage() {
         }
       }
       if (embRes.success && embRes.data) setEmbeddingConfig(embRes.data);
+
+      if (sessRes.success && sessRes.data && sessRes.data.length > 0) {
+        setSessions(sessRes.data);
+        const latestSessionId = sessRes.data[0].id;
+        await loadSessionMessages(latestSessionId, session.access_token);
+      }
     }
 
     initializeDashboard();
@@ -93,7 +120,7 @@ export default function DashboardPage() {
     });
 
     return () => { mounted = false; subscription.unsubscribe(); };
-  }, [supabase, router]);
+  }, [supabase, router, loadSessionMessages]);
 
   const reloadDocuments = useCallback(async (accessToken: string) => {
     const res = await listDocuments(accessToken);
@@ -121,9 +148,27 @@ export default function DashboardPage() {
   }, [supabase, router]);
 
   const handleNewChat = useCallback(() => {
+    setActiveSessionId(null);
     setMessages([]);
     setSelectedCitation(null);
   }, []);
+
+  const handleSelectSession = useCallback(async (sessionId: string) => {
+    if (!token) return;
+    setSelectedCitation(null);
+    await loadSessionMessages(sessionId, token);
+  }, [token, loadSessionMessages]);
+
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
+    if (!token) return;
+    const res = await deleteChatSession(sessionId, token);
+    if (res.success) {
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      if (activeSessionId === sessionId) {
+        handleNewChat();
+      }
+    }
+  }, [token, activeSessionId, handleNewChat]);
 
   const updateAssistantMessage = useCallback((assistantId: string, update: Partial<ChatMessage>) => {
     setMessages((prev) =>
@@ -143,19 +188,33 @@ export default function DashboardPage() {
 
     let accumulatedTokens = '';
 
-    await fetchSSEStream(query, token, provider, documents.map((d) => d.id), {
-      onCitations: (citations) => updateAssistantMessage(assistantId, { citations }),
-      onToken: (tokenText) => {
-        accumulatedTokens += tokenText;
-        updateAssistantMessage(assistantId, { content: accumulatedTokens });
+    await fetchSSEStream(
+      query,
+      token,
+      provider,
+      documents.map((d) => d.id),
+      {
+        onSession: (sessId) => {
+          setActiveSessionId(sessId);
+          reloadSessions(token);
+        },
+        onCitations: (citations) => updateAssistantMessage(assistantId, { citations }),
+        onToken: (tokenText) => {
+          accumulatedTokens += tokenText;
+          updateAssistantMessage(assistantId, { content: accumulatedTokens });
+        },
+        onComplete: () => {
+          setIsStreaming(false);
+          reloadSessions(token);
+        },
+        onError: (errorMsg) => {
+          updateAssistantMessage(assistantId, { content: `Error: ${errorMsg}` });
+          setIsStreaming(false);
+        },
       },
-      onComplete: () => setIsStreaming(false),
-      onError: (errorMsg) => {
-        updateAssistantMessage(assistantId, { content: `Error: ${errorMsg}` });
-        setIsStreaming(false);
-      },
-    });
-  }, [token, provider, documents, updateAssistantMessage]);
+      activeSessionId || undefined
+    );
+  }, [token, provider, documents, activeSessionId, updateAssistantMessage, reloadSessions]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#09090b] text-[#f4f4f5]">
@@ -164,9 +223,13 @@ export default function DashboardPage() {
         provider={provider}
         providerConfigs={providerConfigs}
         documents={documents}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
         hasCredentials={hasCredentials}
         onProviderChange={setProvider}
         onNewChat={handleNewChat}
+        onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
         onLogout={handleLogout}
         onUpload={handleUploadDocument}
         onDelete={handleDeleteDocument}
@@ -185,3 +248,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

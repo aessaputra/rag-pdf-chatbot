@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, LogOut, Plus, Settings } from 'lucide-react';
-import type { DocumentItem, ProviderConfig, UserPayload } from '@/types';
+import { FileText, LogOut, MessageSquare, Plus, Settings, Trash2 } from 'lucide-react';
+import type { ChatSession, DocumentItem, ProviderConfig, UserPayload } from '@/types';
 import DocumentManager from './DocumentManager';
 
 interface SidebarProps {
@@ -10,9 +10,13 @@ interface SidebarProps {
   provider: string;
   providerConfigs: ProviderConfig[];
   documents: DocumentItem[];
+  sessions?: ChatSession[];
+  activeSessionId?: string | null;
   hasCredentials: boolean;
   onProviderChange: (provider: string) => void;
   onNewChat: () => void;
+  onSelectSession?: (sessionId: string) => void;
+  onDeleteSession?: (sessionId: string) => void;
   onLogout: () => void;
   onUpload: (file: File) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -23,9 +27,13 @@ export default function Sidebar({
   provider,
   providerConfigs,
   documents,
+  sessions = [],
+  activeSessionId = null,
   hasCredentials,
   onProviderChange,
   onNewChat,
+  onSelectSession,
+  onDeleteSession,
   onLogout,
   onUpload,
   onDelete,
@@ -56,6 +64,46 @@ export default function Sidebar({
           <Plus className="w-3.5 h-3.5" aria-hidden="true" />
           <span>Percakapan Baru</span>
         </button>
+
+        {/* Chat Sessions History Section */}
+        {sessions.length > 0 ? (
+          <div className="space-y-1.5 max-h-[140px] flex flex-col min-h-0">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider px-1">
+              PERCAKAPAN ({sessions.length})
+            </div>
+            <div className="overflow-y-auto space-y-1 pr-1 flex-1">
+              {sessions.map((sess) => (
+                <div
+                  key={sess.id}
+                  className={`group flex items-center justify-between py-1.5 px-2 rounded-md text-xs transition-colors cursor-pointer ${
+                    activeSessionId === sess.id
+                      ? 'bg-[#18181b] border border-[#27272a] text-white font-medium'
+                      : 'text-zinc-400 hover:text-white hover:bg-[#121215]'
+                  }`}
+                  onClick={() => onSelectSession?.(sess.id)}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
+                    <span className="truncate text-[11px]">{sess.title}</span>
+                  </div>
+                  {onDeleteSession ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteSession(sess.id);
+                      }}
+                      title="Hapus percakapan"
+                      className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-opacity"
+                    >
+                      <Trash2 className="w-3 h-3" aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {/* AI Provider Selector */}
         <div className="space-y-1.5">
@@ -124,4 +172,5 @@ export default function Sidebar({
     </aside>
   );
 }
+
 
