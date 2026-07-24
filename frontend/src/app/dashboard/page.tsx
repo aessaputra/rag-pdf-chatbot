@@ -256,6 +256,7 @@ export default function DashboardPage() {
         isStreaming={isStreaming}
         hasCredentials={hasCredentials}
         activeDocumentCount={activeDocumentCount}
+        documents={documents}
         provider={provider}
         providerConfigs={providerConfigs}
         onProviderChange={setProvider}

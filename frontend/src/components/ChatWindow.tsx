@@ -12,13 +12,14 @@ import {
   Settings,
   Sparkles,
 } from 'lucide-react';
-import type { ChatMessage, Citation, ProviderConfig } from '@/types';
+import type { ChatMessage, Citation, DocumentItem, ProviderConfig } from '@/types';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
   isStreaming: boolean;
   hasCredentials?: boolean;
   activeDocumentCount?: number;
+  documents?: DocumentItem[];
   provider?: string;
   providerConfigs?: ProviderConfig[];
   onProviderChange?: (provider: string) => void;
@@ -107,6 +108,7 @@ export default function ChatWindow({
   isStreaming,
   hasCredentials = true,
   activeDocumentCount = 0,
+  documents = [],
   provider,
   providerConfigs = [],
   onProviderChange,
@@ -119,6 +121,10 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const providerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const activeDocs = documents.filter((d) => (d.is_active ?? true) && d.status === 'ready');
+  const primaryDoc = activeDocs[0];
+  const extraDocsCount = activeDocs.length - 1;
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -182,20 +188,43 @@ export default function ChatWindow({
 
   return (
     <main aria-label="Ruang Percakapan Chat" className="flex-1 flex flex-col h-screen bg-canvas text-primary relative z-10 transition-colors duration-150">
-      {/* Sleek Top Navigation Header Bar */}
+      {/* Sleek Document-First RAG Context Header Bar */}
       <header className="h-13 border-b border-subtle bg-canvas/80 backdrop-blur-xs flex items-center justify-between px-6 shrink-0 z-20 select-none">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-primary font-serif">Percakapan</span>
+        <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <FileText className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
+            {primaryDoc ? (
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-semibold font-serif text-primary truncate max-w-[280px]" title={primaryDoc.filename}>
+                  {primaryDoc.filename}
+                </span>
+                {extraDocsCount > 0 && (
+                  <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle shrink-0">
+                    +{extraDocsCount} Berkas
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-xs font-medium text-amber-500 font-serif">
+                Belum Ada Sumber PDF
+              </span>
+            )}
+          </div>
 
-          {/* Active Document Status Indicator */}
+          {/* Interactive RAG Status Badge Pill */}
           {hasCredentials && (
             <button
               type="button"
               onClick={onOpenDocumentModal}
-              className="px-2.5 py-0.5 rounded-full bg-surface-card hover:bg-surface-card-hover border border-subtle text-[11px] font-mono text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer"
+              className={`px-2.5 py-0.5 rounded-full border text-[11px] font-mono transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                activeDocs.length > 0
+                  ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20'
+              }`}
+              title="Kelola Dokumen RAG"
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${activeDocumentCount > 0 ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
-              <span>{activeDocumentCount} Dokumen Aktif</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${activeDocs.length > 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>{activeDocs.length > 0 ? 'AKTIF' : '+ Tambah'}</span>
             </button>
           )}
         </div>
