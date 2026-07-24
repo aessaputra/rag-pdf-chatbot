@@ -1,4 +1,4 @@
-import type { ApiResponse, Citation, DocumentItem, ProviderConfig, EmbeddingConfig, EmbeddingConfigSavePayload, EmbeddingPreset } from '@/types';
+import type { ApiResponse, Citation, DocumentItem, DocumentPreviewResponse, ProviderConfig, EmbeddingConfig, EmbeddingConfigSavePayload, EmbeddingPreset } from '@/types';
 
 
 import { createClient } from '@/lib/supabaseClient';
@@ -254,6 +254,46 @@ export async function deleteDocument(documentId: string, token: string): Promise
     }
 
     return { success: true, data: true, error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function toggleDocumentActive(documentId: string, isActive: boolean, token: string): Promise<ApiResponse<DocumentItem>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    headers['Content-Type'] = 'application/json';
+
+    const response = await fetch(`${API_BASE}/api/documents/${documentId}/toggle`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ is_active: isActive }),
+    });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengubah status dokumen.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+export async function getDocumentPreviewUrl(documentId: string, token: string): Promise<ApiResponse<DocumentPreviewResponse>> {
+  try {
+    const headers = await getAuthHeaders(token);
+
+    const response = await fetch(`${API_BASE}/api/documents/${documentId}/preview`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil URL preview dokumen.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
   } catch (err: any) {
     return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
   }

@@ -31,7 +31,17 @@ export interface DocumentItem {
   readonly id: string;
   readonly filename: string;
   readonly file_size: number;
+  readonly total_pages?: number;
+  readonly file_path?: string | null;
+  readonly is_active?: boolean;
+  readonly status?: 'processing' | 'ready' | 'failed';
   readonly created_at: string;
+}
+
+export interface DocumentPreviewResponse {
+  readonly document_id: string;
+  readonly signed_url: string;
+  readonly expires_in: number;
 }
 
 export interface ChatSession {
