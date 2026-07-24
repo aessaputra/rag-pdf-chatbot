@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Newsreader } from 'next/font/google';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
 
 const geistSans = Geist({
@@ -31,13 +32,21 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} dark`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen font-sans bg-[#0c0c0d] text-[#f4f4f5] antialiased selection:bg-[#27272a] selection:text-[#fafafa]">
-        <main className="relative z-10">{children}</main>
+      <body className="min-h-screen font-sans bg-canvas text-primary antialiased transition-colors duration-150">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <main className="relative z-10">{children}</main>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+
 

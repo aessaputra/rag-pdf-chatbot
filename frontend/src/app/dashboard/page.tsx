@@ -220,7 +220,7 @@ export default function DashboardPage() {
   }, [token, provider, documents, activeSessionId, updateAssistantMessage, reloadSessions]);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#09090b] text-[#f4f4f5]">
+    <div className="flex h-screen w-screen overflow-hidden bg-canvas text-primary transition-colors duration-150">
       <Sidebar
         user={user}
         provider={provider}

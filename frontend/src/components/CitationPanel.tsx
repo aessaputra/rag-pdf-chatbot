@@ -23,17 +23,17 @@ export default function CitationPanel({ citation, onClose }: CitationPanelProps)
   const cleanContent = sanitizeContextText(citation.content);
 
   return (
-    <aside aria-label="Detail Sitasi Dokumen PDF" className="w-[320px] bg-[#09090b] border-l border-[#232326] p-5 flex flex-col h-screen shrink-0 animate-in slide-in-from-right duration-200 z-20">
+    <aside aria-label="Detail Sitasi Dokumen PDF" className="w-[320px] bg-canvas border-l border-subtle p-5 flex flex-col h-screen shrink-0 animate-in slide-in-from-right duration-200 z-20 transition-colors duration-150">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-[#232326]">
-        <h3 className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-subtle">
+        <h3 className="text-[11px] font-mono uppercase tracking-wider text-muted">
           DETAIL SITASI
         </h3>
         <button
           type="button"
           onClick={onClose}
           aria-label="Tutup Detail Sitasi"
-          className="p-1 rounded text-zinc-400 hover:text-white hover:bg-[#18181b] transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b]"
+          className="p-1 rounded text-muted hover:text-primary hover:bg-surface-card-hover transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400"
         >
           <X className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
@@ -43,12 +43,12 @@ export default function CitationPanel({ citation, onClose }: CitationPanelProps)
       <div className="space-y-1.5 mb-5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <FileText className="w-3.5 h-3.5 text-zinc-400 shrink-0" aria-hidden="true" />
-            <span className="text-xs font-semibold text-white truncate" title={citation.filename}>
+            <FileText className="w-3.5 h-3.5 text-muted shrink-0" aria-hidden="true" />
+            <span className="text-xs font-semibold text-primary truncate" title={citation.filename}>
               {citation.filename}
             </span>
           </div>
-          <span className="text-[10px] font-mono text-zinc-400 bg-[#121215] border border-[#232326] px-2 py-0.5 rounded shrink-0">
+          <span className="text-[10px] font-mono text-secondary bg-surface-card border border-subtle px-2 py-0.5 rounded shrink-0">
             HAL {citation.page_number}
           </span>
         </div>
@@ -56,12 +56,12 @@ export default function CitationPanel({ citation, onClose }: CitationPanelProps)
 
       {/* Editorial Quote Excerpt */}
       <div className="flex-1 flex flex-col min-h-0 space-y-2">
-        <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+        <div className="text-[10px] font-mono text-muted uppercase tracking-wider">
           KONTEKS DOKUMEN
         </div>
         <div
           tabIndex={0}
-          className="flex-1 border-l-2 border-[#52525b] pl-3 py-1 text-zinc-300 text-xs leading-relaxed overflow-y-auto whitespace-pre-wrap font-sans selection:bg-[#27272a] focus-visible:ring-2 focus-visible:ring-[#52525b]"
+          className="flex-1 border-l-2 border-zinc-500 pl-3 py-1 text-secondary text-xs leading-relaxed overflow-y-auto whitespace-pre-wrap font-sans focus-visible:ring-2 focus-visible:ring-zinc-400"
         >
           {cleanContent}
         </div>
@@ -69,5 +69,3 @@ export default function CitationPanel({ citation, onClose }: CitationPanelProps)
     </aside>
   );
 }
-
-

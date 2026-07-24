@@ -35,3 +35,8 @@ _Avoid_: model picker, AI chooser
 **Encryption Key:**
 The server-side AES-256 symmetric key (`SETTINGS_ENCRYPTION_KEY`) used to encrypt and decrypt user API keys at rest. Stored as a backend environment variable, never in the database.
 _Avoid_: secret, master key
+
+**Theme Mode:**
+The visual display mode of the user interface (Dark, Light, or System preference). Managed via `next-themes` and CSS variables to ensure zero-FOUC rendering adhering to the Warm Monochrome Palette.
+_Avoid_: night mode, color scheme switch
+

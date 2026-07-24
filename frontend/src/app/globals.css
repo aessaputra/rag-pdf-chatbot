@@ -4,52 +4,134 @@
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), 'SF Mono', 'JetBrains Mono', monospace;
   --font-serif: var(--font-newsreader), 'Newsreader', Georgia, serif;
+
+  --color-canvas: var(--bg-canvas);
+  --color-surface-card: var(--surface-card);
+  --color-surface-card-hover: var(--surface-card-hover);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-focus: var(--border-focus);
 }
 
 @layer base {
   :root {
+    --bg-canvas: #f9f8f6;
+    --surface-card: #ffffff;
+    --surface-card-hover: #f4f3ef;
+    --border-subtle: #e5e5e0;
+    --border-focus: #a1a1aa;
+    --text-primary: #111111;
+    --text-secondary: #666663;
+    --text-muted: #8e8e8a;
+    --input-bg: #ffffff;
+    --input-border: #e5e5e0;
+    --button-primary-bg: #111111;
+    --button-primary-text: #ffffff;
+    --button-primary-hover: #2a2a2a;
+
+    /* Muted Pastels (Light) */
+    --pastel-red-bg: #fdebec;
+    --pastel-red-text: #9f2f2d;
+    --pastel-blue-bg: #e1f3fe;
+    --pastel-blue-text: #1f6c9f;
+    --pastel-green-bg: #edf3ec;
+    --pastel-green-text: #346538;
+    --pastel-yellow-bg: #fbf3db;
+    --pastel-yellow-text: #956400;
+  }
+
+  .dark {
     --bg-canvas: #09090b;
     --surface-card: #121215;
     --surface-card-hover: #18181b;
     --border-subtle: #232326;
     --border-focus: #52525b;
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --input-bg: #18181b;
+    --input-border: #27272a;
+    --button-primary-bg: #fafafa;
+    --button-primary-text: #09090b;
+    --button-primary-hover: #e4e4e7;
+
+    /* Muted Pastels (Dark) */
+    --pastel-red-bg: rgba(239, 68, 68, 0.15);
+    --pastel-red-text: #fca5a5;
+    --pastel-blue-bg: rgba(59, 130, 246, 0.15);
+    --pastel-blue-text: #93c5fd;
+    --pastel-green-bg: rgba(34, 197, 94, 0.15);
+    --pastel-green-text: #86efac;
+    --pastel-yellow-bg: rgba(234, 179, 8, 0.15);
+    --pastel-yellow-text: #fde047;
   }
 
   body {
     background-color: var(--bg-canvas);
-    color: #f4f4f5;
+    color: var(--text-primary);
     font-family: var(--font-sans);
   }
 }
 
 /* Utilitarian Minimalist Utilities */
+.bg-canvas {
+  background-color: var(--bg-canvas);
+}
+
+.bg-surface-card {
+  background-color: var(--surface-card);
+}
+
+.bg-surface-card-hover {
+  background-color: var(--surface-card-hover);
+}
+
+.border-subtle {
+  border-color: var(--border-subtle);
+}
+
+.border-focus {
+  border-color: var(--border-focus);
+}
+
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
 .minimal-card {
-  background-color: #121215;
-  border: 1px solid #232326;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
 }
 
 .minimal-input {
-  background-color: #18181b;
-  border: 1px solid #27272a;
-  color: #fafafa;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .minimal-input:focus-visible {
   outline: none;
-  border-color: #52525b;
+  border-color: var(--border-focus);
   box-shadow: 0 0 0 2px rgba(161, 161, 170, 0.2);
 }
 
 .minimal-button-primary {
-  background-color: #fafafa;
-  color: #09090b;
+  background-color: var(--button-primary-bg);
+  color: var(--button-primary-text);
   font-weight: 500;
   transition: transform 0.1s ease, background-color 0.15s ease;
 }
 
 .minimal-button-primary:hover:not(:disabled) {
-  background-color: #e4e4e7;
+  background-color: var(--button-primary-hover);
 }
 
 .minimal-button-primary:active:not(:disabled) {
