@@ -1,11 +1,10 @@
 # ==============================================================================
-# Full-Stack Docker Compose Setup for RAG PDF Chatbot
+# Docker Compose Setup for RAG PDF Chatbot (Development Environment)
 # Follows .agents/skills/docker-patterns/SKILL.md best practices:
-# - Multi-container orchestration (Backend FastAPI + Frontend Next.js 15)
-# - Build ARGs passed for Next.js browser bundle embedding
+# - Target: dev stage (Hot-reloading enabled via bind mounts)
 # - Service discovery & dependency order via service_healthy condition
 # - Custom bridge network isolation (rag-network)
-# - Clean env_file binding for Backend (.env) and Frontend (.env)
+# - Variable interpolation from root .env file
 # ==============================================================================
 
 services:
@@ -13,10 +12,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: production
+      target: dev
     container_name: rag_pdf_backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
     env_file:
       - ./backend/.env
     restart: unless-stopped
@@ -33,16 +34,18 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: production
+      target: dev
       args:
-        # These are injected at build time for Next.js static bundle embedding.
-        # Values are read from the frontend/.env file — never hardcode secrets here.
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: rag_pdf_frontend
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     env_file:
       - ./frontend/.env
     depends_on:

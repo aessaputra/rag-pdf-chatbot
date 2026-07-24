@@ -1,0 +1,25 @@
+# ==============================================================================
+# Docker Compose Production Override Setup for RAG PDF Chatbot
+# Follows .agents/skills/docker-patterns/SKILL.md best practices:
+# - Target: production stage (Minimal standalone image, hardened security)
+# - Run using: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# ==============================================================================
+
+services:
+  backend:
+    build:
+      target: production
+    volumes: []
+    restart: always
+
+  frontend:
+    build:
+      target: production
+    volumes: []
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
