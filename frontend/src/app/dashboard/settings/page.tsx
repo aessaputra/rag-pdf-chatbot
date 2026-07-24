@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Check, Plus, Trash2, Edit3, Key, Server, Cpu, Sparkles,
+  ArrowLeft, Check, Plus, Trash2, Edit3, Key, Server, Sparkles,
   ShieldCheck, AlertCircle, Lock, Layers, Save, ExternalLink
 } from 'lucide-react';
 import { createClient } from '@/lib/supabaseClient';
@@ -76,7 +76,6 @@ export default function SettingsPage() {
       setUser(createUserPayload(authUser.id, authUser.email));
       setToken(session.access_token);
 
-      // Fetch Provider Configs, Embedding Presets, and Active Embedding Config in parallel
       const [provRes, presetRes, embConfigRes] = await Promise.all([
         listProviderConfigs(session.access_token),
         listEmbeddingPresets(),
@@ -95,7 +94,6 @@ export default function SettingsPage() {
         setEmbDimensions(conf.embedding_dimensions);
         setEmbBaseUrl(conf.base_url || '');
 
-        // Check if matches preset
         const matchedPreset = presetRes.data?.find(
           (p) => p.model_name === conf.model_name && p.embedding_dimensions === conf.embedding_dimensions
         );
@@ -142,7 +140,7 @@ export default function SettingsPage() {
   const openEditForm = useCallback((config: ProviderConfig) => {
     setEditingConfigId(config.id);
     setFormProvider(config.provider);
-    setFormApiKey(''); // Leave blank unless rotating key
+    setFormApiKey('');
     setFormDisplayName(config.display_name || '');
     setFormModelName(config.model_name || '');
     setFormBaseUrl(config.base_url || '');
@@ -159,9 +157,8 @@ export default function SettingsPage() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Frontend validation
     if (!editingConfigId && !formApiKey.trim()) {
-      setFormError('API Key wajib diisi.');
+      setFormError('Kunci API wajib diisi.');
       return;
     }
 
@@ -171,12 +168,12 @@ export default function SettingsPage() {
         return;
       }
       if (!formModelName.trim()) {
-        setFormError('Model Name wajib diisi untuk OpenAI-Compatible provider.');
+        setFormError('Nama Model wajib diisi untuk OpenAI-Compatible provider.');
         return;
       }
     } else if (formProvider === 'openrouter') {
       if (!formModelName.trim()) {
-        setFormError('Model Name wajib diisi untuk OpenRouter provider.');
+        setFormError('Nama Model wajib diisi untuk OpenRouter provider.');
         return;
       }
     }
@@ -226,7 +223,6 @@ export default function SettingsPage() {
     } finally {
       setIsSubmitting(false);
     }
-
   };
 
   const handleDelete = async (id: string) => {
@@ -260,7 +256,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Preset Selection Handler
   const handlePresetChange = (presetId: string) => {
     setSelectedPresetId(presetId);
     setEmbError(null);
@@ -279,7 +274,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Save Embedding Config Handler
   const handleSaveEmbedding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || embeddingConfig?.locked) return;
@@ -290,7 +284,7 @@ export default function SettingsPage() {
 
     if (isCustomEmbedding) {
       if (!embModelName.trim()) {
-        setEmbError('Model Name wajib diisi.');
+        setEmbError('Nama Model wajib diisi.');
         return;
       }
       if (!embDimensions || embDimensions < 64) {
@@ -326,26 +320,26 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#09090b] text-zinc-100 font-sans">
+    <div className="min-h-screen w-full bg-[#09090b] text-[#f4f4f5] font-sans selection:bg-[#27272a] selection:text-[#fafafa]">
       {/* Top Navbar Header */}
-      <header className="border-b border-[#232326] bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="border-b border-[#232326] bg-[#09090b]/90 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none rounded-md px-2 py-1"
+              className="flex items-center gap-1.5 text-xs text-[#a1a1aa] hover:text-[#f4f4f5] transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b] rounded-md px-2 py-1"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Dashboard</span>
             </Link>
-            <span className="text-zinc-700">/</span>
-            <h1 className="text-base font-medium text-zinc-100 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>Pengaturan AI Provider & Embedding (BYOK)</span>
+            <span className="text-[#232326]">/</span>
+            <h1 className="text-xs font-semibold text-[#f4f4f5] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#a1a1aa]" aria-hidden="true" />
+              <span>Pengaturan AI Provider &amp; Model Embedding</span>
             </h1>
           </div>
           {user && (
-            <div className="text-xs font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-md">
+            <div className="text-[11px] font-mono text-[#a1a1aa] bg-[#121215] border border-[#232326] px-2.5 py-1 rounded-md">
               {user.email}
             </div>
           )}
@@ -353,17 +347,17 @@ export default function SettingsPage() {
       </header>
 
       {/* Main Content Body */}
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
-        {/* Intro Description Banner */}
-        <section className="minimal-card rounded-xl p-6 space-y-2">
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        {/* Intro Security Info Banner */}
+        <section aria-label="Informasi Keamanan BYOK" className="minimal-card rounded-xl p-5 space-y-2">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-400">
-              <ShieldCheck className="w-5 h-5" />
+            <div className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-[#f4f4f5]">
+              <ShieldCheck className="w-4 h-4" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-lg font-medium text-zinc-100">Bring Your Own Key (BYOK) & Model Config</h2>
-              <p className="text-sm text-zinc-400">
-                Sistem ini menggunakan enkripsi tingkat tinggi AES-256 untuk mengamankan API key Anda. Atur AI Provider untuk obrolan chat dan Model Embedding untuk pengolahan dokumen PDF.
+              <h2 className="text-sm font-semibold text-[#f4f4f5]">Keamanan Kunci API (Bring Your Own Key)</h2>
+              <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                Kunci API Anda dienkripsi menggunakan standar enkripsi AES-256 di sisi server. Atur AI Provider untuk percakapan obrolan dan Model Embedding untuk pengolahan berkas PDF.
               </p>
             </div>
           </div>
@@ -371,139 +365,139 @@ export default function SettingsPage() {
 
         {/* Global Toast Messages */}
         {successMsg && (
-          <div className="p-4 rounded-lg bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 text-sm flex items-center gap-3">
-            <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <div role="status" aria-live="polite" className="p-3.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-emerald-300 text-xs flex items-center gap-2.5">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="p-4 rounded-lg bg-rose-950/40 border border-rose-800/60 text-rose-300 text-sm flex items-center gap-3">
-            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+          <div role="alert" aria-live="polite" className="p-3.5 rounded-lg bg-rose-950/30 border border-rose-800/40 text-rose-300 text-xs flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" aria-hidden="true" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* SECTION 1: Configured Chat Providers List */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <section aria-label="Konfigurasi Provider Chat LLM" className="space-y-4">
+          <div className="flex items-center justify-between border-b border-[#232326] pb-3">
             <div>
-              <h3 className="text-base font-medium text-zinc-100 flex items-center gap-2">
-                <Key className="w-4 h-4 text-emerald-400" />
-                <span>1. Chat Provider Configs</span>
+              <h3 className="text-base font-serif italic text-[#f4f4f5] flex items-center gap-2">
+                <Key className="w-4 h-4 text-[#a1a1aa]" aria-hidden="true" />
+                <span>1. Konfigurasi Provider Chat (LLM)</span>
               </h3>
-              <p className="text-xs text-zinc-400">API Key untuk obrolan AI LLM (Gemini, OpenAI, OpenRouter, Custom API).</p>
+              <p className="text-xs text-[#a1a1aa]">Kunci API untuk obrolan AI (Google Gemini, OpenAI, OpenRouter, Custom API).</p>
             </div>
             {!isFormOpen && (
               <button
                 type="button"
                 onClick={openCreateForm}
-                className="minimal-button-primary px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none"
+                className="minimal-button-primary px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#52525b]"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Tambah Provider</span>
               </button>
             )}
           </div>
 
-          {/* Form Modal / Card for Chat Provider */}
+          {/* Form Card for Chat Provider */}
           {isFormOpen && (
-            <div className="minimal-card rounded-xl p-6 border border-zinc-700/60 space-y-6">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                <h4 className="text-sm font-medium text-zinc-100 flex items-center gap-2">
-                  <Key className="w-4 h-4 text-emerald-400" />
+            <div className="minimal-card rounded-xl p-5 border border-[#27272a] space-y-5">
+              <div className="flex items-center justify-between border-b border-[#232326] pb-3">
+                <h4 className="text-xs font-semibold text-[#f4f4f5] flex items-center gap-2">
+                  <Key className="w-3.5 h-3.5 text-[#a1a1aa]" aria-hidden="true" />
                   <span>{editingConfigId ? 'Edit Konfigurasi Provider' : 'Tambah Provider Baru'}</span>
                 </h4>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="text-xs text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded-md"
+                  className="text-xs text-[#a1a1aa] hover:text-[#f4f4f5] px-2 py-1 rounded-md focus-visible:ring-2 focus-visible:ring-[#52525b]"
                 >
                   Batal
                 </button>
               </div>
 
               {formError && (
-                <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                <div role="alert" className="p-3 rounded-lg bg-rose-950/40 border border-rose-800/50 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" aria-hidden="true" />
                   <span>{formError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSaveConfig} className="space-y-5">
+              <form onSubmit={handleSaveConfig} className="space-y-4">
                 {/* Provider Selector */}
-                <div className="space-y-2">
-                  <label htmlFor="formProvider" className="block text-xs font-medium text-zinc-300">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-[#f4f4f5]">
                     Pilih Provider AI <span className="text-rose-400">*</span>
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {PROVIDER_OPTIONS.map((opt) => (
                       <button
                         key={opt.type}
                         type="button"
                         disabled={!!editingConfigId}
                         onClick={() => setFormProvider(opt.type)}
-                        className={`text-left p-3 rounded-lg border text-xs transition-all ${
+                        className={`text-left p-3 rounded-lg border text-xs transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b] ${
                           formProvider === opt.type
-                            ? 'bg-zinc-800/90 border-emerald-500/70 text-zinc-100 ring-1 ring-emerald-500/50'
-                            : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                            ? 'bg-[#18181b] border-[#fafafa] text-[#f4f4f5]'
+                            : 'bg-[#121215] border-[#232326] text-[#a1a1aa] hover:border-[#27272a]'
                         } ${editingConfigId ? 'opacity-70 cursor-not-allowed' : ''}`}
                       >
-                        <div className="font-medium text-zinc-200 flex items-center gap-1.5">
-                          {opt.type === 'gemini' && <Sparkles className="w-3.5 h-3.5 text-blue-400" />}
-                          {opt.type === 'openai' && <Cpu className="w-3.5 h-3.5 text-emerald-400" />}
-                          {opt.type === 'openrouter' && <Server className="w-3.5 h-3.5 text-purple-400" />}
-                          {opt.type === 'openai_compatible' && <Server className="w-3.5 h-3.5 text-amber-400" />}
+                        <div className="font-medium text-[#f4f4f5] flex items-center gap-1.5">
+                          <Server className="w-3.5 h-3.5 text-[#a1a1aa]" aria-hidden="true" />
                           <span>{opt.label}</span>
                         </div>
-                        <p className="mt-1 text-[11px] text-zinc-400 line-clamp-1">{opt.description}</p>
+                        <p className="mt-1 text-[11px] text-[#a1a1aa] line-clamp-1">{opt.description}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Display Name */}
-                <div className="space-y-1.5">
-                  <label htmlFor="formDisplayName" className="block text-xs font-medium text-zinc-300">
-                    Label Display Name <span className="text-zinc-500">(Opsional)</span>
+                <div className="space-y-1">
+                  <label htmlFor="formDisplayName" className="block text-xs font-medium text-[#f4f4f5]">
+                    Label Display Name <span className="text-[#a1a1aa]">(Opsional)</span>
                   </label>
                   <input
                     id="formDisplayName"
                     type="text"
                     autoComplete="off"
+                    spellCheck={false}
                     placeholder="Contoh: Groq Llama 3.3 / My Gemini Key"
                     value={formDisplayName}
                     onChange={(e) => setFormDisplayName(e.target.value)}
-                    className="minimal-input w-full px-3 py-2 rounded-lg text-xs"
+                    className="minimal-input w-full px-3 py-2 rounded-lg text-xs focus-visible:ring-2 focus-visible:ring-[#52525b]"
                   />
                 </div>
 
                 {/* API Key */}
-                <div className="space-y-1.5">
-                  <label htmlFor="formApiKey" className="block text-xs font-medium text-zinc-300">
-                    API Key {editingConfigId ? <span className="text-zinc-500">(Biarkan kosong jika tidak ingin mengubah)</span> : <span className="text-rose-400">*</span>}
+                <div className="space-y-1">
+                  <label htmlFor="formApiKey" className="block text-xs font-medium text-[#f4f4f5]">
+                    Kunci API Rahasia {editingConfigId ? <span className="text-[#a1a1aa]">(Biarkan kosong jika tidak ingin mengubah)</span> : <span className="text-rose-400">*</span>}
                   </label>
                   <input
                     id="formApiKey"
                     type="password"
                     autoComplete="off"
-                    placeholder={editingConfigId ? '••••••••••••••••' : 'Masukkan API key rahasia Anda'}
+                    spellCheck={false}
+                    placeholder={editingConfigId ? '••••••••••••••••' : 'Masukkan Kunci API rahasia Anda'}
                     value={formApiKey}
                     onChange={(e) => setFormApiKey(e.target.value)}
-                    className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono"
+                    className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono focus-visible:ring-2 focus-visible:ring-[#52525b]"
                   />
                 </div>
 
                 {/* Conditional Model Name */}
                 {(formProvider === 'openrouter' || formProvider === 'openai_compatible' || formProvider === 'openai') && (
-                  <div className="space-y-1.5">
-                    <label htmlFor="formModelName" className="block text-xs font-medium text-zinc-300">
-                      Model Name Slug {formProvider !== 'openai' ? <span className="text-rose-400">*</span> : <span className="text-zinc-500">(Opsional, default: gpt-4o-mini)</span>}
+                  <div className="space-y-1">
+                    <label htmlFor="formModelName" className="block text-xs font-medium text-[#f4f4f5]">
+                      Nama Model Slug {formProvider !== 'openai' ? <span className="text-rose-400">*</span> : <span className="text-[#a1a1aa]">(Opsional, default: gpt-4o-mini)</span>}
                     </label>
                     <input
                       id="formModelName"
                       type="text"
                       autoComplete="off"
+                      spellCheck={false}
                       placeholder={
                         formProvider === 'openrouter'
                           ? 'Contoh: meta-llama/llama-3.3-70b-instruct'
@@ -513,25 +507,26 @@ export default function SettingsPage() {
                       }
                       value={formModelName}
                       onChange={(e) => setFormModelName(e.target.value)}
-                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono"
+                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono focus-visible:ring-2 focus-visible:ring-[#52525b]"
                     />
                   </div>
                 )}
 
                 {/* Conditional Base URL */}
                 {formProvider === 'openai_compatible' && (
-                  <div className="space-y-1.5">
-                    <label htmlFor="formBaseUrl" className="block text-xs font-medium text-zinc-300">
+                  <div className="space-y-1">
+                    <label htmlFor="formBaseUrl" className="block text-xs font-medium text-[#f4f4f5]">
                       Base URL Endpoint <span className="text-rose-400">*</span>
                     </label>
                     <input
                       id="formBaseUrl"
                       type="url"
                       autoComplete="off"
+                      spellCheck={false}
                       placeholder="Contoh: https://api.groq.com/openai/v1"
                       value={formBaseUrl}
                       onChange={(e) => setFormBaseUrl(e.target.value)}
-                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono"
+                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono focus-visible:ring-2 focus-visible:ring-[#52525b]"
                     />
                   </div>
                 )}
@@ -543,26 +538,26 @@ export default function SettingsPage() {
                     type="checkbox"
                     checked={formIsDefault}
                     onChange={(e) => setFormIsDefault(e.target.checked)}
-                    className="rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/40"
+                    className="rounded border-[#27272a] bg-[#18181b] text-[#fafafa] focus:ring-1 focus:ring-[#52525b]"
                   />
-                  <label htmlFor="formIsDefault" className="text-xs text-zinc-300 cursor-pointer">
+                  <label htmlFor="formIsDefault" className="text-xs text-[#f4f4f5] cursor-pointer">
                     Jadikan provider ini sebagai default untuk obrolan chat
                   </label>
                 </div>
 
-                {/* Form Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+                {/* Form Action Buttons */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#232326]">
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 rounded-lg text-xs text-zinc-400 hover:text-zinc-200"
+                    className="px-3.5 py-1.5 rounded-lg text-xs text-[#a1a1aa] hover:text-[#f4f4f5] focus-visible:ring-2 focus-visible:ring-[#52525b]"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="minimal-button-primary px-5 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
+                    className="minimal-button-primary px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#52525b]"
                   >
                     {isSubmitting ? <span>Menyimpan…</span> : <span>Simpan Konfigurasi</span>}
                   </button>
@@ -573,47 +568,46 @@ export default function SettingsPage() {
 
           {/* Configured Provider Cards */}
           {isLoading ? (
-            <div className="p-8 text-center text-xs text-zinc-500 animate-pulse">
+            <div className="p-8 text-center text-xs text-[#71717a] animate-pulse">
               Memuat konfigurasi provider…
             </div>
           ) : configs.length === 0 ? (
             <div className="minimal-card rounded-xl p-8 text-center space-y-3">
-              <p className="text-sm text-zinc-400">Belum ada AI Provider yang dikonfigurasi.</p>
-              <p className="text-xs text-zinc-500">Tambahkan API key pertama Anda agar asisten AI dapat digunakan.</p>
+              <p className="text-xs text-[#a1a1aa]">Belum ada AI Provider yang dikonfigurasi.</p>
               {!isFormOpen && (
                 <button
                   type="button"
                   onClick={openCreateForm}
-                  className="minimal-button-primary px-4 py-2 rounded-lg text-xs inline-flex items-center gap-1.5 mt-2"
+                  className="minimal-button-primary px-3.5 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#52525b]"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah Provider Sekarang</span>
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Tambah Provider Pertama</span>
                 </button>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-2.5">
               {configs.map((config) => (
                 <div
                   key={config.id}
-                  className="minimal-card rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-zinc-800/80 hover:border-zinc-700/80 transition-all"
+                  className="minimal-card rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#27272a] transition-colors"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm text-zinc-100">
+                      <span className="font-medium text-xs text-[#f4f4f5]">
                         {config.display_name || config.provider.toUpperCase()}
                       </span>
-                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
+                      <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#18181b] text-[#a1a1aa] border border-[#27272a]">
                         {config.provider}
                       </span>
                       {config.is_default && (
-                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-700/60 flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Default
+                        <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#064e3b]/40 text-[#a7f3d0] border border-[#064e3b]/60 flex items-center gap-1">
+                          <Check className="w-3 h-3 text-[#a7f3d0]" aria-hidden="true" /> Default
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400">
-                      <span>Key: {config.api_key_masked}</span>
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-[#a1a1aa]">
+                      <span>Kunci: {config.api_key_masked}</span>
                       {config.model_name && <span>Model: {config.model_name}</span>}
                       {config.base_url && <span className="truncate max-w-xs">URL: {config.base_url}</span>}
                     </div>
@@ -624,7 +618,7 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => handleSetDefault(config)}
-                        className="px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors"
+                        className="px-2.5 py-1 rounded-lg border border-[#232326] text-[11px] text-[#a1a1aa] hover:text-[#f4f4f5] hover:bg-[#18181b] transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b]"
                       >
                         Set Default
                       </button>
@@ -632,18 +626,20 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => openEditForm(config)}
-                      className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                      aria-label={`Edit provider ${config.display_name || config.provider}`}
                       title="Edit Provider"
+                      className="p-1.5 rounded-lg border border-[#232326] text-[#a1a1aa] hover:text-[#f4f4f5] hover:bg-[#18181b] transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b]"
                     >
-                      <Edit3 className="w-4 h-4" />
+                      <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(config.id)}
-                      className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
+                      aria-label={`Hapus provider ${config.display_name || config.provider}`}
                       title="Hapus Provider"
+                      className="p-1.5 rounded-lg border border-[#232326] text-[#a1a1aa] hover:text-rose-400 hover:bg-rose-950/20 transition-colors focus-visible:ring-2 focus-visible:ring-[#52525b]"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -653,55 +649,54 @@ export default function SettingsPage() {
         </section>
 
         {/* SECTION 2: Embedding Model Configuration & Lock Status */}
-        <section className="space-y-4 pt-4 border-t border-zinc-800">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <section aria-label="Konfigurasi Model Embedding Dokumen" className="space-y-4 pt-4 border-t border-[#232326]">
+          <div className="flex items-center justify-between border-b border-[#232326] pb-3">
             <div>
-              <h3 className="text-base font-medium text-zinc-100 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-purple-400" />
+              <h3 className="text-base font-serif italic text-[#f4f4f5] flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#a1a1aa]" aria-hidden="true" />
                 <span>2. Model Embedding Dokumen (Vector Search)</span>
               </h3>
-              <p className="text-xs text-zinc-400">Model embedding yang digunakan untuk mengekstrak vektor dari dokumen PDF saat diunggah.</p>
+              <p className="text-xs text-[#a1a1aa]">Model embedding yang digunakan untuk mengekstrak vektor dari dokumen PDF.</p>
             </div>
             {embeddingConfig?.locked && (
-              <span className="text-xs font-mono px-3 py-1 rounded-md bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-amber-400" /> Model Terkunci (Locked)
+              <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[#451a03]/40 text-[#fde68a] border border-[#78350f]/60 flex items-center gap-1.5">
+                <Lock className="w-3 h-3 text-[#fde68a]" aria-hidden="true" /> Terkunci (Locked)
               </span>
             )}
           </div>
 
           {/* Lock Warning Banner */}
           {embeddingConfig?.locked && (
-            <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-800/70 text-amber-200 text-xs space-y-2">
-              <div className="flex items-center gap-2 font-medium text-amber-300 text-sm">
-                <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <div className="p-4 rounded-xl bg-[#451a03]/20 border border-[#78350f]/50 text-[#fde68a] text-xs space-y-1.5">
+              <div className="flex items-center gap-2 font-medium text-sm text-[#fde68a]">
+                <Lock className="w-4 h-4 text-[#fde68a] shrink-0" aria-hidden="true" />
                 <span>Model Embedding Terkunci</span>
               </div>
-              <p className="leading-relaxed">
+              <p className="leading-relaxed text-[11px] text-[#fde68a]/90">
                 Anda sudah memiliki dokumen PDF terunggah di basis data. Model embedding tidak dapat diubah agar tidak merusak pencarian vektor dokumen yang sudah di-index.
               </p>
               <div className="pt-1">
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-1.5 text-amber-300 hover:underline font-medium text-xs"
+                  className="inline-flex items-center gap-1.5 text-[#fde68a] hover:underline font-medium text-xs focus-visible:ring-2 focus-visible:ring-[#52525b] rounded"
                 >
-                  <span>Hapus semua dokumen di Dashboard untuk membuka kunci</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Hapus semua dokumen di Dashboard untuk membuka kunci →</span>
                 </Link>
               </div>
             </div>
           )}
 
           {embError && (
-            <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <div role="alert" className="p-3 rounded-lg bg-rose-950/40 border border-rose-800/50 text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" aria-hidden="true" />
               <span>{embError}</span>
             </div>
           )}
 
-          <form onSubmit={handleSaveEmbedding} className="minimal-card rounded-xl p-6 space-y-6 border border-zinc-800/80">
+          <form onSubmit={handleSaveEmbedding} className="minimal-card rounded-xl p-5 space-y-5">
             {/* Preset Selector */}
-            <div className="space-y-2">
-              <label htmlFor="presetSelect" className="block text-xs font-medium text-zinc-300">
+            <div className="space-y-1.5">
+              <label htmlFor="presetSelect" className="block text-xs font-medium text-[#f4f4f5]">
                 Pilih Preset Model Embedding <span className="text-rose-400">*</span>
               </label>
               <select
@@ -709,27 +704,27 @@ export default function SettingsPage() {
                 disabled={!!embeddingConfig?.locked}
                 value={selectedPresetId}
                 onChange={(e) => handlePresetChange(e.target.value)}
-                className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[#52525b]"
               >
                 {presets.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
+                  <option key={preset.id} value={preset.id} className="bg-[#121215] text-[#f4f4f5]">
                     {preset.name} ({preset.embedding_dimensions}d) - {preset.description}
                   </option>
                 ))}
-                <option value="custom">-- Custom Embedding Model / Provider --</option>
+                <option value="custom" className="bg-[#121215] text-[#f4f4f5]">-- Custom Embedding Model / Provider --</option>
               </select>
             </div>
 
             {/* Custom Embedding Fields */}
             {isCustomEmbedding && (
-              <div className="p-4 rounded-lg bg-zinc-900/80 border border-zinc-800 space-y-4">
-                <div className="text-xs font-medium text-zinc-300 pb-1 border-b border-zinc-800">
+              <div className="p-4 rounded-lg bg-[#18181b] border border-[#27272a] space-y-4">
+                <div className="text-xs font-medium text-[#f4f4f5] pb-1 border-b border-[#232326]">
                   Konfigurasi Custom Embedding Model
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label htmlFor="embProvider" className="block text-xs font-medium text-zinc-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label htmlFor="embProvider" className="block text-xs font-medium text-[#f4f4f5]">
                       Provider <span className="text-rose-400">*</span>
                     </label>
                     <select
@@ -737,18 +732,18 @@ export default function SettingsPage() {
                       disabled={!!embeddingConfig?.locked}
                       value={embProvider}
                       onChange={(e) => setEmbProvider(e.target.value)}
-                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs disabled:opacity-60"
+                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#52525b]"
                     >
-                      <option value="gemini">Google Gemini</option>
-                      <option value="openai">OpenAI</option>
-                      <option value="openrouter">OpenRouter</option>
-                      <option value="openai_compatible">OpenAI-Compatible (Custom)</option>
+                      <option value="gemini" className="bg-[#121215] text-[#f4f4f5]">Google Gemini</option>
+                      <option value="openai" className="bg-[#121215] text-[#f4f4f5]">OpenAI</option>
+                      <option value="openrouter" className="bg-[#121215] text-[#f4f4f5]">OpenRouter</option>
+                      <option value="openai_compatible" className="bg-[#121215] text-[#f4f4f5]">OpenAI-Compatible (Custom)</option>
                     </select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="embDimensions" className="block text-xs font-medium text-zinc-300">
-                      Dimensi Vektor Vector Dimensions <span className="text-rose-400">*</span>
+                  <div className="space-y-1">
+                    <label htmlFor="embDimensions" className="block text-xs font-medium text-[#f4f4f5]">
+                      Dimensi Vektor (Vector Dimensions) <span className="text-rose-400">*</span>
                     </label>
                     <input
                       id="embDimensions"
@@ -757,14 +752,14 @@ export default function SettingsPage() {
                       placeholder="768 / 1536 / 3072"
                       value={embDimensions}
                       onChange={(e) => setEmbDimensions(parseInt(e.target.value) || 768)}
-                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono disabled:opacity-60"
+                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#52525b]"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label htmlFor="embModelName" className="block text-xs font-medium text-zinc-300">
-                    Model Name Slug <span className="text-rose-400">*</span>
+                <div className="space-y-1">
+                  <label htmlFor="embModelName" className="block text-xs font-medium text-[#f4f4f5]">
+                    Nama Model Slug <span className="text-rose-400">*</span>
                   </label>
                   <input
                     id="embModelName"
@@ -773,14 +768,14 @@ export default function SettingsPage() {
                     placeholder="Contoh: models/text-embedding-004 / text-embedding-3-small"
                     value={embModelName}
                     onChange={(e) => setEmbModelName(e.target.value)}
-                    className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono disabled:opacity-60"
+                    className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#52525b]"
                   />
                 </div>
 
                 {embProvider === 'openai_compatible' && (
-                  <div className="space-y-1.5">
-                    <label htmlFor="embBaseUrl" className="block text-xs font-medium text-zinc-300">
-                      Base URL Endpoint <span className="text-zinc-500">(Opsional)</span>
+                  <div className="space-y-1">
+                    <label htmlFor="embBaseUrl" className="block text-xs font-medium text-[#f4f4f5]">
+                      Base URL Endpoint <span className="text-[#a1a1aa]">(Opsional)</span>
                     </label>
                     <input
                       id="embBaseUrl"
@@ -789,50 +784,23 @@ export default function SettingsPage() {
                       placeholder="https://api.groq.com/openai/v1"
                       value={embBaseUrl}
                       onChange={(e) => setEmbBaseUrl(e.target.value)}
-                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono disabled:opacity-60"
+                      className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#52525b]"
                     />
                   </div>
                 )}
-
-                <div className="space-y-1.5">
-                  <label htmlFor="embApiKey" className="block text-xs font-medium text-zinc-300">
-                    API Key Spesifik Embedding <span className="text-zinc-500">(Opsional, otomatis menggunakan key dari Chat Provider jika kosong)</span>
-                  </label>
-                  <input
-                    id="embApiKey"
-                    type="password"
-                    disabled={!!embeddingConfig?.locked}
-                    placeholder="Biarkan kosong untuk memakai ulang API Key Provider"
-                    value={embApiKey}
-                    onChange={(e) => setEmbApiKey(e.target.value)}
-                    className="minimal-input w-full px-3 py-2 rounded-lg text-xs font-mono disabled:opacity-60"
-                  />
-                </div>
               </div>
             )}
 
-            {/* Current Active Embedding Summary */}
-            {embeddingConfig && (
-              <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-xs flex flex-wrap items-center justify-between gap-2 text-zinc-400">
-                <span>Model Aktif Saat Ini: <strong className="text-zinc-200 font-mono">{embeddingConfig.model_name}</strong></span>
-                <span>Dimensi Vektor: <strong className="text-emerald-400 font-mono">{embeddingConfig.embedding_dimensions}d</strong></span>
-                <span>Provider: <strong className="text-purple-400 font-mono uppercase">{embeddingConfig.provider}</strong></span>
-              </div>
-            )}
-
-            {/* Save Button */}
-            {!embeddingConfig?.locked && (
-              <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
-                  disabled={isSavingEmbedding}
-                  className="minimal-button-primary px-5 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{isSavingEmbedding ? 'Menyimpan…' : 'Simpan Model Embedding'}</span>
-                </button>
-              </div>
-            )}
+            {/* Form Submit */}
+            <div className="flex justify-end pt-2 border-t border-[#232326]">
+              <button
+                type="submit"
+                disabled={!!embeddingConfig?.locked || isSavingEmbedding}
+                className="minimal-button-primary px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[#52525b]"
+              >
+                {isSavingEmbedding ? <span>Menyimpan…</span> : <span>Simpan Konfigurasi Embedding</span>}
+              </button>
+            </div>
           </form>
         </section>
       </main>
