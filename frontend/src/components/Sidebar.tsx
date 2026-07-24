@@ -41,7 +41,7 @@ export default function Sidebar({
   const hasConfigs = providerConfigs.length > 0;
 
   return (
-    <aside aria-label="Navigasi Utama" className="w-[260px] h-screen bg-[#09090b] flex flex-col justify-between p-4 border-r border-[#232326] shrink-0 select-none">
+    <aside aria-label="Navigasi Utama" className="w-[260px] h-screen bg-[#09090b] flex flex-col justify-between p-4 border-r border-[#232326] shrink-0 select-none relative z-20">
       <div className="flex flex-col flex-1 min-h-0 space-y-4">
         {/* Branding Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[#232326]">
@@ -75,17 +75,20 @@ export default function Sidebar({
               {sessions.map((sess) => (
                 <div
                   key={sess.id}
-                  className={`group flex items-center justify-between py-1.5 px-2 rounded-md text-xs transition-colors cursor-pointer ${
+                  className={`group flex items-center justify-between w-full py-1.5 px-2 rounded-md text-xs transition-colors ${
                     activeSessionId === sess.id
                       ? 'bg-[#18181b] border border-[#27272a] text-white font-medium'
                       : 'text-zinc-400 hover:text-white hover:bg-[#121215]'
                   }`}
-                  onClick={() => onSelectSession?.(sess.id)}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => onSelectSession?.(sess.id)}
+                    className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer focus:outline-none"
+                  >
                     <MessageSquare className="w-3.5 h-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
                     <span className="truncate text-[11px]">{sess.title}</span>
-                  </div>
+                  </button>
                   {onDeleteSession ? (
                     <button
                       type="button"
@@ -94,7 +97,7 @@ export default function Sidebar({
                         onDeleteSession(sess.id);
                       }}
                       title="Hapus percakapan"
-                      className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-opacity cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3" aria-hidden="true" />
                     </button>
