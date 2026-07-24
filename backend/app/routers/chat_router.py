@@ -113,7 +113,7 @@ async def list_session_messages(
             .select("*")
             .eq("session_id", session_id)
             .eq("user_id", user.user_id)
-            .order("created_at", asc=True)
+            .order("created_at", desc=False)
             .execute()
         )
         records = response.data if response.data else []
