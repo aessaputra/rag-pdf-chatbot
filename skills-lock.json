@@ -43,6 +43,12 @@
       "skillPath": "skills/create-agentsmd/SKILL.md",
       "computedHash": "bfbdbb76b17cca970d1d624e36ce72b6847860d740581c8865da796c1fef8552"
     },
+    "dependency-upgrade": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/framework-migration/skills/dependency-upgrade/SKILL.md",
+      "computedHash": "5ed787b9020041c988d0b4932643d816ad3a17bf2768d7dd7bcd453af136cde5"
+    },
     "design-an-interface": {
       "source": "mattpocock/skills",
       "sourceType": "github",
