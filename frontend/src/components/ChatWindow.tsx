@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUp, Bot, FileText, Lock, Settings, Sparkles } from 'lucide-react';
+import { ArrowUp, Bot, Check, ChevronDown, FileText, Lock, Settings, Sparkles } from 'lucide-react';
 import type { ChatMessage, Citation, ProviderConfig } from '@/types';
 
 interface ChatWindowProps {
@@ -27,7 +27,25 @@ export default function ChatWindow({
   onSelectCitation,
 }: ChatWindowProps) {
   const [inputQuery, setInputQuery] = useState('');
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const providerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (providerRef.current && !providerRef.current.contains(event.target as Node)) {
+        setIsProviderOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeConfig = providerConfigs.find((c) => c.provider === provider) || providerConfigs[0];
+  const activeLabel = activeConfig
+    ? `${activeConfig.display_name || activeConfig.provider.toUpperCase()}${activeConfig.is_default ? ' (Default)' : ''}`
+    : provider?.toUpperCase() || 'Pilih Provider';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -142,35 +160,59 @@ export default function ChatWindow({
           onSubmit={handleSubmit}
           className="max-w-3xl mx-auto flex items-center gap-2 p-1.5 pl-3 rounded-xl bg-surface-card border border-subtle focus-within:ring-2 focus-within:ring-zinc-400/50 focus-within:border-zinc-400 transition-all duration-150 shadow-2xs"
         >
-          {/* Integrated AI Model Selector Chip */}
+          {/* Integrated AI Model Selector Custom Dropdown Popover */}
           {providerConfigs && providerConfigs.length > 0 ? (
-            <div className="relative flex items-center shrink-0 border-r border-subtle pr-2.5 mr-0.5">
-              <label htmlFor="chat-provider-select" className="sr-only">
-                Pilih Provider AI
-              </label>
-              <div className="flex items-center gap-1.5 text-muted hover:text-primary transition-colors">
+            <div ref={providerRef} className="relative flex items-center shrink-0 border-r border-subtle pr-2.5 mr-0.5">
+              <button
+                type="button"
+                onClick={() => setIsProviderOpen((prev) => !prev)}
+                disabled={isStreaming}
+                aria-expanded={isProviderOpen}
+                aria-haspopup="listbox"
+                aria-label="Pilih Provider AI"
+                className="flex items-center gap-1.5 text-xs font-mono font-medium text-secondary hover:text-primary transition-colors cursor-pointer py-1 px-1 rounded-md focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-none"
+              >
                 <Sparkles className="w-3.5 h-3.5 shrink-0 text-muted" aria-hidden="true" />
-                <select
-                  id="chat-provider-select"
-                  value={provider}
-                  onChange={(e) => onProviderChange?.(e.target.value)}
-                  disabled={isStreaming}
-                  aria-label="Pilih Provider AI"
-                  className="bg-transparent text-xs font-mono font-medium text-secondary hover:text-primary cursor-pointer border-none outline-none focus:outline-none appearance-none pr-4 py-1"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%3C787774' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right center',
-                    backgroundSize: '12px',
-                  }}
+                <span className="truncate max-w-[140px]">{activeLabel}</span>
+                <ChevronDown className={`w-3 h-3 shrink-0 text-muted transition-transform duration-150 ${isProviderOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+              </button>
+
+              {/* Custom Floating Popover Dropdown Menu */}
+              {isProviderOpen && (
+                <div
+                  role="listbox"
+                  aria-label="Daftar Provider AI"
+                  className="absolute bottom-full mb-2 left-0 z-50 min-w-[200px] p-1 rounded-lg bg-surface-card border border-subtle shadow-md animate-in fade-in zoom-in-95 duration-100 space-y-0.5"
                 >
-                  {providerConfigs.map((config) => (
-                    <option key={config.id} value={config.provider} className="bg-surface-card text-primary font-sans">
-                      {config.display_name || config.provider.toUpperCase()} {config.is_default ? '(Default)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <div className="px-2.5 py-1 text-[10px] font-mono text-muted uppercase tracking-wider border-b border-subtle mb-1">
+                    PROVIDER AI
+                  </div>
+                  {providerConfigs.map((config) => {
+                    const isSelected = config.provider === provider;
+                    const label = `${config.display_name || config.provider.toUpperCase()}${config.is_default ? ' (Default)' : ''}`;
+                    return (
+                      <button
+                        key={config.id}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => {
+                          onProviderChange?.(config.provider);
+                          setIsProviderOpen(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? 'bg-surface-card-hover text-primary font-semibold'
+                            : 'text-secondary hover:text-primary hover:bg-surface-card-hover/50'
+                        }`}
+                      >
+                        <span className="truncate">{label}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-2" aria-hidden="true" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : null}
 
