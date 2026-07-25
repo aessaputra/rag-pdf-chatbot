@@ -170,7 +170,7 @@ export function ProviderSettingsSection({
                 <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted">
                   <span>Kunci: {config.api_key_masked}</span>
                   <span>
-                    Model: {config.model_name || (config.provider === 'gemini' ? 'gemini-2.5-flash' : config.provider === 'openai' ? 'gpt-4o-mini' : config.provider === 'openrouter' ? 'meta-llama/llama-3.3-70b-instruct' : 'default')}
+                    Model: {config.model_name || 'Model Default Provider'}
                   </span>
                   {config.base_url ? (
                     <span className="truncate max-w-xs">URL: {config.base_url}</span>

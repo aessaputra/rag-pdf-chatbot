@@ -203,7 +203,7 @@ export default function DocumentManagerModal({
               {uploading ? (
                 <>
                   <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                  <p className="text-xs font-medium text-secondary">Mengunggah & Memproses PDF...</p>
+                  <p className="text-xs font-medium text-secondary">Mengunggah & Memproses PDF…</p>
                 </>
               ) : (
                 <>

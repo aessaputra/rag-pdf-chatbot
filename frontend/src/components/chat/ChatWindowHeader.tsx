@@ -8,12 +8,8 @@ export function ChatWindowHeader() {
   const { primaryDoc, extraDocsCount, setIsDocModalOpen, provider, providerConfigs } = useDashboard();
 
   const activeConfig = providerConfigs.find((c) => c.is_default) || providerConfigs[0];
-  const activeModelName = activeConfig?.model_name || (
-    provider === 'gemini' ? 'gemini-2.5-flash' :
-    provider === 'openai' ? 'gpt-4o-mini' :
-    provider === 'openrouter' ? 'meta-llama/llama-3.3-70b-instruct' : 'default'
-  );
-  const activeProviderLabel = activeConfig?.display_name || activeConfig?.provider?.toUpperCase() || provider?.toUpperCase();
+  const activeModelName = activeConfig?.model_name || 'Model Default Provider';
+  const activeProviderLabel = activeConfig?.display_name || activeConfig?.provider?.toUpperCase() || provider?.toUpperCase() || 'PILIH PROVIDER';
 
   return (
     <header className="h-13 border-b border-subtle bg-canvas/80 backdrop-blur-xs flex items-center justify-between px-6 shrink-0 z-20 select-none">

@@ -77,7 +77,7 @@ export function DashboardProvider({ children }: { readonly children: React.React
 
   const [user, setUser] = useState<UserPayload | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [provider, setProvider] = useState('gemini');
+  const [provider, setProvider] = useState('');
   const [providerConfigs, setProviderConfigs] = useState<ProviderConfig[]>([]);
   const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);

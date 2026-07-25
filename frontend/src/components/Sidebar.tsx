@@ -95,7 +95,8 @@ export default function Sidebar() {
                       handleDeleteSession(sess.id);
                     }}
                     title="Hapus percakapan"
-                    className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-rose-500 transition-opacity cursor-pointer"
+                    aria-label="Hapus percakapan"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-rose-500 transition-opacity cursor-pointer focus-visible:ring-1 focus-visible:ring-zinc-400"
                   >
                     <Trash2 className="w-3 h-3" aria-hidden="true" />
                   </button>

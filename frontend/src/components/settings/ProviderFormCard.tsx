@@ -289,15 +289,7 @@ export function ProviderFormCard({
                 type="text"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder={
-                  formProvider === 'gemini'
-                    ? 'gemini-2.5-flash'
-                    : formProvider === 'openai'
-                    ? 'gpt-4o-mini'
-                    : formProvider === 'openrouter'
-                    ? 'meta-llama/llama-3.3-70b-instruct'
-                    : 'llama-3.3-70b-versatile'
-                }
+                placeholder="Slug Model (contoh: diproses otomatis via Verifikasi API)"
                 value={formModelName}
                 onChange={(e) => setFormModelName(e.target.value)}
                 className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"

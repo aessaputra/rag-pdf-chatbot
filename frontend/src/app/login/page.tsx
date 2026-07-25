@@ -162,7 +162,7 @@ export default function LoginPage() {
             {authState.status === 'loading' ? (
               <span className="flex items-center gap-2">
                 <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Memproses...
+                Memproses…
               </span>
             ) : (
               <span>{mode === 'signin' ? 'Masuk' : 'Daftar'}</span>

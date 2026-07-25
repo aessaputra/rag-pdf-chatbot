@@ -113,14 +113,6 @@ export function EmbeddingSettingsSection({
 
   const handleModelSelectionChange = (modelName: string) => {
     setEmbModelName(modelName);
-
-    if (modelName.includes('large')) {
-      setEmbDimensions(3072);
-    } else if (modelName.includes('small') || modelName.includes('ada')) {
-      setEmbDimensions(1536);
-    } else if (modelName.includes('gemini')) {
-      setEmbDimensions(768);
-    }
   };
 
   const handleSaveEmbedding = async (e: React.FormEvent) => {
