@@ -43,7 +43,7 @@ export default function LoginPage() {
           status: 'success',
           user: { user_id: data.user.id, email: data.user.email || email, role: 'authenticated' },
         });
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (err: any) {
       console.error('Auth error:', err);

@@ -47,15 +47,17 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
             Konfigurasi Kunci API
           </h2>
           <p className="text-xs text-muted mb-4 leading-normal">
-            Atur provider AI di Pengaturan untuk memulai.
+            Minta LLM Anda untuk memecahkan masalah atau mulai menjelajahi PDF.
           </p>
-          <Link
-            href="/dashboard/settings"
-            className="minimal-button-primary py-2 px-4 rounded-md text-xs font-medium flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
-          >
-            <GearIcon className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>Pengaturan</span>
-          </Link>
+          <div className="mt-4">
+            <Link
+              href="/settings"
+              className="text-[11px] font-mono minimal-button-secondary px-3 py-1.5 rounded-sm inline-flex items-center hover:bg-surface-hover transition-colors gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
+            >
+              <GearIcon className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Pengaturan</span>
+            </Link>
+          </div>
         </div>
       ) : messages.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-center py-16 max-w-md mx-auto">

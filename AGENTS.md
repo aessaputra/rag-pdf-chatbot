@@ -31,7 +31,7 @@ rag-pdf-chatbot/
 - **Bring Your Own Key (BYOK)**: Users manage their own API keys encrypted with **AES-256-GCM** di backend (`CryptoService`).
 - **Multi-Provider LLM & Custom Endpoints**: Supports Google Gemini, OpenAI (GPT-4o / GPT-4o-mini), OpenRouter, and OpenAI-Compatible custom endpoints (Groq, Together AI, vLLM, LM Studio) via dynamic factory in `backend/app/services/llm_factory.py`.
 - **Dynamic Embedding & Embedding Lock**: Supports flexible vector dimensions (768d, 1536d, 3072d). Upon uploading the first document, user's chosen embedding model is automatically locked (`locked = true`) to maintain vector store consistency.
-- **JWT Auth & Hard Block UX**: Backend validates Supabase JWTs. If a user lacks active provider/embedding keys, API endpoints return HTTP 403 Forbidden and frontend enforces a visual hard block guiding them to `/dashboard/settings`.
+- **JWT Auth & Hard Block UX**: Backend validates Supabase JWTs. If a user lacks active provider/embedding keys, API endpoints return HTTP 403 Forbidden and frontend enforces a visual hard block guiding them to `/settings`.
 - **SSE Streaming**: Chat responses stream token-by-token via Server-Sent Events through `backend/app/routers/chat_router.py` → `backend/app/services/rag_service.py`.
 - **Row Level Security (RLS)**: All Supabase tables enforce RLS with cached policy evaluation `((select auth.uid()) = user_id)`.
 

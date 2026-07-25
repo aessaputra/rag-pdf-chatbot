@@ -132,12 +132,12 @@ export function EmbeddingSettingsSection({
 
       {/* Lock Warning Banner */}
       {embeddingConfig?.locked ? (
-        <p className="text-xs text-muted flex items-center justify-between">
-          <span>Model terkunci karena PDF terunggah.</span>
-          <Link href="/dashboard" className="text-primary hover:underline font-mono">
-            Dashboard &rarr;
+        <div className="mt-8 pt-4 border-t border-subtle text-[11px] text-muted text-center">
+          <p className="mb-2">Model terkunci karena PDF terunggah.</p>
+          <Link href="/" className="text-primary hover:underline font-mono">
+            &larr; KEMBALI KE CHAT
           </Link>
-        </p>
+        </div>
       ) : null}
 
       {embError ? (

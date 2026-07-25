@@ -128,7 +128,7 @@ export default function Sidebar() {
 
           <div className="flex items-center gap-1 shrink-0">
             <Link
-              href="/dashboard/settings"
+              href="/settings"
               title="Pengaturan"
               aria-label="Pengaturan"
               className="p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400"
