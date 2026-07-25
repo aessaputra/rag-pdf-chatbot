@@ -43,7 +43,7 @@ export function ProviderFormCard({
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Dynamic model fetching state
+  // Dynamic live model fetching state
   const [fetchedModels, setFetchedModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [isCustomModel, setIsCustomModel] = useState(false);
@@ -51,8 +51,6 @@ export function ProviderFormCard({
   // Auto-fetch available models via debounced API key/config verification
   useEffect(() => {
     let isCancelled = false;
-
-    // Trigger if API key is provided OR when editing an existing config
     const shouldFetch = (formApiKey.trim().length > 3) || Boolean(editingConfigId);
 
     if (!shouldFetch) {
@@ -72,15 +70,14 @@ export function ProviderFormCard({
 
       if (!isCancelled) {
         setIsLoadingModels(false);
-        if (res.success && res.data?.models) {
+        if (res.success && res.data?.models && res.data.models.length > 0) {
           setFetchedModels(res.data.models);
-          // If current model_name isn't set, default to first available model
           if (!formModelName && res.data.default_model) {
             setFormModelName(res.data.default_model);
           }
         }
       }
-    }, 600);
+    }, 500);
 
     return () => {
       isCancelled = true;
@@ -103,12 +100,12 @@ export function ProviderFormCard({
         return;
       }
       if (!formModelName.trim()) {
-        setFormError('Nama Model wajib diisi untuk OpenAI-Compatible.');
+        setFormError('Nama model wajib diisi untuk OpenAI-Compatible.');
         return;
       }
     } else if (formProvider === 'openrouter') {
       if (!formModelName.trim()) {
-        setFormError('Nama Model wajib diisi untuk OpenRouter.');
+        setFormError('Nama model wajib diisi untuk OpenRouter.');
         return;
       }
     }
@@ -140,6 +137,11 @@ export function ProviderFormCard({
     }
   };
 
+  const options = [...fetchedModels];
+  if (formModelName && !options.includes(formModelName) && formModelName !== '__custom__') {
+    options.unshift(formModelName);
+  }
+
   return (
     <div className="p-5 rounded-md bg-surface-card border border-subtle space-y-4">
       <div className="flex items-center justify-between border-b border-subtle pb-3">
@@ -149,23 +151,26 @@ export function ProviderFormCard({
         <button
           type="button"
           onClick={onCancel}
-          className="text-xs text-muted hover:text-primary px-2 py-1 rounded focus-visible:ring-2 focus-visible:ring-zinc-400"
+          className="text-xs text-muted hover:text-primary transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 rounded px-1.5 py-0.5"
         >
           Batal
         </button>
       </div>
 
       {formError ? (
-        <div role="alert" className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal">
+        <div
+          role="alert"
+          className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal"
+        >
           {formError}
         </div>
       ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Provider Selector Grid */}
-        <div className="space-y-1.5">
-          <label className="block text-[11px] font-mono uppercase tracking-wider text-muted">
-            PILIH PROVIDER
+        {/* Provider Selector */}
+        <div>
+          <label className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+            PROVIDER
           </label>
           <div className="grid grid-cols-2 gap-2">
             {PROVIDER_OPTIONS.map((opt) => (
@@ -176,13 +181,14 @@ export function ProviderFormCard({
                 onClick={() => {
                   setFormProvider(opt.type);
                   setFetchedModels([]);
+                  setFormModelName('');
                   setIsCustomModel(false);
                 }}
-                className={`text-left px-3 py-2.5 rounded-md border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 ${
+                className={`text-left px-3 py-2 rounded-md border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 ${
                   formProvider === opt.type
                     ? 'bg-surface-card-hover border-primary text-primary'
-                    : 'bg-surface-card border-subtle text-muted hover:border-zinc-400'
-                } ${editingConfigId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    : 'bg-surface-card border-subtle text-secondary hover:text-primary hover:bg-surface-card-hover/50'
+                } ${editingConfigId ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {opt.label}
               </button>
@@ -192,32 +198,29 @@ export function ProviderFormCard({
 
         {/* Display Name */}
         <div>
-          <label htmlFor="formDisplayName" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
-            LABEL
+          <label htmlFor="formDisplayName" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+            LABEL (OPSIONAL)
           </label>
           <input
             id="formDisplayName"
             type="text"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="Nama opsi (opsional)"
+            placeholder="Label nama opsional"
             value={formDisplayName}
             onChange={(e) => setFormDisplayName(e.target.value)}
-            className="minimal-input w-full px-3 py-2 rounded-md text-xs"
+            className="minimal-input w-full px-3 py-2 rounded-md text-xs font-sans"
           />
         </div>
 
         {/* API Key */}
         <div>
-          <label htmlFor="formApiKey" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
-            KUNCI API
+          <label htmlFor="formApiKey" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+            KUNCI API {editingConfigId ? '(OPSIONAL)' : ''}
           </label>
           <input
             id="formApiKey"
             type="password"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder={editingConfigId ? '••••••••' : 'Kunci API rahasia'}
+            autoComplete="new-password"
+            placeholder={editingConfigId ? '••••••••' : 'Masukkan Kunci API'}
             value={formApiKey}
             onChange={(e) => setFormApiKey(e.target.value)}
             className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"
@@ -227,14 +230,12 @@ export function ProviderFormCard({
         {/* Conditional Base URL for OpenAI-Compatible */}
         {formProvider === 'openai_compatible' ? (
           <div>
-            <label htmlFor="formBaseUrl" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
+            <label htmlFor="formBaseUrl" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
               BASE URL
             </label>
             <input
               id="formBaseUrl"
               type="url"
-              autoComplete="off"
-              spellCheck={false}
               placeholder="https://api.groq.com/openai/v1"
               value={formBaseUrl}
               onChange={(e) => setFormBaseUrl(e.target.value)}
@@ -243,53 +244,54 @@ export function ProviderFormCard({
           </div>
         ) : null}
 
-        {/* Dynamic Model Selection */}
+        {/* Minimal High-Signal Model Selector */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="formModelSelect" className="block text-[11px] font-mono uppercase tracking-wider text-muted">
-              MODEL LLM
+            <label htmlFor="formModelSelect" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+              MODEL
             </label>
             {isLoadingModels ? (
               <span className="text-[10px] text-amber-500 font-mono animate-pulse">
-                Memuat daftar model…
+                Memuat…
               </span>
             ) : fetchedModels.length > 0 ? (
-              <span className="text-[10px] text-[var(--pastel-green-text)] font-mono">
-                {fetchedModels.length} model resmi tersedia
+              <span className="text-[10px] text-[var(--pastel-green-text)] font-mono font-medium">
+                ● LIVE ({fetchedModels.length})
               </span>
             ) : null}
           </div>
 
-          {fetchedModels.length > 0 && !isCustomModel ? (
-            (() => {
-              const options = [...fetchedModels];
-              if (formModelName && !options.includes(formModelName)) {
-                options.unshift(formModelName);
-              }
-              return (
-                <select
-                  id="formModelSelect"
-                  value={formModelName}
-                  onChange={(e) => {
-                    if (e.target.value === '__custom__') {
-                      setIsCustomModel(true);
-                      setFormModelName('');
-                    } else {
-                      setFormModelName(e.target.value);
-                    }
-                  }}
-                  className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card text-primary border border-subtle"
-                >
-                  <option value="" disabled>-- Pilih Model --</option>
-                  {options.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                  <option value="__custom__">-- Input Slug Custom --</option>
-                </select>
-              );
-            })()
+          {!isCustomModel ? (
+            <select
+              id="formModelSelect"
+              value={formModelName}
+              onChange={(e) => {
+                if (e.target.value === '__custom__') {
+                  setIsCustomModel(true);
+                  setFormModelName('');
+                } else {
+                  setFormModelName(e.target.value);
+                }
+              }}
+              className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card text-primary border border-subtle cursor-pointer"
+            >
+              {options.length === 0 ? (
+                <option value="" disabled>
+                  {isLoadingModels
+                    ? 'Memuat model…'
+                    : 'Pilih atau ketik kunci API…'}
+                </option>
+              ) : (
+                <option value="" disabled>Pilih Model…</option>
+              )}
+
+              {options.map((m) => (
+                <option key={m} value={m} className="bg-surface-card text-primary">
+                  {m}
+                </option>
+              ))}
+              <option value="__custom__" className="bg-surface-card text-primary">Input Custom…</option>
+            </select>
           ) : (
             <div className="space-y-1">
               <input
@@ -297,20 +299,18 @@ export function ProviderFormCard({
                 type="text"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="Slug Model (contoh: diproses otomatis via Verifikasi API)"
+                placeholder="Slug model (mis. gpt-4o)"
                 value={formModelName}
                 onChange={(e) => setFormModelName(e.target.value)}
                 className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"
               />
-              {fetchedModels.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setIsCustomModel(false)}
-                  className="text-[10px] text-muted hover:text-primary underline"
-                >
-                  Kembali ke daftar model resmi
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onClick={() => setIsCustomModel(false)}
+                className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
+              >
+                Pilih dari daftar
+              </button>
             </div>
           )}
         </div>
@@ -322,28 +322,35 @@ export function ProviderFormCard({
             type="checkbox"
             checked={formIsDefault}
             onChange={(e) => setFormIsDefault(e.target.checked)}
-            className="rounded border-subtle bg-surface-card text-primary focus:ring-1 focus:ring-zinc-400"
+            className="rounded border-subtle bg-surface-card text-primary focus:ring-1 focus:ring-zinc-400 cursor-pointer"
           />
-          <label htmlFor="formIsDefault" className="text-xs text-secondary cursor-pointer">
-            Jadikan provider default
+          <label htmlFor="formIsDefault" className="text-xs text-secondary cursor-pointer select-none">
+            Default
           </label>
         </div>
 
-        {/* Form Action Buttons */}
+        {/* Form Actions */}
         <div className="flex items-center justify-end gap-2 pt-3 border-t border-subtle">
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 rounded-md text-xs text-muted hover:text-primary"
+            className="px-3.5 py-1.5 rounded-md border border-subtle text-xs text-muted hover:text-primary hover:bg-surface-card-hover transition-colors cursor-pointer"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="minimal-button-primary px-4 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5"
+            className="minimal-button-primary px-4 py-1.5 rounded-md text-xs font-medium cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
           >
-            {isSubmitting ? <span>Menyimpan…</span> : <span>Simpan</span>}
+            {isSubmitting ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <span>Menyimpan…</span>
+              </>
+            ) : (
+              <span>Simpan</span>
+            )}
           </button>
         </div>
       </form>

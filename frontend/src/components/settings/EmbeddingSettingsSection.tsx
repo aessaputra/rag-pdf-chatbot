@@ -61,13 +61,11 @@ export function EmbeddingSettingsSection({
 
       if (!isCancelled) {
         setIsLoadingEmbModels(false);
-        if (res.success && res.data?.models) {
+        if (res.success && res.data?.models && res.data.models.length > 0) {
           setFetchedEmbModels(res.data.models);
-          // Set initial model_name if currently empty
           if (!embModelName && res.data.default_model) {
             setEmbModelName(res.data.default_model);
           }
-          // Set live probed dimension if available
           if (res.data.probed_dimension) {
             setEmbDimensions(res.data.probed_dimension);
           }
@@ -91,11 +89,11 @@ export function EmbeddingSettingsSection({
     onSetSuccessMsg(null);
 
     if (!embModelName.trim()) {
-      setEmbError('Nama Model Embedding wajib diisi.');
+      setEmbError('Nama model embedding wajib diisi.');
       return;
     }
     if (!embDimensions || embDimensions < 64) {
-      setEmbError('Dimensi Vektor minimal 64.');
+      setEmbError('Dimensi vektor minimal 64.');
       return;
     }
 
@@ -124,6 +122,11 @@ export function EmbeddingSettingsSection({
     }
   };
 
+  const options = [...fetchedEmbModels];
+  if (embModelName && !options.includes(embModelName) && embModelName !== '__custom__') {
+    options.unshift(embModelName);
+  }
+
   return (
     <section
       aria-label="Konfigurasi Model Embedding Dokumen"
@@ -132,11 +135,11 @@ export function EmbeddingSettingsSection({
       <div className="flex items-center justify-between border-b border-subtle pb-3">
         <h2 className="text-[11px] font-mono uppercase tracking-wider text-muted flex items-center gap-2">
           <Layers className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
-          <span>MODEL EMBEDDING (LIVE FETCH)</span>
+          <span>EMBEDDING</span>
         </h2>
         {embeddingConfig?.locked ? (
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--pastel-yellow-bg)] text-[var(--pastel-yellow-text)] border border-[var(--pastel-yellow-text)]/20 flex items-center gap-1">
-            <Lock className="w-3 h-3 text-[var(--pastel-yellow-text)]" aria-hidden="true" /> Terkunci
+            <Lock className="w-3 h-3 text-[var(--pastel-yellow-text)]" aria-hidden="true" /> TERKUNCI
           </span>
         ) : null}
       </div>
@@ -144,7 +147,7 @@ export function EmbeddingSettingsSection({
       {/* Lock Warning Banner */}
       {embeddingConfig?.locked ? (
         <div className="p-3 rounded-md bg-surface-card border border-subtle text-xs flex items-center justify-between text-muted">
-          <span>Model embedding terkunci karena dokumen PDF sudah terunggah.</span>
+          <span>Model embedding terkunci karena dokumen PDF terunggah.</span>
           <Link href="/dashboard" className="text-xs text-primary hover:underline shrink-0 ml-2 font-mono">
             Dashboard &rarr;
           </Link>
@@ -163,8 +166,8 @@ export function EmbeddingSettingsSection({
       <form onSubmit={handleSaveEmbedding} className="p-5 rounded-md bg-surface-card border border-subtle space-y-4">
         {/* Provider Selection */}
         <div>
-          <label htmlFor="embProvider" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
-            PROVIDER EMBEDDING
+          <label htmlFor="embProvider" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+            PROVIDER
           </label>
           <select
             id="embProvider"
@@ -173,9 +176,10 @@ export function EmbeddingSettingsSection({
             onChange={(e) => {
               setEmbProvider(e.target.value);
               setFetchedEmbModels([]);
+              setEmbModelName('');
               setIsCustomModelInput(false);
             }}
-            className="minimal-input w-full px-3 py-2 rounded-md text-xs disabled:opacity-50"
+            className="minimal-input w-full px-3 py-2 rounded-md text-xs cursor-pointer disabled:opacity-50"
           >
             <option value="gemini" className="bg-surface-card text-primary">Google Gemini</option>
             <option value="openai" className="bg-surface-card text-primary">OpenAI</option>
@@ -184,63 +188,62 @@ export function EmbeddingSettingsSection({
           </select>
         </div>
 
-        {/* Live Dynamic Model & Dimension Config */}
+        {/* Dynamic Live Model & Dimension Config */}
         <div className="p-3.5 rounded-md bg-surface-card-hover border border-subtle space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="embModelSelect" className="block text-[11px] font-mono uppercase tracking-wider text-muted">
-                  MODEL EMBEDDING (LIVE)
+                <label htmlFor="embModelSelect" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+                  MODEL
                 </label>
                 {isLoadingEmbModels ? (
                   <span className="text-[10px] text-amber-500 font-mono animate-pulse">
-                    Memuat model live…
+                    Memuat…
                   </span>
                 ) : fetchedEmbModels.length > 0 ? (
-                  <span className="text-[10px] text-[var(--pastel-green-text)] font-mono">
-                    {fetchedEmbModels.length} model resmi terdeteksi
+                  <span className="text-[10px] text-[var(--pastel-green-text)] font-mono font-medium">
+                    ● LIVE ({fetchedEmbModels.length})
                   </span>
                 ) : null}
               </div>
 
-              {fetchedEmbModels.length > 0 && !isCustomModelInput ? (
-                (() => {
-                  const options = [...fetchedEmbModels];
-                  if (embModelName && !options.includes(embModelName)) {
-                    options.unshift(embModelName);
-                  }
-                  return (
-                    <select
-                      id="embModelSelect"
-                      disabled={!!embeddingConfig?.locked}
-                      value={embModelName}
-                      onChange={(e) => {
-                        if (e.target.value === '__custom__') {
-                          setIsCustomModelInput(true);
-                          setEmbModelName('');
-                        } else {
-                          setEmbModelName(e.target.value);
-                        }
-                      }}
-                      className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"
-                    >
-                      <option value="" disabled>-- Pilih Model Embedding --</option>
-                      {options.map((m) => (
-                        <option key={m} value={m} className="bg-surface-card text-primary">
-                          {m}
-                        </option>
-                      ))}
-                      <option value="__custom__">-- Input Slug Custom --</option>
-                    </select>
-                  );
-                })()
+              {!isCustomModelInput ? (
+                <select
+                  id="embModelSelect"
+                  disabled={!!embeddingConfig?.locked}
+                  value={embModelName}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomModelInput(true);
+                      setEmbModelName('');
+                    } else {
+                      setEmbModelName(e.target.value);
+                    }
+                  }}
+                  className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50"
+                >
+                  {options.length === 0 ? (
+                    <option value="" disabled>
+                      {isLoadingEmbModels ? 'Memuat model…' : 'Pilih Model…'}
+                    </option>
+                  ) : (
+                    <option value="" disabled>Pilih Model…</option>
+                  )}
+
+                  {options.map((m) => (
+                    <option key={m} value={m} className="bg-surface-card text-primary">
+                      {m}
+                    </option>
+                  ))}
+                  <option value="__custom__" className="bg-surface-card text-primary">Input Custom…</option>
+                </select>
               ) : (
                 <div className="space-y-1">
                   <input
                     id="embModelNameInput"
                     type="text"
                     disabled={!!embeddingConfig?.locked}
-                    placeholder="Masukkan Slug Model Embedding"
+                    placeholder="Slug model embedding"
                     value={embModelName}
                     onChange={(e) => setEmbModelName(e.target.value)}
                     className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"
@@ -249,9 +252,9 @@ export function EmbeddingSettingsSection({
                     <button
                       type="button"
                       onClick={() => setIsCustomModelInput(false)}
-                      className="text-[10px] text-muted hover:text-primary underline"
+                      className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
                     >
-                      Kembali ke daftar model live
+                      Pilih dari daftar
                     </button>
                   ) : null}
                 </div>
@@ -259,8 +262,8 @@ export function EmbeddingSettingsSection({
             </div>
 
             <div>
-              <label htmlFor="embDimensions" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
-                DIMENSI VEKTOR (PROBED LIVE)
+              <label htmlFor="embDimensions" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+                DIMENSI
               </label>
               <input
                 id="embDimensions"
@@ -276,7 +279,7 @@ export function EmbeddingSettingsSection({
 
           {embProvider === 'openai_compatible' ? (
             <div>
-              <label htmlFor="embBaseUrl" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
+              <label htmlFor="embBaseUrl" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
                 BASE URL
               </label>
               <input
@@ -305,7 +308,7 @@ export function EmbeddingSettingsSection({
                 <span>Menyimpan…</span>
               </>
             ) : (
-              <span>Simpan Model Embedding</span>
+              <span>Simpan</span>
             )}
           </button>
         </div>
