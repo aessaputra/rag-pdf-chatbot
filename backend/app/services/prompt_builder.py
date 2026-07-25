@@ -2,40 +2,142 @@
 Prompt Builder Module
 
 Constructs structured RAG prompts by formatting retrieved context chunks
-and user queries into a single prompt string for LLM consumption.
+and user queries into optimized prompt messages for LLM consumption.
+
+Applies the following prompt engineering patterns:
+- Role-Based System Prompts: Structured identity, constraints, and output format.
+- Chain-of-Thought (CoT): Step-by-step reasoning guidance.
+- Self-Verification: Post-answer verification against context.
+- Confidence-Based Response: Tiered response strategy based on context coverage.
+- Progressive Context Formatting: Clear visual separators per source chunk.
 """
 
 from typing import Any, Dict, List
 
+from langchain_core.messages import BaseMessage
+from langchain_core.prompts import ChatPromptTemplate
+
 
 class PromptBuilder:
-    """Formats query and context chunks into a structured RAG prompt for the LLM."""
+    """Formats query and context chunks into an optimized RAG prompt for the LLM.
 
-    SYSTEM_INSTRUCTION = (
-        "Anda adalah asisten AI cerdas berbasis RAG PDF Chatbot. "
-        "Jawab pertanyaan berikut secara akurat dan ringkas berdasarkan informasi konteks dokumen PDF yang diberikan. "
-        "Jika jawaban tidak ada dalam konteks, sampaikan bahwa informasi tidak ditemukan dalam dokumen."
+    Uses role-based system prompts with chain-of-thought reasoning guidance
+    and self-verification instructions to improve answer accuracy and citation quality.
+    """
+
+    # ── Role & Identity ─────────────────────────────────────────────
+    _ROLE = (
+        "Anda adalah asisten AI ahli dalam analisis dokumen. "
+        "Tugas utama Anda adalah menjawab pertanyaan pengguna secara akurat "
+        "berdasarkan konteks dokumen yang diberikan (Retrieval-Augmented Generation)."
     )
 
-    NO_CONTEXT_MESSAGE = "Maaf, tidak ditemukan dokumen PDF yang relevan untuk menjawab pertanyaan ini."
+    # ── Hard Constraints ────────────────────────────────────────────
+    _CONSTRAINTS = (
+        "ATURAN MUTLAK:\n"
+        "- Anda HANYA boleh menjawab berdasarkan informasi yang ada di bagian \"KONTEKS DOKUMEN\".\n"
+        "- DILARANG menggunakan pengetahuan di luar konteks yang diberikan.\n"
+        "- DILARANG mengarang, menebak, atau berhalusinasi fakta.\n"
+        "- Jika informasi tidak ditemukan dalam konteks, katakan dengan jelas bahwa informasi tersebut tidak tersedia."
+    )
+
+    # ── Chain-of-Thought Reasoning ──────────────────────────────────
+    _REASONING = (
+        "PROSES MENJAWAB (ikuti langkah-langkah ini secara internal):\n"
+        "1. IDENTIFIKASI — Temukan bagian konteks yang relevan dengan pertanyaan.\n"
+        "2. ANALISIS — Pahami dan hubungkan informasi dari bagian-bagian tersebut.\n"
+        "3. SINTESIS — Susun jawaban yang koheren dari hasil analisis.\n"
+        "4. KUTIP — Sertakan referensi sumber menggunakan format [nomor_sumber].\n"
+        "5. VERIFIKASI — Periksa kembali bahwa setiap klaim dalam jawaban Anda benar-benar ada di konteks."
+    )
+
+    # ── Citation Format ─────────────────────────────────────────────
+    _CITATIONS = (
+        "FORMAT KUTIPAN:\n"
+        "- Gunakan notasi [1], [2], dst. untuk merujuk sumber konteks.\n"
+        "- Setiap fakta spesifik atau argumen WAJIB disertai kutipan sumber.\n"
+        "- Contoh: \"RAG meningkatkan akurasi jawaban LLM [1] dengan memanfaatkan retrieval [2].\""
+    )
+
+    # ── Confidence-Based Response Strategy ──────────────────────────
+    _CONFIDENCE = (
+        "STRATEGI RESPONS BERDASARKAN CAKUPAN KONTEKS:\n"
+        "- Jika konteks memuat jawaban LENGKAP → Jawab langsung dengan kutipan sumber.\n"
+        "- Jika konteks hanya memuat SEBAGIAN → Jawab bagian yang tersedia, sebutkan aspek yang tidak tercakup.\n"
+        "- Jika konteks TIDAK RELEVAN → Nyatakan: \"Informasi tidak ditemukan dalam dokumen yang relevan.\""
+    )
+
+    # ── Output Format ───────────────────────────────────────────────
+    _OUTPUT_FORMAT = (
+        "FORMAT OUTPUT:\n"
+        "- Berikan jawaban yang ringkas, jelas, dan terstruktur.\n"
+        "- Gunakan poin-poin atau markdown jika membantu kejelasan.\n"
+        "- Hindari pengulangan; langsung ke inti jawaban."
+    )
+
+    # ── Composed System Instruction ─────────────────────────────────
+    SYSTEM_INSTRUCTION = "\n\n".join([
+        _ROLE,
+        _CONSTRAINTS,
+        _REASONING,
+        _CITATIONS,
+        _CONFIDENCE,
+        _OUTPUT_FORMAT,
+    ])
+
+    NO_CONTEXT_MESSAGE = "Maaf, tidak ditemukan dokumen yang relevan untuk menjawab pertanyaan ini."
 
     @staticmethod
-    def format_context_prompt(query: str, chunks: List[Dict[str, Any]]) -> str:
-        """Formats query and context chunks into a structured RAG prompt."""
-        context_blocks = []
+    def _build_context_string(chunks: List[Dict[str, Any]]) -> str:
+        """Formats raw chunks into a visually separated context string.
+
+        Each chunk is labeled with a source number, filename, and page number
+        using clear visual separators for improved LLM comprehension.
+
+        Args:
+            chunks: List of chunk dicts with 'content' and 'metadata' keys.
+
+        Returns:
+            Formatted context string with labeled source blocks.
+        """
+        context_blocks: list[str] = []
         for idx, chunk in enumerate(chunks, start=1):
             metadata = chunk.get("metadata", {})
             page_num = metadata.get("page_number", 1)
             filename = metadata.get("filename", "Doc")
+            content = chunk.get("content", "")
             context_blocks.append(
-                f"[{idx}] (File: {filename}, Page {page_num}):\n{chunk.get('content', '')}"
+                f"--- Sumber [{idx}] | File: {filename} | Halaman: {page_num} ---\n"
+                f"{content}"
             )
+        return "\n\n".join(context_blocks)
 
-        context_str = "\n\n".join(context_blocks)
+    @staticmethod
+    def format_context_prompt(
+        query: str,
+        chunks: List[Dict[str, Any]],
+    ) -> List[BaseMessage]:
+        """Formats query and context chunks into structured RAG prompt messages.
 
-        return (
-            f"{PromptBuilder.SYSTEM_INSTRUCTION}\n\n"
-            f"=== KONTEKS DOKUMEN ===\n{context_str}\n\n"
-            f"=== PERTANYAAN ===\n{query}\n\n"
-            "=== JAWABAN ==="
-        )
+        Applies role-based system prompts with chain-of-thought reasoning
+        and self-verification to maximize LLM answer quality.
+
+        Args:
+            query: The user's question.
+            chunks: Retrieved document chunks with content and metadata.
+
+        Returns:
+            List of LangChain BaseMessage objects ready for LLM consumption.
+        """
+        context_str = PromptBuilder._build_context_string(chunks)
+
+        prompt_template = ChatPromptTemplate.from_messages([
+            ("system", PromptBuilder.SYSTEM_INSTRUCTION),
+            (
+                "user",
+                "=== KONTEKS DOKUMEN ===\n{context}\n\n"
+                "=== PERTANYAAN ===\n{query}",
+            ),
+        ])
+
+        return prompt_template.format_messages(context=context_str, query=query)
