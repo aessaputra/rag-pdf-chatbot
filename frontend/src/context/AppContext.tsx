@@ -52,38 +52,8 @@ export function AppProvider({
   );
 
   useEffect(() => {
-    let mounted = true;
-
-    async function initializeApp() {
-      if (!initialSession) return;
-
-      const [provRes, embRes] = await Promise.all([
-        listProviderConfigs(initialSession.access_token),
-        getEmbeddingConfig(initialSession.access_token),
-      ]);
-
-      if (!mounted) return;
-
-      if (provRes.success && provRes.data) {
-        setProviderConfigs(provRes.data);
-        const defaultConfig = provRes.data.find((c) => c.is_default);
-        if (defaultConfig) {
-          setProvider(defaultConfig.provider);
-        } else if (provRes.data.length > 0) {
-          setProvider(provRes.data[0].provider);
-        }
-      }
-      if (embRes.success && embRes.data) setEmbeddingConfig(embRes.data);
-      
-      setIsInitializing(false);
-    }
-
-    initializeApp();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
-        if (!mounted) return;
-
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
           setToken(null);
@@ -99,10 +69,54 @@ export function AppProvider({
     );
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, [supabase, router]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function initializeApp() {
+      if (!token) {
+        setIsInitializing(false);
+        return;
+      }
+      
+      setIsInitializing(true);
+      const [provRes, embRes] = await Promise.all([
+        listProviderConfigs(token),
+        getEmbeddingConfig(token),
+      ]);
+
+      if (!mounted) return;
+
+      if (provRes.success && provRes.data) {
+        setProviderConfigs(provRes.data);
+        const defaultConfig = provRes.data.find((c) => c.is_default);
+        if (defaultConfig) {
+          setProvider(defaultConfig.provider);
+        } else if (provRes.data.length > 0) {
+          setProvider(provRes.data[0].provider);
+        }
+      } else {
+        setProviderConfigs([]);
+      }
+      
+      if (embRes.success && embRes.data) {
+        setEmbeddingConfig(embRes.data);
+      } else {
+        setEmbeddingConfig(null);
+      }
+      
+      setIsInitializing(false);
+    }
+
+    initializeApp();
+
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
 
   const handleLogout = React.useCallback(async () => {
     await supabase.auth.signOut();
