@@ -153,7 +153,7 @@ export function ProviderFormCard({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Provider Selector */}
         <div>
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
             PROVIDER
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -182,10 +182,10 @@ export function ProviderFormCard({
         {/* Display Name */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="formDisplayName" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+            <label htmlFor="formDisplayName" className="block text-xs font-mono uppercase tracking-wider text-muted">
               LABEL
             </label>
-            <span className="text-[9px] font-mono text-muted/50">
+            <span className="text-xs font-mono text-muted/50">
               opsional
             </span>
           </div>
@@ -202,10 +202,10 @@ export function ProviderFormCard({
         {/* API Key */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="formApiKey" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+            <label htmlFor="formApiKey" className="block text-xs font-mono uppercase tracking-wider text-muted">
               KUNCI API
             </label>
-            <span className="text-[9px] font-mono text-muted/50">
+            <span className="text-xs font-mono text-muted/50">
               {editingConfigId ? 'tersimpan' : 'wajib'}
             </span>
           </div>
@@ -223,7 +223,7 @@ export function ProviderFormCard({
         {/* Conditional Base URL for OpenAI-Compatible */}
         {formProvider === 'openai_compatible' ? (
           <div>
-            <label htmlFor="formBaseUrl" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+            <label htmlFor="formBaseUrl" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
               BASE URL
             </label>
             <input
@@ -240,15 +240,15 @@ export function ProviderFormCard({
         {/* 100% Dynamic Live Model Selector */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="formModelSelect" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+            <label htmlFor="formModelSelect" className="block text-xs font-mono uppercase tracking-wider text-muted">
               MODEL
             </label>
             {isLoadingModels ? (
-              <span className="text-[10px] font-mono text-muted animate-pulse">
+              <span className="text-xs font-mono text-muted animate-pulse">
                 Loading…
               </span>
             ) : fetchError ? (
-              <span className="text-[10px] font-mono text-(--pastel-red-text)" title={fetchError}>
+              <span className="text-xs font-mono text-(--pastel-red-text)" title={fetchError}>
                 Error
               </span>
             ) : null}
@@ -306,7 +306,7 @@ export function ProviderFormCard({
               <button
                 type="button"
                 onClick={() => setIsCustomModel(false)}
-                className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
+                className="text-xs text-muted hover:text-primary underline cursor-pointer font-mono"
               >
                 pilih dari daftar
               </button>

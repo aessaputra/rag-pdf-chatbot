@@ -94,9 +94,9 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               <div
                 role="listbox"
                 aria-label="Daftar Provider AI"
-                className="absolute bottom-full mb-2 left-0 z-50 min-w-[200px] p-1 rounded-lg bg-surface-card border border-subtle shadow-lg animate-in fade-in zoom-in-95 duration-100 space-y-0.5"
+                className="absolute bottom-full mb-2 left-0 z-50 min-w-50 p-1 rounded-lg bg-surface-card border border-subtle shadow-lg animate-in fade-in zoom-in-95 duration-100 space-y-0.5"
               >
-                <div className="px-2.5 py-1 text-[10px] font-mono text-muted uppercase tracking-wider border-b border-subtle mb-1">
+                <div className="px-2.5 py-1 text-xs font-mono text-muted uppercase tracking-wider border-b border-subtle mb-1">
                   PROVIDER AI
                 </div>
                 {providerConfigs.map((config) => {
@@ -145,7 +145,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               ? 'Konfigurasi provider AI di Pengaturan terlebih dahulu…'
               : 'Tanyakan sesuatu…'
           }
-          className="flex-1 bg-transparent border-none text-xs text-primary placeholder:text-muted focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed min-w-0 py-1.5 px-1 font-sans resize-none max-h-36 overflow-y-auto leading-relaxed"
+          className="flex-1 bg-transparent border-none text-sm text-primary placeholder:text-muted focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed min-w-0 py-1.5 px-1 font-sans resize-none max-h-36 overflow-y-auto leading-relaxed"
         />
 
         {/* Integrated Send Button */}

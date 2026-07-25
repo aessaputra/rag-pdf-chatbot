@@ -29,7 +29,7 @@ export function AuthForm({
       <div>
         <label
           htmlFor="auth-email"
-          className="block font-mono text-[11px] uppercase tracking-wider text-muted mb-1.5"
+          className="block font-mono text-xs uppercase tracking-wider text-muted mb-1.5"
         >
           EMAIL
         </label>
@@ -49,7 +49,7 @@ export function AuthForm({
       <div>
         <label
           htmlFor="auth-password"
-          className="block font-mono text-[11px] uppercase tracking-wider text-muted mb-1.5"
+          className="block font-mono text-xs uppercase tracking-wider text-muted mb-1.5"
         >
           KATA SANDI
         </label>

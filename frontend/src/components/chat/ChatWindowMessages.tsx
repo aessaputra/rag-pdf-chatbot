@@ -43,13 +43,13 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
           <h2 className="text-base font-serif font-semibold text-primary mb-1.5">
             Konfigurasi Kunci API
           </h2>
-          <p className="text-xs text-muted mb-4 leading-normal">
+          <p className="text-sm text-muted mb-4 leading-normal">
             Minta LLM Anda untuk memecahkan masalah.
           </p>
           <div className="mt-4">
             <Link
               href="/settings"
-              className="text-[11px] font-mono minimal-button-secondary px-3 py-1.5 rounded-sm inline-flex items-center hover:bg-surface-hover transition-colors gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="text-xs font-mono minimal-button-secondary px-3 py-1.5 rounded-sm inline-flex items-center hover:bg-surface-hover transition-colors gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
             >
               <GearIcon className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Pengaturan</span>
@@ -66,7 +66,7 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
               <h2 className="text-xl font-serif font-semibold text-primary tracking-tight mb-2">
                 Belum ada dokumen aktif.
               </h2>
-              <p className="text-xs text-muted leading-relaxed mb-5 max-w-xs">
+              <p className="text-sm text-muted leading-relaxed mb-5 max-w-xs">
                 Aktifkan minimal 1 dokumen PDF agar asisten AI dapat menjawab pertanyaan berdasarkan konteks dokumen.
               </p>
               <button
@@ -86,7 +86,7 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
               <h2 className="text-2xl font-serif font-semibold text-primary tracking-tight mb-2">
                 Tanyakan tentang dokumen Anda.
               </h2>
-              <p className="text-xs text-muted mb-6">
+              <p className="text-sm text-muted mb-6">
                 {activeDocumentCount} dokumen aktif siap digunakan sebagai sumber konteks RAG.
               </p>
 
@@ -97,7 +97,7 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
                     key={idx}
                     type="button"
                     onClick={() => onSetInputQuery(promptText)}
-                    className="w-full text-left p-3 rounded-lg bg-surface-card hover:bg-surface-card-hover border border-subtle text-xs text-secondary hover:text-primary transition-all cursor-pointer flex items-center justify-between group"
+                    className="w-full text-left p-3 rounded-lg bg-surface-card hover:bg-surface-card-hover border border-subtle text-sm text-secondary hover:text-primary transition-all cursor-pointer flex items-center justify-between group"
                   >
                     <span>{promptText}</span>
                     <ArrowUpIcon className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted" />

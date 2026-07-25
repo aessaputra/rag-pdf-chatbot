@@ -21,7 +21,7 @@ export default function Sidebar() {
   return (
     <aside
       aria-label="Navigasi Utama"
-      className="w-[260px] h-screen bg-canvas flex flex-col justify-between p-4 border-r border-subtle shrink-0 select-none relative z-20 transition-colors duration-150"
+      className="w-65 h-screen bg-canvas flex flex-col justify-between p-4 border-r border-subtle shrink-0 select-none relative z-20 transition-colors duration-150"
     >
       <div className="flex flex-col flex-1 min-h-0 space-y-4">
         {/* Branding Header */}
@@ -56,7 +56,7 @@ export default function Sidebar() {
               <FileTextIcon className="w-4 h-4" aria-hidden="true" />
               <span>Dokumen</span>
             </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
+            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
               {activeDocumentCount} Aktif
             </span>
           </button>
@@ -65,7 +65,7 @@ export default function Sidebar() {
         {/* Chat Sessions History Section */}
         {sessions.length > 0 ? (
           <div className="flex-1 space-y-1.5 flex flex-col min-h-0 pt-2 border-t border-subtle">
-            <div className="text-[10px] font-mono text-muted uppercase tracking-wider px-1">
+            <div className="text-xs font-mono text-muted uppercase tracking-wider px-1">
               PERCAKAPAN ({sessions.length})
             </div>
             <div className="overflow-y-auto space-y-1 pr-1 flex-1">
@@ -84,7 +84,7 @@ export default function Sidebar() {
                     className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer focus:outline-hidden"
                   >
                     <ChatBubbleIcon className="w-3.5 h-3.5 shrink-0 text-muted" aria-hidden="true" />
-                    <span className="truncate text-[11px]">{sess.title}</span>
+                    <span className="truncate text-xs">{sess.title}</span>
                   </button>
                   <button
                     type="button"
@@ -109,14 +109,14 @@ export default function Sidebar() {
       <div className="pt-3 border-t border-subtle space-y-2">
         {/* Row 1: Theme Switcher */}
         <div className="flex items-center justify-between px-1">
-          <span className="text-[10px] font-mono text-muted uppercase tracking-wider">TEMA</span>
+          <span className="text-xs font-mono text-muted uppercase tracking-wider">TEMA</span>
           <ThemeToggle compact />
         </div>
 
         {/* Row 2: User Profile Card with Settings & Logout */}
         <div className="flex items-center justify-between p-2 rounded-md bg-surface-card border border-subtle gap-2">
           <div className="flex items-center min-w-0 gap-2 flex-1">
-            <div className="w-6.5 h-6.5 rounded-md bg-surface-card-hover border border-subtle flex items-center justify-center text-[10px] font-mono font-medium text-primary shrink-0">
+            <div className="w-6.5 h-6.5 rounded-md bg-surface-card-hover border border-subtle flex items-center justify-center text-xs font-mono font-medium text-primary shrink-0">
               {(user?.email?.[0] || 'U').toUpperCase()}
             </div>
             <span className="text-xs font-mono text-secondary truncate min-w-0" title={user?.email || 'Pengguna'}>

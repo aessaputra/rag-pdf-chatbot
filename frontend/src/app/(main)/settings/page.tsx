@@ -82,7 +82,7 @@ export default function SettingsPage() {
             </h1>
           </div>
           {user ? (
-            <div className="text-[10px] font-mono text-muted/80 tracking-wide">
+            <div className="text-xs font-mono text-muted/80 tracking-wide">
               {user.email}
             </div>
           ) : null}

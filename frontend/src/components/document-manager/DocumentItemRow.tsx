@@ -40,25 +40,25 @@ export function DocumentItemRow({ doc, isBusy, onToggleActive, onPreview, onDele
               {doc.filename}
             </span>
             {isProcessing ? (
-              <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
+              <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xs tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
                 <UpdateIcon className="w-2.5 h-2.5 animate-spin" />
                 PROSES
               </span>
             ) : isFailed ? (
-              <span className="bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[10px] tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
+              <span className="bg-rose-500/10 text-rose-500 border border-rose-500/20 text-xs tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
                 GAGAL
               </span>
             ) : isActive ? (
-              <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
+              <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
                 AKTIF
               </span>
             ) : (
-              <span className="bg-surface-card-hover text-muted border border-subtle text-[10px] tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
+              <span className="bg-surface-card-hover text-muted border border-subtle text-xs tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
                 OFF
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted">
+          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
             <span>{formatFileSize(doc.file_size)}</span>
             {doc.total_pages && <span>• {doc.total_pages} hal</span>}
           </div>
@@ -95,13 +95,13 @@ export function DocumentItemRow({ doc, isBusy, onToggleActive, onPreview, onDele
             <button
               onClick={handleDelete}
               disabled={isBusy}
-              className="px-2 py-0.5 text-[10px] font-medium text-rose-500 bg-rose-500/10 border border-rose-500/20 rounded hover:bg-rose-500/20 transition-colors cursor-pointer"
+              className="px-2 py-0.5 text-xs font-medium text-rose-500 bg-rose-500/10 border border-rose-500/20 rounded hover:bg-rose-500/20 transition-colors cursor-pointer"
             >
               Hapus
             </button>
             <button
               onClick={() => setDeletingId(null)}
-              className="px-1.5 py-0.5 text-[10px] text-muted hover:text-primary cursor-pointer"
+              className="px-1.5 py-0.5 text-xs text-muted hover:text-primary cursor-pointer"
             >
               Batal
             </button>

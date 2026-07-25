@@ -21,7 +21,7 @@ export function DocumentList({
 }: DocumentListProps) {
   return (
     <div className="space-y-2">
-      <h3 className="text-[10px] font-mono font-medium uppercase tracking-wider text-muted px-1">
+      <h3 className="text-xs font-mono font-medium uppercase tracking-wider text-muted px-1">
         DAFTAR DOKUMEN ({documents.length})
       </h3>
 
@@ -30,7 +30,7 @@ export function DocumentList({
           Belum ada dokumen yang diunggah.
         </div>
       ) : (
-        <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
           {documents.map((doc) => (
             <DocumentItemRow
               key={doc.id}

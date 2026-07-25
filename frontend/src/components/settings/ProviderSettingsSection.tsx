@@ -121,7 +121,7 @@ export function ProviderSettingsSection({
       {isFormOpen ? (
         <>
           <div 
-            className="fixed inset-0 z-40 h-screen w-screen bg-black/5 backdrop-blur-[2px] transition-opacity cursor-pointer"
+            className="fixed inset-0 z-40 h-screen w-screen bg-black/5 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={handleCloseForm}
             aria-hidden="true"
           />
@@ -170,17 +170,17 @@ export function ProviderSettingsSection({
                     {config.display_name || config.provider.toUpperCase()}
                   </span>
                   {config.display_name && config.display_name.toLowerCase() !== config.provider.toLowerCase() && (
-                    <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
+                    <span className="text-xs uppercase font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
                       {config.provider}
                     </span>
                   )}
                   {config.is_default ? (
-                    <span className="text-[10px] font-serif italic text-muted">
+                    <span className="text-xs font-serif italic text-muted">
                       (Default)
                     </span>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-muted">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted">
                   <span>{config.api_key_masked}</span>
                   <span className="text-zinc-500/40">•</span>
                   <span>{config.model_name || 'default'}</span>
@@ -198,7 +198,7 @@ export function ProviderSettingsSection({
                   <button
                     type="button"
                     onClick={() => handleSetDefault(config)}
-                    className="px-2.5 py-1 rounded-md border border-subtle text-[11px] text-muted hover:text-primary hover:bg-surface-card-hover transition-colors"
+                    className="px-2.5 py-1 rounded-md border border-subtle text-xs text-muted hover:text-primary hover:bg-surface-card-hover transition-colors"
                   >
                     Set Default
                   </button>

@@ -132,7 +132,7 @@ export function EmbeddingSettingsSection({
 
       {/* Lock Warning Banner */}
       {embeddingConfig?.locked ? (
-        <div className="mt-8 pt-4 border-t border-subtle text-[11px] text-muted text-center">
+        <div className="mt-8 pt-4 border-t border-subtle text-xs text-muted text-center">
           <p className="mb-2">Model terkunci karena PDF terunggah.</p>
           <Link href="/" className="text-primary hover:underline font-mono">
             &larr; KEMBALI KE CHAT
@@ -153,11 +153,11 @@ export function EmbeddingSettingsSection({
         {/* Provider Selection */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="embProvider" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+            <label htmlFor="embProvider" className="block text-xs font-mono uppercase tracking-wider text-muted">
               PROVIDER
             </label>
             {!targetConfigId && !embeddingConfig?.locked ? (
-              <span className="text-[9px] font-mono text-(--pastel-red-text)">
+              <span className="text-xs font-mono text-(--pastel-red-text)">
                 Belum dikonfigurasi di Chat
               </span>
             ) : null}
@@ -187,19 +187,19 @@ export function EmbeddingSettingsSection({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="embModelSelect" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+                <label htmlFor="embModelSelect" className="block text-xs font-mono uppercase tracking-wider text-muted">
                   MODEL
                 </label>
                 {isLoadingEmbModels ? (
-                  <span className="text-[10px] font-mono text-muted animate-pulse">
+                  <span className="text-xs font-mono text-muted animate-pulse">
                     Loading…
                   </span>
                 ) : !targetConfigId ? (
-                  <span className="text-[10px] font-mono text-zinc-500/50">
+                  <span className="text-xs font-mono text-zinc-500/50">
                     Menunggu API Key...
                   </span>
                 ) : fetchError ? (
-                  <span className="text-[10px] font-mono text-(--pastel-red-text)" title={fetchError}>
+                  <span className="text-xs font-mono text-(--pastel-red-text)" title={fetchError}>
                     Error
                   </span>
                 ) : null}
@@ -243,7 +243,7 @@ export function EmbeddingSettingsSection({
                   <button
                     type="button"
                     onClick={() => setIsCustomModelInput(false)}
-                    className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
+                    className="text-xs text-muted hover:text-primary underline cursor-pointer font-mono"
                   >
                     pilih dari daftar
                   </button>
@@ -252,7 +252,7 @@ export function EmbeddingSettingsSection({
             </div>
 
             <div>
-              <label htmlFor="embDimensions" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+              <label htmlFor="embDimensions" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
                 DIMENSI
               </label>
               <input
@@ -269,7 +269,7 @@ export function EmbeddingSettingsSection({
 
           {embProvider === 'openai_compatible' ? (
             <div>
-              <label htmlFor="embBaseUrl" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
+              <label htmlFor="embBaseUrl" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
                 BASE URL
               </label>
               <input
