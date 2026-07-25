@@ -201,12 +201,12 @@ class VerifyModelsRequest(BaseModel):
 
 
 class VerifyModelsResponse(BaseModel):
-    """Response DTO for verified provider model listing."""
+    """Response DTO for verified provider model listing and live vector probing."""
 
     success: bool
     models: List[str]
     default_model: str
-    default_dimensions: Optional[Dict[str, int]] = None
+    probed_dimension: Optional[int] = None
     error: Optional[str] = None
 
 

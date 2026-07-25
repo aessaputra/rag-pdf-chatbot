@@ -440,7 +440,7 @@ export interface VerifyModelsResponseData {
   success: boolean;
   models: string[];
   default_model: string;
-  default_dimensions?: Record<string, number> | null;
+  probed_dimension?: number | null;
   error?: string | null;
 }
 

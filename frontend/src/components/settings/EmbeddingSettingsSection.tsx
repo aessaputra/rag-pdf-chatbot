@@ -34,7 +34,6 @@ export function EmbeddingSettingsSection({
 
   // Dynamic live embedding model fetching state
   const [fetchedEmbModels, setFetchedEmbModels] = useState<string[]>([]);
-  const [modelDimensionsMap, setModelDimensionsMap] = useState<Record<string, number>>({});
   const [isLoadingEmbModels, setIsLoadingEmbModels] = useState(false);
 
   useEffect(() => {
@@ -80,8 +79,8 @@ export function EmbeddingSettingsSection({
         setIsLoadingEmbModels(false);
         if (res.success && res.data?.models) {
           setFetchedEmbModels(res.data.models);
-          if (res.data.default_dimensions) {
-            setModelDimensionsMap(res.data.default_dimensions);
+          if (res.data.probed_dimension) {
+            setEmbDimensions(res.data.probed_dimension);
           }
         }
       }
@@ -115,11 +114,7 @@ export function EmbeddingSettingsSection({
   const handleModelSelectionChange = (modelName: string) => {
     setEmbModelName(modelName);
 
-    // Auto-set native recommended vector dimension if known
-    const recDimension = modelDimensionsMap[modelName];
-    if (recDimension) {
-      setEmbDimensions(recDimension);
-    } else if (modelName.includes('large')) {
+    if (modelName.includes('large')) {
       setEmbDimensions(3072);
     } else if (modelName.includes('small') || modelName.includes('ada')) {
       setEmbDimensions(1536);

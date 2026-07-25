@@ -221,13 +221,13 @@ def test_verify_models_success(mock_fetch):
 
 @patch("app.routers.settings_router.ModelService.fetch_available_models")
 def test_verify_embedding_models_success(mock_fetch):
-    """Verify POST /api/settings/providers/verify-models with model_type=embedding."""
+    """Verify POST /api/settings/providers/verify-models with model_type=embedding and live vector probing."""
     app.dependency_overrides[get_current_user] = override_get_current_user
     mock_fetch.return_value = {
         "success": True,
         "models": ["models/gemini-embedding-001", "models/text-embedding-004"],
         "default_model": "models/gemini-embedding-001",
-        "default_dimensions": {"models/gemini-embedding-001": 768},
+        "probed_dimension": 768,
         "error": None
     }
     try:
@@ -243,7 +243,7 @@ def test_verify_embedding_models_success(mock_fetch):
         data = response.json()
         assert data["success"] is True
         assert "models/gemini-embedding-001" in data["models"]
-        assert data["default_dimensions"]["models/gemini-embedding-001"] == 768
+        assert data["probed_dimension"] == 768
     finally:
         app.dependency_overrides.clear()
 
