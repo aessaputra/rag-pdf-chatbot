@@ -436,4 +436,42 @@ export async function saveEmbeddingConfig(
   }
 }
 
+export interface VerifyModelsResponseData {
+  success: boolean;
+  models: string[];
+  default_model: string;
+  error?: string | null;
+}
+
+export async function verifyAndFetchModels(
+  provider: string,
+  apiKey?: string,
+  baseUrl?: string,
+  configId?: string,
+  token?: string
+): Promise<ApiResponse<VerifyModelsResponseData>> {
+  try {
+    const headers = await getAuthHeaders(token);
+    const response = await fetch(`${API_BASE}/api/settings/providers/verify-models`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({
+        provider,
+        api_key: apiKey || undefined,
+        base_url: baseUrl || undefined,
+        config_id: configId || undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal memverifikasi model provider.') };
+    }
+
+    return { success: true, data: await response.json(), error: null };
+  } catch (err: any) {
+    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
+
 

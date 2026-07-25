@@ -191,3 +191,31 @@ def test_save_embedding_config_locked_when_documents_exist_returns_400(mock_get_
     finally:
         app.dependency_overrides.clear()
 
+
+@patch("app.routers.settings_router.ModelService.fetch_available_models")
+def test_verify_models_success(mock_fetch):
+    """Verify POST /api/settings/providers/verify-models returns model list."""
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    mock_fetch.return_value = {
+        "success": True,
+        "models": ["gemini-2.5-flash", "gemini-2.5-pro"],
+        "default_model": "gemini-2.5-flash",
+        "error": None
+    }
+    try:
+        response = client.post(
+            "/api/settings/providers/verify-models",
+            json={
+                "provider": "gemini",
+                "api_key": "AIzaSyTest"
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "gemini-2.5-flash" in data["models"]
+        assert data["default_model"] == "gemini-2.5-flash"
+    finally:
+        app.dependency_overrides.clear()
+
+

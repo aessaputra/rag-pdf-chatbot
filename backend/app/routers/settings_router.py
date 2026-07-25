@@ -18,9 +18,12 @@ from app.schemas import (
     ProviderConfigCreate,
     ProviderConfigResponse,
     ProviderConfigUpdate,
+    VerifyModelsRequest,
+    VerifyModelsResponse,
 )
 
 from app.services.crypto_service import CryptoService
+from app.services.model_service import ModelService
 
 router = APIRouter(
     prefix="/api/settings",
@@ -109,6 +112,47 @@ async def create_provider_config(
         return _format_config_response(response.data[0], crypto)
 
     return await run_in_threadpool(insert_config)
+
+
+@router.post("/providers/verify-models", response_model=VerifyModelsResponse)
+async def verify_and_list_models(
+    payload: VerifyModelsRequest,
+    user: CurrentUserDep,
+) -> VerifyModelsResponse:
+    """Validates API key and returns available models for the given provider."""
+    api_key = payload.api_key
+    base_url = payload.base_url
+
+    # If config_id is provided and api_key is missing, resolve decrypted key from existing config
+    if not api_key and payload.config_id:
+        def fetch_key() -> tuple[Optional[str], Optional[str]]:
+            supabase = get_supabase_client()
+            crypto = CryptoService()
+            existing = (
+                supabase.table("user_provider_configs")
+                .select("api_key_enc, base_url")
+                .eq("id", payload.config_id)
+                .eq("user_id", user.user_id)
+                .execute()
+            )
+            if existing.data:
+                k = crypto.decrypt(existing.data[0].get("api_key_enc", ""))
+                u = existing.data[0].get("base_url")
+                return k, u
+            return None, None
+
+        key_from_db, url_from_db = await run_in_threadpool(fetch_key)
+        if key_from_db:
+            api_key = key_from_db
+        if not base_url:
+            base_url = url_from_db
+
+    res = await ModelService.fetch_available_models(
+        provider=payload.provider,
+        api_key=api_key or "",
+        base_url=base_url,
+    )
+    return VerifyModelsResponse(**res)
 
 
 @router.put("/providers/{config_id}", response_model=ProviderConfigResponse)

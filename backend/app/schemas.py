@@ -190,3 +190,22 @@ class EmbeddingConfigResponse(BaseModel):
     updated_at: datetime
 
 
+class VerifyModelsRequest(BaseModel):
+    """Payload for validating an API key and fetching available LLM models."""
+
+    provider: str = Field(..., description="Provider type: gemini, openai, openrouter, ollama, or openai_compatible")
+    api_key: Optional[str] = Field(None, description="Raw API key to test")
+    base_url: Optional[str] = Field(None, max_length=500, description="Optional custom base URL")
+    config_id: Optional[str] = Field(None, description="Optional existing ProviderConfig ID to reuse saved encrypted key")
+
+
+class VerifyModelsResponse(BaseModel):
+    """Response DTO for verified provider model listing."""
+
+    success: bool
+    models: List[str]
+    default_model: str
+    error: Optional[str] = None
+
+
+

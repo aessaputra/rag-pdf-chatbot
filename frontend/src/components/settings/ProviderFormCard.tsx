@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ProviderType } from '@/types';
+import { verifyAndFetchModels } from '@/lib/api';
 
 const PROVIDER_OPTIONS: { type: ProviderType; label: string }[] = [
   { type: 'gemini', label: 'Google Gemini' },
@@ -29,6 +30,7 @@ export function ProviderFormCard({
   initialModelName = '',
   initialBaseUrl = '',
   initialIsDefault = false,
+  token,
   onSave,
   onCancel,
 }: ProviderFormCardProps) {
@@ -40,6 +42,51 @@ export function ProviderFormCard({
   const [formIsDefault, setFormIsDefault] = useState(initialIsDefault);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Dynamic model fetching state
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [isCustomModel, setIsCustomModel] = useState(false);
+
+  // Auto-fetch available models via debounced API key/config verification
+  useEffect(() => {
+    let isCancelled = false;
+
+    // Trigger if API key is provided OR when editing an existing config
+    const shouldFetch = (formApiKey.trim().length > 3) || Boolean(editingConfigId);
+
+    if (!shouldFetch) {
+      setFetchedModels([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsLoadingModels(true);
+      const res = await verifyAndFetchModels(
+        formProvider,
+        formApiKey.trim() || undefined,
+        formBaseUrl.trim() || undefined,
+        editingConfigId || undefined,
+        token
+      );
+
+      if (!isCancelled) {
+        setIsLoadingModels(false);
+        if (res.success && res.data?.models) {
+          setFetchedModels(res.data.models);
+          // If current model_name isn't set, default to first available model
+          if (!formModelName && res.data.default_model) {
+            setFormModelName(res.data.default_model);
+          }
+        }
+      }
+    }, 600);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formProvider, formApiKey, formBaseUrl, editingConfigId, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +173,11 @@ export function ProviderFormCard({
                 key={opt.type}
                 type="button"
                 disabled={!!editingConfigId}
-                onClick={() => setFormProvider(opt.type)}
+                onClick={() => {
+                  setFormProvider(opt.type);
+                  setFetchedModels([]);
+                  setIsCustomModel(false);
+                }}
                 className={`text-left px-3 py-2.5 rounded-md border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 ${
                   formProvider === opt.type
                     ? 'bg-surface-card-hover border-primary text-primary'
@@ -173,32 +224,7 @@ export function ProviderFormCard({
           />
         </div>
 
-        {/* Conditional Model Name */}
-        {(formProvider === 'openrouter' || formProvider === 'openai_compatible' || formProvider === 'openai') ? (
-          <div>
-            <label htmlFor="formModelName" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
-              SLUG MODEL
-            </label>
-            <input
-              id="formModelName"
-              type="text"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={
-                formProvider === 'openrouter'
-                  ? 'meta-llama/llama-3.3-70b-instruct'
-                  : formProvider === 'openai_compatible'
-                  ? 'llama-3.3-70b-versatile'
-                  : 'gpt-4o-mini'
-              }
-              value={formModelName}
-              onChange={(e) => setFormModelName(e.target.value)}
-              className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"
-            />
-          </div>
-        ) : null}
-
-        {/* Conditional Base URL */}
+        {/* Conditional Base URL for OpenAI-Compatible */}
         {formProvider === 'openai_compatible' ? (
           <div>
             <label htmlFor="formBaseUrl" className="block text-[11px] font-mono uppercase tracking-wider text-muted mb-1.5">
@@ -216,6 +242,78 @@ export function ProviderFormCard({
             />
           </div>
         ) : null}
+
+        {/* Dynamic Model Selection */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="formModelSelect" className="block text-[11px] font-mono uppercase tracking-wider text-muted">
+              MODEL LLM
+            </label>
+            {isLoadingModels ? (
+              <span className="text-[10px] text-amber-500 font-mono animate-pulse">
+                Memuat daftar model…
+              </span>
+            ) : fetchedModels.length > 0 ? (
+              <span className="text-[10px] text-[var(--pastel-green-text)] font-mono">
+                {fetchedModels.length} model resmi tersedia
+              </span>
+            ) : null}
+          </div>
+
+          {fetchedModels.length > 0 && !isCustomModel ? (
+            <select
+              id="formModelSelect"
+              value={formModelName}
+              onChange={(e) => {
+                if (e.target.value === '__custom__') {
+                  setIsCustomModel(true);
+                  setFormModelName('');
+                } else {
+                  setFormModelName(e.target.value);
+                }
+              }}
+              className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card text-primary border border-subtle"
+            >
+              <option value="" disabled>-- Pilih Model --</option>
+              {fetchedModels.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+              <option value="__custom__">-- Input Slug Custom --</option>
+            </select>
+          ) : (
+            <div className="space-y-1">
+              <input
+                id="formModelNameInput"
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={
+                  formProvider === 'gemini'
+                    ? 'gemini-2.5-flash'
+                    : formProvider === 'openai'
+                    ? 'gpt-4o-mini'
+                    : formProvider === 'openrouter'
+                    ? 'meta-llama/llama-3.3-70b-instruct'
+                    : 'llama-3.3-70b-versatile'
+                }
+                value={formModelName}
+                onChange={(e) => setFormModelName(e.target.value)}
+                className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"
+              />
+              {fetchedModels.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setIsCustomModel(false)}
+                  className="text-[10px] text-muted hover:text-primary underline"
+                >
+                  Kembali ke daftar model resmi
+                </button>
+              ) : null}
+            </div>
+          )}
+        </div>
 
         {/* Is Default */}
         <div className="flex items-center gap-2 pt-1">
