@@ -259,7 +259,7 @@ export function EmbeddingSettingsSection({
                 id="embDimensions"
                 type="number"
                 disabled={!!embeddingConfig?.locked}
-                placeholder="contoh: 768"
+                placeholder="e.g. 768"
                 value={embDimensions === '' ? '' : embDimensions}
                 onChange={(e) => setEmbDimensions(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
                 className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"
