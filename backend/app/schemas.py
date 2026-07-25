@@ -95,25 +95,24 @@ class ChatSessionResponse(BaseModel):
     created_at: datetime
 
 
+ProviderType = Literal["gemini", "openai", "openrouter", "openai_compatible"]
+
+
 class ChatQueryRequest(BaseModel):
     """Payload for submitting a RAG query to the streaming endpoint."""
 
-    query: str = Field(..., min_length=1, description="User question prompt")
-    provider: Optional[str] = Field("gemini", description="LLM provider name: gemini, openai, or ollama")
-    document_ids: Optional[List[str]] = Field(None, description="Optional document ID filters")
+    query: str = Field(min_length=1, max_length=2000, description="User question prompt")
+    provider: Optional[ProviderType] = Field("gemini", description="LLM provider name")
+    document_ids: Optional[List[str]] = Field(None, max_length=20, description="Optional document ID filters")
     session_id: Optional[str] = Field(None, description="Optional chat session ID")
 
-
-# --- BYOK User Settings Schemas ---
-
-ProviderType = Literal["gemini", "openai", "openrouter", "openai_compatible"]
 
 
 class ProviderConfigCreate(BaseModel):
     """Payload for registering a new LLM provider configuration."""
 
     provider: ProviderType
-    api_key: str = Field(..., min_length=1, description="Raw API key string")
+    api_key: str = Field(min_length=1, description="Raw API key string")
     display_name: Optional[str] = Field(None, max_length=100, description="Custom label e.g. Groq Llama 3")
     base_url: Optional[str] = Field(None, max_length=500, description="Custom base URL endpoint")
     model_name: Optional[str] = Field(None, max_length=200, description="Target model slug name")
@@ -170,10 +169,10 @@ class EmbeddingPresetDTO(BaseModel):
 class EmbeddingConfigSaveRequest(BaseModel):
     """Payload for creating or updating user's active embedding model configuration."""
 
-    provider: str = Field(..., description="Provider name: gemini, openai, openrouter, or openai_compatible")
+    provider: str = Field(description="Provider name: gemini, openai, openrouter, or openai_compatible")
     api_key: Optional[str] = Field(None, description="Raw API key string (optional if reusing provider key)")
     base_url: Optional[str] = Field(None, max_length=500)
-    model_name: str = Field(..., min_length=1, description="Embedding model name slug")
+    model_name: str = Field(min_length=1, description="Embedding model name slug")
     embedding_dimensions: int = Field(768, gt=0, description="Vector output dimensions")
 
 

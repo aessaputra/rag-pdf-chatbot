@@ -6,6 +6,7 @@ listing documents, toggling RAG active status, preview URLs, and deletion.
 Follows FastAPI best practices (Annotated dependencies, explicit response models, run_in_threadpool).
 """
 
+import logging
 from typing import List
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
@@ -21,7 +22,12 @@ from app.schemas import (
 from app.services.ingestion_service import PDFIngestionService
 from app.services.storage_service import StorageService
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/api/documents",
+    tags=["Documents"],
+)
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
@@ -192,7 +198,11 @@ async def delete_document(
             try:
                 StorageService.delete_file(file_path)
             except Exception:
-                pass  # Proceed with DB deletion even if storage cleanup fails
+                logger.warning(
+                    "Failed to delete storage file %s during document cleanup",
+                    file_path,
+                    exc_info=True,
+                )
 
         # Delete from database (cascades to document_chunks)
         supabase.table("documents").delete().eq("id", document_id).eq("user_id", user.user_id).execute()

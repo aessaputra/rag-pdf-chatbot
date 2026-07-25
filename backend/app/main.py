@@ -31,9 +31,9 @@ app.add_middleware(
 )
 
 # Register API Routers
-app.include_router(document_router.router, prefix="/api/documents", tags=["Documents"])
-app.include_router(chat_router.router, prefix="/api/chat", tags=["Chat"])
-app.include_router(settings_router.router, prefix="/api/settings", tags=["Settings"])
+app.include_router(document_router.router)
+app.include_router(chat_router.router)
+app.include_router(settings_router.router)
 
 
 

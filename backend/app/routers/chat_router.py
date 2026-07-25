@@ -2,14 +2,17 @@
 Chat Router Module
 
 Handles RAG query SSE streaming responses and conversation session history.
-Follows FastAPI best practices (Annotated dependencies, explicit router tags).
+Follows FastAPI best practices: Annotated dependencies, EventSourceResponse for SSE,
+router-declared prefix/tags, and proper exception logging.
 """
 
-import json
-from typing import Any, List, Optional
-from fastapi import APIRouter, HTTPException, status
+import logging
+from collections.abc import AsyncIterable
+from typing import Annotated, Any, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import StreamingResponse
+from fastapi.sse import EventSourceResponse, ServerSentEvent
 
 from app.auth import CurrentUserDep
 from app.database import get_supabase_client
@@ -19,9 +22,15 @@ from app.schemas import (
     ChatSessionResponse,
     Citation,
 )
-from app.services.rag_service import RAGService
+from app.services.context_retriever import ContextRetriever
+from app.services.rag_service import RAGService, initialize_user_models
 
-router = APIRouter()
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    prefix="/api/chat",
+    tags=["Chat"],
+)
 
 
 def parse_citations(citations_raw: Any) -> List[Citation]:
@@ -30,6 +39,7 @@ def parse_citations(citations_raw: Any) -> List[Citation]:
         return []
     if isinstance(citations_raw, str):
         try:
+            import json
             citations_raw = json.loads(citations_raw)
         except Exception:
             return []
@@ -51,27 +61,100 @@ def parse_citations(citations_raw: Any) -> List[Citation]:
     return []
 
 
-@router.post("/stream")
+def get_rag_service(
+    user: CurrentUserDep,
+    request: ChatQueryRequest,
+) -> RAGService:
+    """FastAPI dependency that initializes RAGService with user's BYOK models."""
+    llm, embeddings_model = initialize_user_models(
+        user_id=user.user_id,
+        provider=request.provider,
+    )
+    retriever = ContextRetriever(
+        embeddings_model=embeddings_model,
+        user_id=user.user_id,
+    )
+    return RAGService(
+        user_id=user.user_id,
+        llm=llm,
+        retriever=retriever,
+    )
+
+
+RAGServiceDep = Annotated[RAGService, Depends(get_rag_service)]
+
+
+async def _stream_with_session(
+    service: RAGService,
+    request: ChatQueryRequest,
+    user_id: str,
+) -> AsyncIterable[ServerSentEvent]:
+    """Wraps RAGService stream with session creation and message persistence."""
+    # Auto-create or resolve session
+    active_session_id = request.session_id
+    try:
+        supabase = get_supabase_client()
+        if not active_session_id:
+            title = request.query[:30] + ("…" if len(request.query) > 30 else "")
+            sess_res = supabase.table("chat_sessions").insert({
+                "user_id": user_id,
+                "title": title,
+            }).execute()
+            if sess_res.data:
+                active_session_id = str(sess_res.data[0]["id"])
+    except Exception:
+        logger.warning("Failed to create chat session for user %s", user_id, exc_info=True)
+
+    if active_session_id:
+        yield ServerSentEvent(data={"session_id": active_session_id}, event="session")
+
+    # Delegate to RAGService stream
+    async for event in service.generate_rag_stream(
+        query=request.query,
+        document_ids=request.document_ids,
+    ):
+        yield event
+
+    # Persist messages to database
+    if active_session_id and service.last_response:
+        try:
+            supabase = get_supabase_client()
+            supabase.table("chat_messages").insert([
+                {
+                    "session_id": active_session_id,
+                    "user_id": user_id,
+                    "sender": "user",
+                    "content": request.query,
+                    "citations": [],
+                },
+                {
+                    "session_id": active_session_id,
+                    "user_id": user_id,
+                    "sender": "assistant",
+                    "content": service.last_response,
+                    "citations": service.last_citations,
+                },
+            ]).execute()
+        except Exception:
+            logger.warning(
+                "Failed to persist chat messages for session %s",
+                active_session_id,
+                exc_info=True,
+            )
+
+
+@router.post("/stream", response_class=EventSourceResponse)
 async def stream_chat_response(
     request: ChatQueryRequest,
     user: CurrentUserDep,
-) -> StreamingResponse:
+    service: RAGServiceDep,
+) -> AsyncIterable[ServerSentEvent]:
     """
     Submits a RAG query and streams Server-Sent Events (SSE) tokens and citations in real time.
     Auto-persists messages to the specified or auto-created session.
     """
-    rag_service = RAGService(user_id=user.user_id, provider=request.provider)
-    await run_in_threadpool(rag_service.initialize_user_models)
-
-    return StreamingResponse(
-        rag_service.generate_rag_stream(
-            query=request.query,
-            user_id=user.user_id,
-            document_ids=request.document_ids,
-            session_id=request.session_id,
-        ),
-        media_type="text/event-stream",
-    )
+    async for event in _stream_with_session(service, request, user.user_id):
+        yield event
 
 
 @router.get("/sessions", response_model=List[ChatSessionResponse])
@@ -167,4 +250,3 @@ async def delete_chat_session(session_id: str, user: CurrentUserDep) -> None:
         supabase.table("chat_sessions").delete().eq("id", session_id).eq("user_id", user.user_id).execute()
 
     await run_in_threadpool(remove_session)
-

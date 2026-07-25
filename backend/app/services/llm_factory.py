@@ -5,7 +5,9 @@ Provides multi-provider initialization for Chat Models and Embedding models
 (Gemini, OpenAI, OpenRouter, OpenAI-Compatible) using user BYOK credentials.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+from langchain_core.embeddings import Embeddings
+from langchain_core.language_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -30,7 +32,7 @@ class LLMFactory:
         return ""
 
     @classmethod
-    def get_llm_for_config(cls, config: Dict[str, Any]) -> Any:
+    def get_llm_for_config(cls, config: Dict[str, Any]) -> BaseChatModel:
         """
         Returns a streaming-enabled LLM instance using decrypted BYOK configuration.
         Supports Gemini, OpenAI, OpenRouter, and OpenAI-Compatible custom endpoints.
@@ -74,7 +76,7 @@ class LLMFactory:
             )
 
     @classmethod
-    def get_embeddings_for_config(cls, config: Dict[str, Any]) -> Any:
+    def get_embeddings_for_config(cls, config: Dict[str, Any]) -> Embeddings:
         """
         Returns an Embeddings generator instance using decrypted BYOK configuration.
         Supports customizable vector output dimensions.
@@ -119,19 +121,3 @@ class LLMFactory:
             if dimensions:
                 kwargs["output_dimensionality"] = dimensions
             return GoogleGenerativeAIEmbeddings(**kwargs)
-
-    @staticmethod
-    def get_llm(provider: str = settings.DEFAULT_LLM_PROVIDER) -> Any:
-        """Legacy fallback helper for creating static LLM instances from environment settings."""
-        return LLMFactory.get_llm_for_config({
-            "provider": provider,
-            "api_key": settings.OPENAI_API_KEY if provider == "openai" else settings.GEMINI_API_KEY,
-        })
-
-    @staticmethod
-    def get_embeddings(provider: str = settings.DEFAULT_LLM_PROVIDER) -> Any:
-        """Legacy fallback helper for creating static Embeddings instances from environment settings."""
-        return LLMFactory.get_embeddings_for_config({
-            "provider": provider,
-            "api_key": settings.OPENAI_API_KEY if provider == "openai" else settings.GEMINI_API_KEY,
-        })

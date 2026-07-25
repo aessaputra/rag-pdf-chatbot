@@ -22,7 +22,10 @@ from app.schemas import (
 
 from app.services.crypto_service import CryptoService
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/api/settings",
+    tags=["Settings"],
+)
 
 
 def _format_config_response(record: dict, crypto: CryptoService) -> ProviderConfigResponse:

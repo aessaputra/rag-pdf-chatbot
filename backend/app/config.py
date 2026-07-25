@@ -15,9 +15,8 @@ class Settings(BaseSettings):
     """Application Settings Model."""
 
     # Supabase Configuration
-    SUPABASE_URL: str = Field(..., alias="SUPABASE_URL")
+    SUPABASE_URL: str = Field(alias="SUPABASE_URL")
     SUPABASE_SECRET_KEY: str = Field(
-        ...,
         validation_alias=AliasChoices("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"),
     )
     SUPABASE_JWKS_URL: Optional[str] = Field(None, alias="SUPABASE_JWKS_URL")
