@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useDeferredValue } from 'react';
+import useSWR from 'swr';
 import type { ProviderType } from '@/types';
 import { verifyAndFetchModels } from '@/lib/api';
 
@@ -42,60 +43,32 @@ export function ProviderFormCard({
   const [formIsDefault, setFormIsDefault] = useState(initialIsDefault);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Dynamic live model fetching state
-  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isCustomModel, setIsCustomModel] = useState(false);
 
-  // Auto-fetch available models via debounced API key/config verification
+  const deferredApiKey = useDeferredValue(formApiKey.trim());
+  const deferredBaseUrl = useDeferredValue(formBaseUrl.trim());
+
+  const fetcherKey = ['verifyAndFetchModels', formProvider, deferredApiKey, deferredBaseUrl, editingConfigId, token, 'chat'];
+
+  const fetcher = async ([, prov, key, url, cid, tok, type]: any) => {
+    return verifyAndFetchModels(prov, key || undefined, url || undefined, cid || undefined, tok, type);
+  };
+
+  const { data: res, isLoading: isLoadingModels } = useSWR(fetcherKey, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  });
+
+  const fetchedModels = res?.success && res.data?.models ? res.data.models : [];
+  const fetchError = res?.error || res?.data?.error || null;
+
   useEffect(() => {
-    let isCancelled = false;
-
-    // Trigger if API key is typed OR when editing an existing config
-    const shouldFetch = (formApiKey.trim().length > 3) || Boolean(editingConfigId);
-
-    if (!shouldFetch) {
-      setFetchedModels([]);
-      setFetchError(null);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsLoadingModels(true);
-      setFetchError(null);
-
-      const res = await verifyAndFetchModels(
-        formProvider,
-        formApiKey.trim() || undefined,
-        formBaseUrl.trim() || undefined,
-        editingConfigId || undefined,
-        token
-      );
-
-      if (!isCancelled) {
-        setIsLoadingModels(false);
-        if (res.success && res.data?.models && res.data.models.length > 0) {
-          setFetchedModels(res.data.models);
-          setFetchError(null);
-          if (!formModelName && res.data.default_model) {
-            setFormModelName(res.data.default_model);
-          }
-        } else {
-          setFetchedModels([]);
-          if (res.error) {
-            setFetchError(res.error);
-          }
-        }
+    if (res?.success && res.data?.models && res.data.models.length > 0) {
+      if (!formModelName && res.data.default_model) {
+        setFormModelName(res.data.default_model);
       }
-    }, 500);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timer);
-    };
-  }, [formProvider, formApiKey, formBaseUrl, editingConfigId, token]);
+    }
+  }, [res, formModelName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,15 +122,16 @@ export function ProviderFormCard({
     }
   };
 
+  // Build model options dynamically from API response
   const options = [...fetchedModels];
   if (formModelName && !options.includes(formModelName) && formModelName !== '__custom__') {
     options.unshift(formModelName);
   }
 
   return (
-    <div className="p-5 rounded-md bg-surface-card border border-subtle space-y-4">
-      <div className="flex items-center justify-between border-b border-subtle pb-3">
-        <h3 className="text-xs font-mono uppercase tracking-wider text-primary">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b border-subtle pb-4">
+        <h3 className="text-sm font-serif tracking-tight text-primary">
           {editingConfigId ? 'EDIT PROVIDER' : 'TAMBAH PROVIDER'}
         </h3>
         <button
@@ -192,10 +166,8 @@ export function ProviderFormCard({
                 disabled={!!editingConfigId}
                 onClick={() => {
                   setFormProvider(opt.type);
-                  setFetchedModels([]);
                   setFormModelName('');
                   setIsCustomModel(false);
-                  setFetchError(null);
                 }}
                 className={`text-left px-3 py-2 rounded-md border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 ${
                   formProvider === opt.type
@@ -262,23 +234,23 @@ export function ProviderFormCard({
           </div>
         ) : null}
 
-        {/* Minimal High-Signal Model Selector */}
+        {/* 100% Dynamic Live Model Selector */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="formModelSelect" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
               MODEL
             </label>
             {isLoadingModels ? (
-              <span className="text-[10px] text-amber-500 font-mono animate-pulse">
-                Memuat…
+              <span className="text-[10px] font-mono text-muted animate-pulse">
+                Loading…
               </span>
             ) : fetchedModels.length > 0 ? (
-              <span className="text-[10px] text-[var(--pastel-green-text)] font-mono font-medium">
-                ● LIVE ({fetchedModels.length})
+              <span className="text-[10px] font-mono text-muted">
+                {fetchedModels.length} models
               </span>
             ) : fetchError ? (
-              <span className="text-[9px] text-[var(--pastel-red-text)] font-mono" title={fetchError}>
-                Perlu Kunci API
+              <span className="text-[10px] font-mono text-[var(--pastel-red-text)]" title={fetchError}>
+                Error
               </span>
             ) : null}
           </div>
@@ -295,13 +267,19 @@ export function ProviderFormCard({
                   setFormModelName(e.target.value);
                 }
               }}
-              className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card text-primary border border-subtle cursor-pointer"
+              className={`minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card cursor-pointer focus-visible:ring-2 ${
+                fetchError 
+                  ? 'border-[var(--pastel-red-bg)] text-[var(--pastel-red-text)] focus-visible:ring-[var(--pastel-red-text)]/30' 
+                  : 'border-subtle text-primary focus-visible:ring-zinc-400'
+              }`}
             >
               {options.length === 0 ? (
                 <option value="" disabled>
                   {isLoadingModels
                     ? 'Memuat model…'
-                    : 'Isi Kunci API untuk memuat model…'}
+                    : fetchError
+                    ? fetchError
+                    : 'Pilih atau ketik Kunci API…'}
                 </option>
               ) : (
                 <option value="" disabled>Pilih Model…</option>

@@ -5,7 +5,7 @@ Handles CRUD REST endpoints for BYOK LLM Provider Configurations.
 Follows FastAPI best practices (Annotated dependencies, explicit return types, non-blocking threadpool execution).
 """
 
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 

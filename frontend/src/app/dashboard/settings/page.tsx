@@ -90,42 +90,51 @@ export default function SettingsPage() {
       </header>
 
       {/* Main Content Body */}
-      <main className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-        {/* Global Toast Messages */}
-        {successMsg ? (
-          <div role="status" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-green-bg)] border border-[var(--pastel-green-text)]/20 text-[var(--pastel-green-text)] text-xs leading-normal flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-[var(--pastel-green-text)] shrink-0" aria-hidden="true" />
-            <span>{successMsg}</span>
+      <main className="max-w-5xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        {/* Global Toast Messages - positioned at top, spanning all columns */}
+        {(successMsg || errorMsg) && (
+          <div className="md:col-span-3 space-y-3 mb-2">
+            {successMsg ? (
+              <div role="status" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-green-bg)] border border-[var(--pastel-green-text)]/20 text-[var(--pastel-green-text)] text-xs leading-normal flex items-center gap-2 shadow-sm">
+                <Check className="w-3.5 h-3.5 text-[var(--pastel-green-text)] shrink-0" aria-hidden="true" />
+                <span>{successMsg}</span>
+              </div>
+            ) : null}
+
+            {errorMsg ? (
+              <div role="alert" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal flex items-center gap-2 shadow-sm">
+                <AlertCircle className="w-3.5 h-3.5 text-[var(--pastel-red-text)] shrink-0" aria-hidden="true" />
+                <span>{errorMsg}</span>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* SECTION 1: Chat Providers (Bento Box - 2/3 width) */}
+        {token ? (
+          <div className="md:col-span-2 h-full flex flex-col">
+            <ProviderSettingsSection
+              configs={configs}
+              token={token}
+              onReloadConfigs={reloadConfigs}
+              onSetSuccessMsg={setSuccessMsg}
+              onSetErrorMsg={setErrorMsg}
+            />
           </div>
         ) : null}
 
-        {errorMsg ? (
-          <div role="alert" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal flex items-center gap-2">
-            <AlertCircle className="w-3.5 h-3.5 text-[var(--pastel-red-text)] shrink-0" aria-hidden="true" />
-            <span>{errorMsg}</span>
+        {/* SECTION 2: Embedding Models (Bento Box - 1/3 width) */}
+        {token ? (
+          <div className="md:col-span-1 h-full flex flex-col">
+            <EmbeddingSettingsSection
+              configs={configs}
+              embeddingConfig={embeddingConfig}
+              token={token}
+              onSetEmbeddingConfig={setEmbeddingConfig}
+              onSetSuccessMsg={setSuccessMsg}
+              onSetErrorMsg={setErrorMsg}
+            />
           </div>
-        ) : null}
-
-        {/* SECTION 1: Chat Providers */}
-        {token ? (
-          <ProviderSettingsSection
-            configs={configs}
-            token={token}
-            onReloadConfigs={reloadConfigs}
-            onSetSuccessMsg={setSuccessMsg}
-            onSetErrorMsg={setErrorMsg}
-          />
-        ) : null}
-
-        {/* SECTION 2: Embedding Models */}
-        {token ? (
-          <EmbeddingSettingsSection
-            embeddingConfig={embeddingConfig}
-            token={token}
-            onSetEmbeddingConfig={setEmbeddingConfig}
-            onSetSuccessMsg={setSuccessMsg}
-            onSetErrorMsg={setErrorMsg}
-          />
         ) : null}
       </main>
     </div>

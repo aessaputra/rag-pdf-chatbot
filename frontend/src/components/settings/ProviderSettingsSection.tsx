@@ -100,11 +100,11 @@ export function ProviderSettingsSection({
   };
 
   return (
-    <section aria-label="Konfigurasi Provider Chat LLM" className="space-y-4">
-      <div className="flex items-center justify-between border-b border-subtle pb-3">
-        <h2 className="text-[11px] font-mono uppercase tracking-wider text-muted flex items-center gap-2">
-          <Key className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
-          <span>PROVIDER CHAT</span>
+    <section aria-label="Konfigurasi Provider Chat LLM" className="p-6 rounded-xl bg-surface-card border border-subtle h-full flex flex-col space-y-6">
+      <div className="flex items-center justify-between border-b border-subtle pb-4">
+        <h2 className="text-sm font-serif tracking-tight text-primary flex items-center gap-2">
+          <Key className="w-4 h-4 text-muted" aria-hidden="true" />
+          <span>Provider Chat</span>
         </h2>
         {!isFormOpen ? (
           <button
@@ -119,21 +119,32 @@ export function ProviderSettingsSection({
       </div>
 
       {isFormOpen ? (
-        <ProviderFormCard
-          editingConfigId={editingConfig?.id || null}
-          initialProvider={editingConfig?.provider}
-          initialDisplayName={editingConfig?.display_name || ''}
-          initialModelName={editingConfig?.model_name || ''}
-          initialBaseUrl={editingConfig?.base_url || ''}
-          initialIsDefault={editingConfig?.is_default || false}
-          token={token}
-          onSave={handleSave}
-          onCancel={handleCloseForm}
-        />
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div 
+            className="fixed inset-0 bg-black/5 backdrop-blur-[2px] transition-opacity cursor-pointer"
+            onClick={handleCloseForm}
+            aria-hidden="true"
+          />
+          <div className="relative w-full max-w-md bg-canvas h-full border-l border-subtle shadow-2xl overflow-y-auto z-10 animate-in slide-in-from-right duration-300">
+            <div className="p-8">
+              <ProviderFormCard
+                editingConfigId={editingConfig?.id || null}
+                initialProvider={editingConfig?.provider}
+                initialDisplayName={editingConfig?.display_name || ''}
+                initialModelName={editingConfig?.model_name || ''}
+                initialBaseUrl={editingConfig?.base_url || ''}
+                initialIsDefault={editingConfig?.is_default || false}
+                token={token}
+                onSave={handleSave}
+                onCancel={handleCloseForm}
+              />
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {configs.length === 0 ? (
-        <div className="p-6 rounded-md bg-surface-card border border-subtle text-center space-y-3">
+        <div className="p-6 rounded-lg bg-canvas border border-subtle text-center space-y-3 flex-1 flex flex-col items-center justify-center">
           <p className="text-xs text-muted">Belum ada AI Provider yang dikonfigurasi.</p>
           {!isFormOpen ? (
             <button
@@ -147,11 +158,11 @@ export function ProviderSettingsSection({
           ) : null}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3 flex-1">
           {configs.map((config) => (
             <div
               key={config.id}
-              className="p-3.5 rounded-md bg-surface-card border border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-zinc-400 transition-colors"
+              className="p-4 rounded-lg bg-canvas border border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-zinc-400 transition-colors"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -162,8 +173,8 @@ export function ProviderSettingsSection({
                     {config.provider}
                   </span>
                   {config.is_default ? (
-                    <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-[var(--pastel-green-bg)] text-[var(--pastel-green-text)] border border-[var(--pastel-green-text)]/20">
-                      DEFAULT
+                    <span className="text-[10px] font-serif italic text-muted">
+                      (Default)
                     </span>
                   ) : null}
                 </div>

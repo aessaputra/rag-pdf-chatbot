@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useDeferredValue } from 'react';
 import Link from 'next/link';
 import { Layers, Lock } from 'lucide-react';
+import useSWR from 'swr';
 import { saveEmbeddingConfig, verifyAndFetchModels } from '@/lib/api';
-import type { EmbeddingConfig } from '@/types';
+import type { EmbeddingConfig, ProviderConfig } from '@/types';
 
 interface EmbeddingSettingsSectionProps {
+  readonly configs: ProviderConfig[];
   readonly embeddingConfig: EmbeddingConfig | null;
   readonly token: string;
   readonly onSetEmbeddingConfig: (config: EmbeddingConfig) => void;
@@ -15,6 +17,7 @@ interface EmbeddingSettingsSectionProps {
 }
 
 export function EmbeddingSettingsSection({
+  configs,
   embeddingConfig,
   token,
   onSetEmbeddingConfig,
@@ -27,10 +30,6 @@ export function EmbeddingSettingsSection({
   const [embBaseUrl, setEmbBaseUrl] = useState<string>('');
   const [embError, setEmbError] = useState<string | null>(null);
   const [isSavingEmbedding, setIsSavingEmbedding] = useState(false);
-
-  // Dynamic live embedding model fetching state
-  const [fetchedEmbModels, setFetchedEmbModels] = useState<string[]>([]);
-  const [isLoadingEmbModels, setIsLoadingEmbModels] = useState(false);
   const [isCustomModelInput, setIsCustomModelInput] = useState(false);
 
   useEffect(() => {
@@ -42,43 +41,35 @@ export function EmbeddingSettingsSection({
     }
   }, [embeddingConfig]);
 
-  // Fetch live embedding models directly from Provider API endpoint
+  const deferredBaseUrl = useDeferredValue(embBaseUrl.trim());
+  const targetConfigId = configs.find((c) => c.provider === embProvider)?.id;
+
+  const fetcherKey = embeddingConfig?.locked 
+    ? null 
+    : ['verifyAndFetchModels', embProvider, deferredBaseUrl, targetConfigId, token, 'embedding'];
+
+  const fetcher = async ([, prov, url, cid, tok, type]: any) => {
+    return verifyAndFetchModels(prov, undefined, url || undefined, cid || undefined, tok, type);
+  };
+
+  const { data: res, isLoading: isLoadingEmbModels } = useSWR(fetcherKey, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  });
+
+  const fetchedEmbModels = res?.data?.models || [];
+  const fetchError = res?.error || res?.data?.error || null;
+
   useEffect(() => {
-    let isCancelled = false;
-
-    if (embeddingConfig?.locked) return;
-
-    async function loadEmbModels() {
-      setIsLoadingEmbModels(true);
-      const res = await verifyAndFetchModels(
-        embProvider,
-        undefined,
-        embBaseUrl.trim() || undefined,
-        undefined,
-        token,
-        'embedding'
-      );
-
-      if (!isCancelled) {
-        setIsLoadingEmbModels(false);
-        if (res.success && res.data?.models && res.data.models.length > 0) {
-          setFetchedEmbModels(res.data.models);
-          if (!embModelName && res.data.default_model) {
-            setEmbModelName(res.data.default_model);
-          }
-          if (res.data.probed_dimension) {
-            setEmbDimensions(res.data.probed_dimension);
-          }
-        }
+    if (res?.success && res.data?.models && res.data.models.length > 0) {
+      if (!embModelName && res.data.default_model) {
+        setEmbModelName(res.data.default_model);
+      }
+      if (res.data.probed_dimension) {
+        setEmbDimensions(res.data.probed_dimension);
       }
     }
-
-    loadEmbModels();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [embProvider, embBaseUrl, token, embeddingConfig?.locked]);
+  }, [res, embModelName]);
 
   const handleSaveEmbedding = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,28 +121,28 @@ export function EmbeddingSettingsSection({
   return (
     <section
       aria-label="Konfigurasi Model Embedding Dokumen"
-      className="space-y-4 pt-4 border-t border-subtle"
+      className="p-6 rounded-xl bg-surface-card border border-subtle h-full flex flex-col space-y-6"
     >
-      <div className="flex items-center justify-between border-b border-subtle pb-3">
-        <h2 className="text-[11px] font-mono uppercase tracking-wider text-muted flex items-center gap-2">
-          <Layers className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
-          <span>EMBEDDING</span>
+      <div className="flex items-center justify-between border-b border-subtle pb-4">
+        <h2 className="text-sm font-serif tracking-tight text-primary flex items-center gap-2">
+          <Layers className="w-4 h-4 text-muted" aria-hidden="true" />
+          <span>Embedding</span>
         </h2>
         {embeddingConfig?.locked ? (
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--pastel-yellow-bg)] text-[var(--pastel-yellow-text)] border border-[var(--pastel-yellow-text)]/20 flex items-center gap-1">
-            <Lock className="w-3 h-3 text-[var(--pastel-yellow-text)]" aria-hidden="true" /> TERKUNCI
+          <span className="text-xs font-serif text-muted flex items-center gap-1.5" aria-hidden="true">
+            <Lock className="w-3.5 h-3.5" /> Terkunci
           </span>
         ) : null}
       </div>
 
       {/* Lock Warning Banner */}
       {embeddingConfig?.locked ? (
-        <div className="p-3 rounded-md bg-surface-card border border-subtle text-xs flex items-center justify-between text-muted">
-          <span>Model embedding terkunci karena dokumen PDF terunggah.</span>
-          <Link href="/dashboard" className="text-xs text-primary hover:underline shrink-0 ml-2 font-mono">
+        <p className="text-xs text-muted flex items-center justify-between">
+          <span>Model terkunci karena PDF terunggah.</span>
+          <Link href="/dashboard" className="text-primary hover:underline font-mono">
             Dashboard &rarr;
           </Link>
-        </div>
+        </p>
       ) : null}
 
       {embError ? (
@@ -163,7 +154,7 @@ export function EmbeddingSettingsSection({
         </div>
       ) : null}
 
-      <form onSubmit={handleSaveEmbedding} className="p-5 rounded-md bg-surface-card border border-subtle space-y-4">
+      <form onSubmit={handleSaveEmbedding} className="flex-1 space-y-5 flex flex-col">
         {/* Provider Selection */}
         <div>
           <label htmlFor="embProvider" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
@@ -174,8 +165,8 @@ export function EmbeddingSettingsSection({
             disabled={!!embeddingConfig?.locked}
             value={embProvider}
             onChange={(e) => {
-              setEmbProvider(e.target.value);
-              setFetchedEmbModels([]);
+              const newProv = e.target.value;
+              setEmbProvider(newProv);
               setEmbModelName('');
               setIsCustomModelInput(false);
             }}
@@ -188,7 +179,7 @@ export function EmbeddingSettingsSection({
           </select>
         </div>
 
-        {/* Dynamic Live Model & Dimension Config */}
+        {/* Dynamic Model & Dimension Config */}
         <div className="p-3.5 rounded-md bg-surface-card-hover border border-subtle space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
@@ -197,12 +188,16 @@ export function EmbeddingSettingsSection({
                   MODEL
                 </label>
                 {isLoadingEmbModels ? (
-                  <span className="text-[10px] text-amber-500 font-mono animate-pulse">
-                    Memuat…
+                  <span className="text-[10px] font-mono text-muted animate-pulse">
+                    Loading…
                   </span>
                 ) : fetchedEmbModels.length > 0 ? (
-                  <span className="text-[10px] text-[var(--pastel-green-text)] font-mono font-medium">
-                    ● LIVE ({fetchedEmbModels.length})
+                  <span className="text-[10px] font-mono text-muted">
+                    {fetchedEmbModels.length} models
+                  </span>
+                ) : fetchError ? (
+                  <span className="text-[10px] font-mono text-[var(--pastel-red-text)]" title={fetchError}>
+                    Error
                   </span>
                 ) : null}
               </div>
@@ -222,14 +217,7 @@ export function EmbeddingSettingsSection({
                   }}
                   className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50"
                 >
-                  {options.length === 0 ? (
-                    <option value="" disabled>
-                      {isLoadingEmbModels ? 'Memuat model…' : 'Pilih Model…'}
-                    </option>
-                  ) : (
-                    <option value="" disabled>Pilih Model…</option>
-                  )}
-
+                  <option value="" disabled>Pilih Model…</option>
                   {options.map((m) => (
                     <option key={m} value={m} className="bg-surface-card text-primary">
                       {m}
@@ -248,15 +236,13 @@ export function EmbeddingSettingsSection({
                     onChange={(e) => setEmbModelName(e.target.value)}
                     className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"
                   />
-                  {fetchedEmbModels.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => setIsCustomModelInput(false)}
-                      className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
-                    >
-                      Pilih dari daftar
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomModelInput(false)}
+                    className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
+                  >
+                    Pilih dari daftar
+                  </button>
                 </div>
               )}
             </div>
@@ -295,8 +281,10 @@ export function EmbeddingSettingsSection({
           ) : null}
         </div>
 
+        <div className="flex-1" />
+
         {/* Form Submit */}
-        <div className="flex justify-end pt-2 border-t border-subtle">
+        <div className="flex justify-end pt-4 border-t border-subtle mt-auto">
           <button
             type="submit"
             disabled={!!embeddingConfig?.locked || isSavingEmbedding}

@@ -1,8 +1,8 @@
 """
 Model Service Module
 
-Provides 100% dynamic live model discovery and real-time vector probing for LLM providers
-(Google Gemini, OpenAI, OpenRouter, Ollama, OpenAI-Compatible). Zero hardcoded model or dimension dictionaries.
+Provides 100% dynamic live model discovery and real-time vector probing directly from LLM provider REST APIs
+(Google Gemini, OpenAI, OpenRouter, Ollama, OpenAI-Compatible). Zero hardcoded model lists.
 """
 
 import logging
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelService:
-    """Service for 100% dynamic live model discovery and vector probing."""
+    """Service for 100% dynamic live model discovery directly from provider REST APIs."""
 
     @classmethod
     async def fetch_available_models(
@@ -27,7 +27,7 @@ class ModelService:
     ) -> Dict[str, Any]:
         """
         Fetches live available models directly from provider REST API endpoints.
-        Performs live vector probing when model_type="embedding".
+        Zero hardcoded catalogs.
 
         Returns:
             Dict with keys:
@@ -40,13 +40,17 @@ class ModelService:
         provider_norm = provider.lower().strip()
         is_embedding = model_type.lower().strip() == "embedding"
 
-        if not api_key or not api_key.strip() or api_key == "mock-key":
+        # OpenRouter public endpoint can be queried without an API key
+        if not api_key and provider_norm == "openrouter":
+            api_key = "public"
+
+        if not api_key or not api_key.strip():
             return {
                 "success": False,
                 "models": [],
                 "default_model": "",
                 "probed_dimension": None,
-                "error": "Kunci API belum diisi. Masukkan Kunci API untuk memuat daftar model dari provider.",
+                "error": "Kunci API belum diisi. Masukkan Kunci API untuk memuat model live dari provider.",
             }
 
         try:
@@ -71,9 +75,11 @@ class ModelService:
             default_model = models[0]
             probed_dim: Optional[int] = None
 
-            # Perform live vector probing for embedding models
-            if is_embedding and default_model:
-                probed_dim = await cls.probe_vector_dimension(provider_norm, api_key, default_model, base_url)
+            if is_embedding and default_model and api_key and api_key != "public":
+                try:
+                    probed_dim = await cls.probe_vector_dimension(provider_norm, api_key, default_model, base_url)
+                except Exception as err:
+                    logger.warning("Vector probe failed: %s", str(err))
 
             return {
                 "success": True,
@@ -83,13 +89,13 @@ class ModelService:
                 "error": None,
             }
         except Exception as err:
-            logger.warning("Failed to fetch %s models for provider %s: %s", model_type, provider_norm, str(err))
+            logger.warning("Live fetch failed for provider %s: %s", provider_norm, str(err))
             return {
                 "success": False,
                 "models": [],
                 "default_model": "",
                 "probed_dimension": None,
-                "error": f"Gagal mengambil daftar model dari provider: {str(err)}",
+                "error": str(err),
             }
 
     @classmethod
@@ -99,146 +105,91 @@ class ModelService:
         api_key: str,
         model_name: str,
         base_url: Optional[str] = None,
-    ) -> Optional[int]:
-        """
-        Executes a 1-token live embedding probe to measure exact vector length (len(vec)).
-        Zero hardcoded dimension guessing.
-        """
-        if not api_key or api_key.startswith("mock-"):
-            # Mock testing fallback dimension for test suite
-            return 768 if "gemini" in model_name or "768" in model_name else 1536
+    ) -> int:
+        """Sends a 1-token probe embedding request to detect vector dimension."""
+        provider_norm = provider.lower().strip()
 
-        try:
-            if provider == "gemini":
-                clean_model = model_name if model_name.startswith("models/") else f"models/{model_name}"
-                url = f"https://generativelanguage.googleapis.com/v1beta/{clean_model}:embedContent?key={api_key}"
-                payload = {
-                    "model": clean_model,
-                    "content": {"parts": [{"text": "test"}]}
-                }
-                async with httpx.AsyncClient(timeout=8.0) as client:
-                    resp = await client.post(url, json=payload)
-                    if resp.status_code == 200:
-                        vec = resp.json().get("embedding", {}).get("values", [])
-                        if vec:
-                            return len(vec)
-            else:
-                target_url = (base_url.rstrip("/") if base_url else "")
-                if provider == "openrouter":
-                    endpoint = "https://openrouter.ai/api/v1/embeddings"
-                elif target_url:
-                    endpoint = f"{target_url}/embeddings" if not target_url.endswith("/embeddings") else target_url
-                else:
-                    endpoint = "https://api.openai.com/v1/embeddings"
+        if provider_norm == "gemini":
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+            emb = GoogleGenerativeAIEmbeddings(model=model_name, google_api_key=api_key)
+            vec = await emb.aembed_query("probe")
+            return len(vec)
 
-                headers = {"Authorization": f"Bearer {api_key}"}
-                payload = {"model": model_name, "input": "test"}
+        if provider_norm in ("openai", "openrouter", "openai_compatible"):
+            from langchain_openai import OpenAIEmbeddings
+            kw: Dict[str, Any] = {"model": model_name, "openai_api_key": api_key}
+            if base_url:
+                kw["openai_api_base"] = base_url
+            emb = OpenAIEmbeddings(**kw)
+            vec = await emb.aembed_query("probe")
+            return len(vec)
 
-                async with httpx.AsyncClient(timeout=8.0) as client:
-                    resp = await client.post(endpoint, headers=headers, json=payload)
-                    if resp.status_code == 200:
-                        data_items = resp.json().get("data", [])
-                        if data_items and "embedding" in data_items[0]:
-                            return len(data_items[0]["embedding"])
-
-            return None
-        except Exception as err:
-            logger.debug("Live vector probing failed for model %s: %s", model_name, str(err))
-            return None
+        return 768
 
     @staticmethod
     async def _fetch_gemini_models(api_key: str, is_embedding: bool) -> List[str]:
-        if api_key.startswith("mock-"):
-            if is_embedding:
-                return ["models/gemini-embedding-001", "models/text-embedding-004"]
-            return ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"]
-
+        """Queries Google Gemini v1beta models endpoint live."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(url)
             if resp.status_code != 200:
-                raise ValueError(f"HTTP {resp.status_code}: {resp.text[:150]}")
-
+                raise ValueError("Kunci API tidak valid atau akses ditolak.")
             data = resp.json()
-            models_data = data.get("models", [])
-            results: List[str] = []
-
-            for item in models_data:
+            models: List[str] = []
+            for item in data.get("models", []):
                 name = item.get("name", "")
                 methods = item.get("supportedGenerationMethods", [])
-
+                clean_name = name.replace("models/", "")
                 if is_embedding:
                     if "embedContent" in methods:
-                        results.append(name)
+                        models.append(name if name.startswith("models/") else f"models/{clean_name}")
                 else:
                     if "generateContent" in methods:
-                        clean_name = name.replace("models/", "")
-                        if "gemini" in clean_name and not clean_name.endswith("-embedding"):
-                            results.append(clean_name)
-
-            results.sort(key=lambda m: (0 if "flash" in m else 1, m))
-            return results
+                        models.append(clean_name)
+            return models
 
     @staticmethod
     async def _fetch_openai_style_models(
-        provider: str, api_key: str, base_url: Optional[str], is_embedding: bool
+        provider: str,
+        api_key: str,
+        base_url: Optional[str],
+        is_embedding: bool,
     ) -> List[str]:
-        if api_key.startswith("mock-"):
-            if is_embedding:
-                return ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"]
-            if provider == "openai":
-                return ["gpt-4o-mini", "gpt-4o", "o1-preview", "o3-mini"]
-            elif provider == "openrouter":
-                return ["meta-llama/llama-3.3-70b-instruct", "openai/gpt-4o", "anthropic/claude-3.5-sonnet"]
-            else:
-                return ["gpt-3.5-turbo", "llama-3.3-70b-versatile"]
-
-        target_url = (base_url.rstrip("/") if base_url else "")
+        """Queries OpenAI/OpenRouter models endpoint live."""
         if provider == "openrouter":
-            endpoint = "https://openrouter.ai/api/v1/models"
-        elif target_url:
-            endpoint = f"{target_url}/models" if not target_url.endswith("/models") else target_url
+            url = "https://openrouter.ai/api/v1/models"
+            headers = {}
+            if api_key and api_key != "public":
+                headers["Authorization"] = f"Bearer {api_key}"
+        elif provider == "openai_compatible" and base_url:
+            url = f"{base_url.rstrip('/')}/models"
+            headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         else:
-            endpoint = "https://api.openai.com/v1/models"
-
-        headers = {"Authorization": f"Bearer {api_key}"}
+            url = "https://api.openai.com/v1/models"
+            headers = {"Authorization": f"Bearer {api_key}"}
 
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(endpoint, headers=headers)
+            resp = await client.get(url, headers=headers)
             if resp.status_code != 200:
-                raise ValueError(f"HTTP {resp.status_code}: {resp.text[:150]}")
-
+                raise ValueError("Kunci API tidak valid atau akses ditolak.")
             data = resp.json()
-            model_items = data.get("data", [])
-            results: List[str] = []
-
-            for item in model_items:
-                model_id = item.get("id", "")
-                if not model_id:
-                    continue
-
+            models: List[str] = []
+            for item in data.get("data", []):
+                m_id = item.get("id", "")
                 if is_embedding:
-                    if "embedding" in model_id:
-                        results.append(model_id)
-                elif provider == "openai":
-                    if any(k in model_id for k in ("gpt-", "o1", "o3", "chat")):
-                        if not any(k in model_id for k in ("realtime", "audio", "transcription", "tts", "whisper", "embedding")):
-                            results.append(model_id)
+                    if "embed" in m_id.lower():
+                        models.append(m_id)
                 else:
-                    results.append(model_id)
-
-            results.sort()
-            return results
+                    models.append(m_id)
+            return models
 
     @staticmethod
     async def _fetch_ollama_models(base_url: str) -> List[str]:
-        target_url = base_url.rstrip("/") + "/api/tags"
+        """Queries Ollama local tags endpoint live."""
+        url = f"{base_url.rstrip('/')}/api/tags"
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(target_url)
+            resp = await client.get(url)
             if resp.status_code != 200:
                 return []
-
             data = resp.json()
-            models_data = data.get("models", [])
-            results = [m.get("name", "").split(":")[0] for m in models_data if m.get("name")]
-            return results
+            return [m.get("name", "") for m in data.get("models", []) if m.get("name")]
