@@ -53,10 +53,12 @@ class PromptBuilder:
 
     # ── Citation Format ─────────────────────────────────────────────
     _CITATIONS = (
-        "FORMAT KUTIPAN:\n"
-        "- Gunakan notasi [1], [2], dst. untuk merujuk sumber konteks.\n"
-        "- Setiap fakta spesifik atau argumen WAJIB disertai kutipan sumber.\n"
-        "- Contoh: \"RAG meningkatkan akurasi jawaban LLM [1] dengan memanfaatkan retrieval [2].\""
+        "ATURAN KUTIPAN:\n"
+        "- Anda WAJIB meletakkan notasi [1], [2], dst. di akhir fakta untuk menunjukkan dari mana informasi itu diambil.\n"
+        "- Pastikan nomor kutipan BENAR-BENAR COCOK dengan nomor sumber yang secara eksplisit berisi informasi tersebut.\n"
+        "- DILARANG KERAS mengutip nomor sumber yang salah atau tidak relevan.\n"
+        "- Jika satu kalimat menggabungkan fakta dari beberapa sumber, gunakan format gabungan: [1][2].\n"
+        "- Contoh: \"RAG meningkatkan akurasi [1] dengan pencarian vektor [2].\""
     )
 
     # ── Confidence-Based Response Strategy ──────────────────────────

@@ -43,3 +43,30 @@ def test_chunking_service_should_skip_empty_whitespace_text():
         page_number=1
     )
     assert len(empty_chunks) == 0
+
+
+def test_pdf_ingestion_removes_boilerplate_headers():
+    """Verify that repetitive boilerplate headers/footers are stripped before chunking."""
+    ingestion_service = PDFIngestionService()
+    
+    # Simulate text from 3 pages with repeated boilerplate
+    mock_pages = [
+        "Building of Informatics, Technology and Science (BITS)\nPage 1\nHere is some actual content for page 1.\nCopyright 2023",
+        "Building of Informatics, Technology and Science (BITS)\nPage 2\nHere is different content for page 2.\nCopyright 2023",
+        "Building of Informatics, Technology and Science (BITS)\nPage 3\nAnd more content for page 3.\nCopyright 2023",
+    ]
+    
+    cleaned_pages = ingestion_service._clean_boilerplate(mock_pages)
+    
+    # Assert boilerplate was removed
+    assert "Building of Informatics" not in cleaned_pages[0]
+    assert "Copyright 2023" not in cleaned_pages[1]
+    
+    # Assert actual content is kept
+    assert "Here is some actual content for page 1." in cleaned_pages[0]
+    assert "Here is different content for page 2." in cleaned_pages[1]
+    
+    # Assert "Page X" was removed by the regex
+    assert "Page 1" not in cleaned_pages[0]
+    assert "Page 3" not in cleaned_pages[2]
+

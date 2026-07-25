@@ -1,14 +1,10 @@
-"""
-PDF Ingestion Service Module
-
-Handles parsing PDF raw bytes, text chunking with metadata annotations, embedding generation,
-and Supabase batch insertion following performance best practices.
-"""
-
 import io
+import re
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 from pypdf import PdfReader
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.database import get_supabase_client
@@ -17,7 +13,6 @@ from app.services.llm_factory import LLMFactory
 
 
 class PDFIngestionService:
-    """Service responsible for PDF processing, text chunking, and batch vector storage."""
 
     def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -29,41 +24,84 @@ class PDFIngestionService:
     def split_text_with_metadata(
         self, text: str, filename: str, page_number: int
     ) -> List[DocumentChunkDTO]:
-        """Splits raw page text into annotated DocumentChunkDTOs."""
         cleaned_text = text.strip()
         if not cleaned_text:
             return []
 
-        raw_chunks = self.text_splitter.split_text(cleaned_text)
-        annotated_chunks: List[DocumentChunkDTO] = []
-
-        for chunk_text in raw_chunks:
-            metadata: Dict[str, Any] = {
-                "filename": filename,
-                "page_number": page_number,
-            }
-            annotated_chunks.append(
-                DocumentChunkDTO(
-                    content=chunk_text,
-                    page_number=page_number,
-                    filename=filename,
-                    metadata=metadata
-                )
+        doc = Document(
+            page_content=cleaned_text,
+            metadata={"filename": filename, "page_number": page_number}
+        )
+        
+        split_docs = self.text_splitter.split_documents([doc])
+        
+        return [
+            DocumentChunkDTO(
+                content=chunk.page_content,
+                page_number=chunk.metadata["page_number"],
+                filename=chunk.metadata["filename"],
+                metadata=chunk.metadata
             )
+            for chunk in split_docs
+        ]
 
-        return annotated_chunks
+    def _identify_boilerplate_lines(self, pages_text: List[str]) -> set:
+        if len(pages_text) <= 2:
+            return set()
+            
+        line_counts = Counter()
+        for text in pages_text:
+            # Only consider lines that are reasonably long
+            lines = {line.strip() for line in text.split('\n') if len(line.strip()) > 5}
+            for line in lines:
+                line_counts[line] += 1
+                
+        threshold = len(pages_text) * 0.5
+        return {line for line, count in line_counts.items() if count >= threshold}
+
+    def _clean_boilerplate(self, pages_text: List[str]) -> List[str]:
+        """Uses line frequency analysis to strip headers, footers, and page numbers."""
+        boilerplate = self._identify_boilerplate_lines(pages_text)
+        
+        cleaned_pages = []
+        for text in pages_text:
+            cleaned_lines = []
+            for line in text.split('\n'):
+                stripped = line.strip()
+                
+                # Remove if it's exact boilerplate match
+                if stripped in boilerplate:
+                    continue
+                
+                # Remove standalone page numbers or "Page: 123" patterns
+                if re.match(r'^(page|hal|halaman)[:\s\-0-9]+$', stripped, re.IGNORECASE):
+                    continue
+                    
+                cleaned_lines.append(line)
+            cleaned_pages.append('\n'.join(cleaned_lines))
+            
+        return cleaned_pages
 
     def parse_pdf_bytes(self, pdf_bytes: bytes, filename: str) -> List[DocumentChunkDTO]:
-        """Reads raw PDF bytes and returns all annotated text chunks across pages."""
         pdf_reader = PdfReader(io.BytesIO(pdf_bytes))
+        
+        raw_pages_text = [page.extract_text() or "" for page in pdf_reader.pages]
+        cleaned_pages_text = self._clean_boilerplate(raw_pages_text)
+        
         all_chunks: List[DocumentChunkDTO] = []
+        for current_index, current_text in enumerate(cleaned_pages_text):
+            page_number = current_index + 1
+            has_next_page = (current_index + 1) < len(cleaned_pages_text)
+            
+            if has_next_page:
+                next_page_text = cleaned_pages_text[current_index + 1]
+                overlap_chars = getattr(self.text_splitter, '_chunk_overlap', 200)
+                current_text = f"{current_text} {next_page_text[:overlap_chars]}"
 
-        for page_index, page in enumerate(pdf_reader.pages, start=1):
-            page_text = page.extract_text() or ""
             page_chunks = self.split_text_with_metadata(
-                text=page_text,
+                text=current_text,
                 filename=filename,
-                page_number=page_index
+                page_number=page_number
             )
             all_chunks.extend(page_chunks)
 
@@ -81,16 +119,13 @@ class PDFIngestionService:
         batch_size: int = 100
     ) -> DocumentUploadResponse:
         """
-        Inserts document record, uploads PDF to storage, and batch-inserts vector chunks.
-
-        On failure during embedding or chunk insertion, cleans up the storage file
-        and removes the document record to prevent orphaned data.
+        Rollback strategy: On failure during embedding or chunk insertion, cleans up 
+        the storage file and removes the document record to prevent orphaned data.
         """
         from app.services.storage_service import StorageService
 
         supabase = get_supabase_client()
 
-        # 1. Insert Document record with status='processing'
         doc_data = {
             "user_id": user_id,
             "filename": filename,
@@ -102,18 +137,14 @@ class PDFIngestionService:
         doc_response = supabase.table("documents").insert(doc_data).execute()
         document_id = doc_response.data[0]["id"]
 
-        # 2. Upload PDF bytes to Supabase Storage
         try:
             file_path = StorageService.upload_file(user_id, document_id, pdf_bytes)
         except Exception:
-            # Rollback: delete the document record
             supabase.table("documents").delete().eq("id", document_id).eq("user_id", user_id).execute()
             raise
 
-        # 3. Update document with file_path
         supabase.table("documents").update({"file_path": file_path}).eq("id", document_id).execute()
 
-        # 4. Fetch User Embedding Config & Generate Embeddings
         try:
             embedding_res = (
                 supabase.table("user_embedding_configs")
@@ -131,7 +162,6 @@ class PDFIngestionService:
             chunk_texts = [chunk.content for chunk in chunks]
             vector_embeddings = embeddings_model.embed_documents(chunk_texts)
 
-            # 5. Prepare Batch Records for document_chunks
             chunk_records = []
             for chunk, embedding_vector in zip(chunks, vector_embeddings):
                 chunk_records.append({
@@ -143,19 +173,14 @@ class PDFIngestionService:
                     "embedding": embedding_vector
                 })
 
-            # 6. Perform Batch Insert (Supabase Data Access Best Practice)
             for i in range(0, len(chunk_records), batch_size):
                 batch = chunk_records[i : i + batch_size]
                 supabase.table("document_chunks").insert(batch).execute()
 
-            # 7. Auto-lock user's embedding model choice after first document ingestion
             supabase.table("user_embedding_configs").update({"locked": True}).eq("user_id", user_id).execute()
-
-            # 8. Mark document as ready
             supabase.table("documents").update({"status": "ready"}).eq("id", document_id).execute()
 
         except Exception:
-            # Rollback: update status to failed
             supabase.table("documents").update({"status": "failed"}).eq("id", document_id).execute()
             raise
 

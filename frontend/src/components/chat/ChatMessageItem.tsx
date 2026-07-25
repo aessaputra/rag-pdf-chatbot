@@ -28,10 +28,9 @@ function formatInlineMarkdown(
             type="button"
             onClick={() => onSelectCitation(citation)}
             aria-label={`Buka sitasi ${citation.filename} halaman ${citation.page_number}`}
-            className="inline-flex items-center gap-1 px-1.5 mx-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20 text-xs font-mono transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-400 align-baseline"
+            className="inline-flex items-center justify-center px-1.5 py-0.5 mx-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20 text-xs font-mono transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-400 align-baseline leading-none"
           >
-            <FileTextIcon className="w-3 h-3" aria-hidden="true" />
-            <span className="font-medium [font-variant-numeric:tabular-nums]">Hal {citation.page_number}</span>
+            <span className="font-semibold [font-variant-numeric:tabular-nums]">[{citationIndex + 1}]</span>
           </button>
         );
       }

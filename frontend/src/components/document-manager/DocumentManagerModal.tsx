@@ -103,7 +103,7 @@ export default function DocumentManagerModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div
-        className="w-full max-w-2xl bg-canvas border border-subtle rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-primary"
+        className="w-full max-w-2xl bg-canvas border border-subtle rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-full text-primary"
         role="dialog"
         aria-modal="true"
         aria-labelledby="document-modal-title"
