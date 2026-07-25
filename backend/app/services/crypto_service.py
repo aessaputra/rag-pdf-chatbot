@@ -2,7 +2,7 @@ import base64
 import binascii
 import hashlib
 import os
-from typing import Optional
+
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -15,7 +15,7 @@ MIN_PAYLOAD_BYTES = NONCE_SIZE_BYTES + TAG_SIZE_BYTES  # 28 bytes minimum
 
 
 class CryptoService:
-    def __init__(self, secret_key: Optional[str] = None):
+    def __init__(self, secret_key: str | None = None):
         key_material = secret_key if secret_key is not None else settings.SETTINGS_ENCRYPTION_KEY
         # Derive fixed 32-byte key via SHA-256 hash of secret string
         self.key = hashlib.sha256(key_material.encode("utf-8")).digest()

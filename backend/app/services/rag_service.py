@@ -1,6 +1,6 @@
 import logging
 from collections.abc import AsyncIterable
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import HTTPException, status
 from fastapi.sse import ServerSentEvent
@@ -29,7 +29,7 @@ class RAGService:
     async def generate_rag_stream(
         self,
         query: str,
-        document_ids: Optional[List[str]] = None,
+        document_ids: list[str] | None = None,
     ) -> AsyncIterable[ServerSentEvent]:
         # 1. Retrieve relevant chunks
         chunks = self.retriever.retrieve_relevant_chunks(
@@ -70,11 +70,11 @@ class RAGService:
         return getattr(self, "_last_response", "")
 
     @property
-    def last_citations(self) -> List[Dict[str, Any]]:
+    def last_citations(self) -> list[dict[str, Any]]:
         return getattr(self, "_last_citations", [])
 
 
-def initialize_user_models(user_id: str, provider: Optional[str] = None) -> tuple[BaseChatModel, Embeddings]:
+def initialize_user_models(user_id: str, provider: str | None = None) -> tuple[BaseChatModel, Embeddings]:
     supabase = get_supabase_client()
 
     # 1. Fetch User Provider Config

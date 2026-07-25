@@ -1,4 +1,5 @@
-from typing import Any, Dict
+from typing import Any
+
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
@@ -11,18 +12,18 @@ from app.services.crypto_service import CryptoService
 
 class LLMFactory:
     @staticmethod
-    def _resolve_api_key(config: Dict[str, Any]) -> str:
-        if "api_key" in config and config["api_key"]:
+    def _resolve_api_key(config: dict[str, Any]) -> str:
+        if config.get("api_key"):
             return config["api_key"]
 
-        if "api_key_enc" in config and config["api_key_enc"]:
+        if config.get("api_key_enc"):
             crypto = CryptoService()
             return crypto.decrypt(config["api_key_enc"])
 
         return ""
 
     @classmethod
-    def get_llm_for_config(cls, config: Dict[str, Any]) -> BaseChatModel:
+    def get_llm_for_config(cls, config: dict[str, Any]) -> BaseChatModel:
         provider = config.get("provider", "gemini").lower().strip()
         api_key = cls._resolve_api_key(config)
         model_name = config.get("model_name")
@@ -62,7 +63,7 @@ class LLMFactory:
             )
 
     @classmethod
-    def get_embeddings_for_config(cls, config: Dict[str, Any]) -> Embeddings:
+    def get_embeddings_for_config(cls, config: dict[str, Any]) -> Embeddings:
         provider = config.get("provider", "gemini").lower().strip()
         api_key = cls._resolve_api_key(config)
         model_name = config.get("model_name")
@@ -70,7 +71,7 @@ class LLMFactory:
         dimensions = config.get("embedding_dimensions")
 
         if provider == "openai":
-            kwargs: Dict[str, Any] = {
+            kwargs: dict[str, Any] = {
                 "model": model_name or "text-embedding-3-small",
                 "api_key": api_key or "mock-openai-key",
             }

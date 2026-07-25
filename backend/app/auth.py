@@ -1,11 +1,11 @@
 import logging
 from functools import lru_cache
-from typing import Annotated, Optional
+from typing import Annotated
 
 import jwt
-from jwt import PyJWKClient
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClient
 
 from app.config import settings
 from app.schemas import UserPayload
@@ -19,14 +19,14 @@ HMAC_ALGORITHMS = ["HS256", "HS384", "HS512"]
 
 
 @lru_cache(maxsize=1)
-def get_jwks_client() -> Optional[PyJWKClient]:
+def get_jwks_client() -> PyJWKClient | None:
     jwks_url = getattr(settings, "SUPABASE_JWKS_URL", None)
     if not jwks_url:
         return None
     try:
         return PyJWKClient(jwks_url)
-    except Exception:
-        logger.warning("Failed to initialize JWKS client from %s", jwks_url)
+    except Exception as e:
+        logger.warning("Failed to initialize JWKS client from %s: %s", jwks_url, e)
         return None
 
 
@@ -77,7 +77,7 @@ def _extract_user_payload(payload: dict) -> UserPayload:
     return UserPayload(user_id=user_id, email=email, role=role)
 
 
-def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPayload:
+def verify_supabase_token(token: str, secret: str | None = None) -> UserPayload:
     effective_secret = secret or settings.SUPABASE_JWT_SECRET
     audience = settings.SUPABASE_JWT_AUDIENCE
 
@@ -97,8 +97,10 @@ def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPaylo
         )
 
 
+CredentialsDep = Annotated[HTTPAuthorizationCredentials, Depends(security)]
+
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: CredentialsDep,
 ) -> UserPayload:
     """FastAPI dependency that extracts and verifies the current user from the Bearer token."""
     return verify_supabase_token(credentials.credentials)

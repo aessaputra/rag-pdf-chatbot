@@ -1,5 +1,6 @@
 from functools import lru_cache
-from typing import Literal, Optional
+from typing import Literal
+
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     SUPABASE_SECRET_KEY: str = Field(
         validation_alias=AliasChoices("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"),
     )
-    SUPABASE_JWKS_URL: Optional[str] = Field(None, alias="SUPABASE_JWKS_URL")
+    SUPABASE_JWKS_URL: str | None = Field(None, alias="SUPABASE_JWKS_URL")
     SUPABASE_JWT_SECRET: str = Field("placeholder_jwt_secret", alias="SUPABASE_JWT_SECRET")
     SUPABASE_JWT_AUDIENCE: str = Field("authenticated", alias="SUPABASE_JWT_AUDIENCE")
 
@@ -35,7 +36,7 @@ class Settings(BaseSettings):
     )
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     return Settings()
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -23,7 +23,7 @@ class ChatMessageResponse(BaseModel):
     session_id: str
     sender: str
     content: str
-    citations: List[Citation] = []
+    citations: list[Citation] = []
     created_at: datetime
 
 
@@ -31,7 +31,7 @@ class DocumentChunkDTO(BaseModel):
     content: str
     page_number: int
     filename: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class DocumentUploadResponse(BaseModel):
@@ -48,7 +48,7 @@ class DocumentItemResponse(BaseModel):
     filename: str
     file_size: int
     total_pages: int
-    file_path: Optional[str] = None
+    file_path: str | None = None
     is_active: bool = True
     status: str = "ready"
     created_at: datetime
@@ -76,21 +76,21 @@ ProviderType = Literal["gemini", "openai", "openrouter", "openai_compatible"]
 
 class ChatQueryRequest(BaseModel):
     query: str = Field(min_length=1, max_length=2000, description="User question prompt")
-    provider: Optional[ProviderType] = Field("gemini", description="LLM provider name")
-    document_ids: Optional[List[str]] = Field(None, max_length=20, description="Optional document ID filters")
-    session_id: Optional[str] = Field(None, description="Optional chat session ID")
+    provider: ProviderType | None = Field("gemini", description="LLM provider name")
+    document_ids: list[str] | None = Field(None, max_length=20, description="Optional document ID filters")
+    session_id: str | None = Field(None, description="Optional chat session ID")
 
 
 
 class ProviderConfigCreate(BaseModel):
     provider: ProviderType
     api_key: str = Field(min_length=1, description="Raw API key string")
-    display_name: Optional[str] = Field(None, max_length=100, description="Custom label e.g. Groq Llama 3")
-    base_url: Optional[str] = Field(None, max_length=500, description="Custom base URL endpoint")
-    model_name: Optional[str] = Field(None, max_length=200, description="Target model slug name")
+    display_name: str | None = Field(None, max_length=100, description="Custom label e.g. Groq Llama 3")
+    base_url: str | None = Field(None, max_length=500, description="Custom base URL endpoint")
+    model_name: str | None = Field(None, max_length=200, description="Target model slug name")
     is_default: bool = Field(False, description="Set as active default chat provider")
 
-    def model_post_init(self, __context: Any) -> None:
+    def model_post_init(self, __context: Any, /) -> None:
         if self.provider == "openai_compatible":
             if not self.base_url or not self.base_url.strip():
                 raise ValueError("base_url is required for OpenAI-Compatible provider")
@@ -102,21 +102,21 @@ class ProviderConfigCreate(BaseModel):
 
 
 class ProviderConfigUpdate(BaseModel):
-    display_name: Optional[str] = Field(None, max_length=100)
-    api_key: Optional[str] = Field(None, min_length=1, description="New raw API key if rotating")
-    base_url: Optional[str] = Field(None, max_length=500)
-    model_name: Optional[str] = Field(None, max_length=200)
-    is_default: Optional[bool] = None
+    display_name: str | None = Field(None, max_length=100)
+    api_key: str | None = Field(None, min_length=1, description="New raw API key if rotating")
+    base_url: str | None = Field(None, max_length=500)
+    model_name: str | None = Field(None, max_length=200)
+    is_default: bool | None = None
 
 
 class ProviderConfigResponse(BaseModel):
     id: str
     user_id: str
     provider: str
-    display_name: Optional[str] = None
+    display_name: str | None = None
     api_key_masked: str
-    base_url: Optional[str] = None
-    model_name: Optional[str] = None
+    base_url: str | None = None
+    model_name: str | None = None
     is_default: bool
     created_at: datetime
     updated_at: datetime
@@ -133,8 +133,8 @@ class EmbeddingPresetDTO(BaseModel):
 
 class EmbeddingConfigSaveRequest(BaseModel):
     provider: str = Field(description="Provider name: gemini, openai, openrouter, or openai_compatible")
-    api_key: Optional[str] = Field(None, description="Raw API key string (optional if reusing provider key)")
-    base_url: Optional[str] = Field(None, max_length=500)
+    api_key: str | None = Field(None, description="Raw API key string (optional if reusing provider key)")
+    base_url: str | None = Field(None, max_length=500)
     model_name: str = Field(min_length=1, description="Embedding model name slug")
     embedding_dimensions: int = Field(768, gt=0, description="Vector output dimensions")
 
@@ -143,7 +143,7 @@ class EmbeddingConfigResponse(BaseModel):
     user_id: str
     provider: str
     api_key_masked: str
-    base_url: Optional[str] = None
+    base_url: str | None = None
     model_name: str
     embedding_dimensions: int
     locked: bool
@@ -154,17 +154,17 @@ class EmbeddingConfigResponse(BaseModel):
 class VerifyModelsRequest(BaseModel):
     provider: str = Field(..., description="Provider type: gemini, openai, openrouter, ollama, or openai_compatible")
     model_type: Literal["chat", "embedding"] = Field("chat", description="Model type filter: chat or embedding")
-    api_key: Optional[str] = Field(None, description="Raw API key to test")
-    base_url: Optional[str] = Field(None, max_length=500, description="Optional custom base URL")
-    config_id: Optional[str] = Field(None, description="Optional existing ProviderConfig ID to reuse saved encrypted key")
+    api_key: str | None = Field(None, description="Raw API key to test")
+    base_url: str | None = Field(None, max_length=500, description="Optional custom base URL")
+    config_id: str | None = Field(None, description="Optional existing ProviderConfig ID to reuse saved encrypted key")
 
 
 class VerifyModelsResponse(BaseModel):
     success: bool
-    models: List[str]
+    models: list[str]
     default_model: str
-    probed_dimension: Optional[int] = None
-    error: Optional[str] = None
+    probed_dimension: int | None = None
+    error: str | None = None
 
 
 

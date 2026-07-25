@@ -1,5 +1,6 @@
 import logging
-from typing import List
+from typing import Annotated
+
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_pdf_document(
     user: CurrentUserDep,
-    file: UploadFile = File(...)
+    file: Annotated[UploadFile, File(...)],
 ) -> DocumentUploadResponse:
     """
     Uploads and ingests a PDF document.
@@ -72,12 +73,12 @@ async def upload_pdf_document(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal menyimpan dokumen ke database: {str(e)}"
+            detail=f"Gagal menyimpan dokumen ke database: {e!s}"
         )
 
 
-@router.get("", response_model=List[DocumentItemResponse])
-async def list_user_documents(user: CurrentUserDep) -> List[DocumentItemResponse]:
+@router.get("", response_model=list[DocumentItemResponse])
+async def list_user_documents(user: CurrentUserDep) -> list[DocumentItemResponse]:
     def fetch_docs():
         supabase = get_supabase_client()
         res = (

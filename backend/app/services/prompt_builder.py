@@ -12,7 +12,7 @@ Applies the following prompt engineering patterns:
 - Progressive Context Formatting: Clear visual separators per source chunk.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from langchain_core.messages import BaseMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -78,19 +78,12 @@ class PromptBuilder:
     )
 
     # ── Composed System Instruction ─────────────────────────────────
-    SYSTEM_INSTRUCTION = "\n\n".join([
-        _ROLE,
-        _CONSTRAINTS,
-        _REASONING,
-        _CITATIONS,
-        _CONFIDENCE,
-        _OUTPUT_FORMAT,
-    ])
+    SYSTEM_INSTRUCTION = f"{_ROLE}\n\n{_CONSTRAINTS}\n\n{_REASONING}\n\n{_CITATIONS}\n\n{_CONFIDENCE}\n\n{_OUTPUT_FORMAT}"
 
     NO_CONTEXT_MESSAGE = "Maaf, tidak ditemukan dokumen yang relevan untuk menjawab pertanyaan ini."
 
     @staticmethod
-    def _build_context_string(chunks: List[Dict[str, Any]]) -> str:
+    def _build_context_string(chunks: list[dict[str, Any]]) -> str:
         """Formats raw chunks into a visually separated context string.
 
         Each chunk is labeled with a source number, filename, and page number
@@ -117,8 +110,8 @@ class PromptBuilder:
     @staticmethod
     def format_context_prompt(
         query: str,
-        chunks: List[Dict[str, Any]],
-    ) -> List[BaseMessage]:
+        chunks: list[dict[str, Any]],
+    ) -> list[BaseMessage]:
         """Formats query and context chunks into structured RAG prompt messages.
 
         Applies role-based system prompts with chain-of-thought reasoning
@@ -137,8 +130,8 @@ class PromptBuilder:
             ("system", PromptBuilder.SYSTEM_INSTRUCTION),
             (
                 "user",
-                "=== KONTEKS DOKUMEN ===\n{context}\n\n"
-                "=== PERTANYAAN ===\n{query}",
+                ("=== KONTEKS DOKUMEN ===\n{context}\n\n"
+                 "=== PERTANYAAN ===\n{query}"),
             ),
         ])
 

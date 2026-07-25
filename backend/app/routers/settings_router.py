@@ -1,4 +1,4 @@
-from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 
@@ -14,7 +14,6 @@ from app.schemas import (
     VerifyModelsRequest,
     VerifyModelsResponse,
 )
-
 from app.services.crypto_service import CryptoService
 from app.services.model_service import ModelService
 
@@ -42,9 +41,9 @@ def _format_config_response(record: dict, crypto: CryptoService) -> ProviderConf
     )
 
 
-@router.get("/providers", response_model=List[ProviderConfigResponse])
-async def list_provider_configs(user: CurrentUserDep) -> List[ProviderConfigResponse]:
-    def fetch_configs() -> List[ProviderConfigResponse]:
+@router.get("/providers", response_model=list[ProviderConfigResponse])
+async def list_provider_configs(user: CurrentUserDep) -> list[ProviderConfigResponse]:
+    def fetch_configs() -> list[ProviderConfigResponse]:
         supabase = get_supabase_client()
         crypto = CryptoService()
 
@@ -114,7 +113,7 @@ async def verify_and_list_models(
 
     # If config_id is provided and api_key is missing, resolve decrypted key from existing config
     if not api_key and payload.config_id:
-        def fetch_key() -> tuple[Optional[str], Optional[str]]:
+        def fetch_key() -> tuple[str | None, str | None]:
             supabase = get_supabase_client()
             crypto = CryptoService()
             existing = (
@@ -241,7 +240,7 @@ async def delete_provider_config(
 
 # --- Embedding Configuration Endpoints ---
 
-RECOMMENDED_EMBEDDING_PRESETS: List[EmbeddingPresetDTO] = [
+RECOMMENDED_EMBEDDING_PRESETS: list[EmbeddingPresetDTO] = [
     EmbeddingPresetDTO(
         id="gemini-embedding-001",
         name="Google Gemini (768d)",
@@ -294,8 +293,8 @@ def _format_embedding_response(record: dict, is_locked: bool, crypto: CryptoServ
     )
 
 
-@router.get("/embedding/presets", response_model=List[EmbeddingPresetDTO])
-async def list_embedding_presets() -> List[EmbeddingPresetDTO]:
+@router.get("/embedding/presets", response_model=list[EmbeddingPresetDTO])
+async def list_embedding_presets() -> list[EmbeddingPresetDTO]:
     return RECOMMENDED_EMBEDDING_PRESETS
 
 

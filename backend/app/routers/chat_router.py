@@ -1,6 +1,6 @@
 import logging
 from collections.abc import AsyncIterable
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
@@ -25,14 +25,15 @@ router = APIRouter(
 )
 
 
-def parse_citations(citations_raw: Any) -> List[Citation]:
+def parse_citations(citations_raw: Any) -> list[Citation]:
     if not citations_raw:
         return []
     if isinstance(citations_raw, str):
         try:
             import json
             citations_raw = json.loads(citations_raw)
-        except Exception:
+        except Exception as e:
+            logger.debug("Failed to parse citations JSON: %s", e)
             return []
     if isinstance(citations_raw, list):
         parsed = []
@@ -46,8 +47,8 @@ def parse_citations(citations_raw: Any) -> List[Citation]:
                             content=str(item.get("content", "")),
                         )
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Skipped invalid citation: %s", e)
         return parsed
     return []
 
@@ -91,8 +92,8 @@ async def _stream_with_session(
             }).execute()
             if sess_res.data:
                 active_session_id = str(sess_res.data[0]["id"])
-    except Exception:
-        logger.warning("Failed to create chat session for user %s", user_id, exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to create chat session for user %s: %s", user_id, e, exc_info=True)
 
     if active_session_id:
         yield ServerSentEvent(data={"session_id": active_session_id}, event="session")
@@ -124,10 +125,10 @@ async def _stream_with_session(
                     "citations": service.last_citations,
                 },
             ]).execute()
-        except Exception:
+        except Exception as e:
             logger.warning(
-                "Failed to persist chat messages for session %s",
-                active_session_id,
+                "Failed to persist chat messages for session %s: %s",
+                active_session_id, e,
                 exc_info=True,
             )
 
@@ -142,9 +143,9 @@ async def stream_chat_response(
         yield event
 
 
-@router.get("/sessions", response_model=List[ChatSessionResponse])
-async def list_chat_sessions(user: CurrentUserDep) -> List[ChatSessionResponse]:
-    def fetch_sessions() -> List[ChatSessionResponse]:
+@router.get("/sessions", response_model=list[ChatSessionResponse])
+async def list_chat_sessions(user: CurrentUserDep) -> list[ChatSessionResponse]:
+    def fetch_sessions() -> list[ChatSessionResponse]:
         supabase = get_supabase_client()
         response = (
             supabase.table("chat_sessions")
@@ -167,12 +168,12 @@ async def list_chat_sessions(user: CurrentUserDep) -> List[ChatSessionResponse]:
     return await run_in_threadpool(fetch_sessions)
 
 
-@router.get("/sessions/{session_id}/messages", response_model=List[ChatMessageResponse])
+@router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
 async def list_session_messages(
     session_id: str,
     user: CurrentUserDep,
-) -> List[ChatMessageResponse]:
-    def fetch_messages() -> List[ChatMessageResponse]:
+) -> list[ChatMessageResponse]:
+    def fetch_messages() -> list[ChatMessageResponse]:
         supabase = get_supabase_client()
         response = (
             supabase.table("chat_messages")
@@ -202,7 +203,7 @@ async def list_session_messages(
 @router.post("/sessions", response_model=ChatSessionResponse, status_code=status.HTTP_201_CREATED)
 async def create_chat_session(
     user: CurrentUserDep,
-    title: Optional[str] = None,
+    title: str | None = None,
 ) -> ChatSessionResponse:
     def insert_session() -> ChatSessionResponse:
         supabase = get_supabase_client()

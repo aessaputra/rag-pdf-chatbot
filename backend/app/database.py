@@ -7,7 +7,9 @@ server-side operations that intentionally require elevated privileges.
 """
 
 from functools import lru_cache
-from supabase import create_client, Client
+
+from supabase import Client, create_client
+
 from app.config import settings
 
 

@@ -6,7 +6,8 @@ Provides 100% dynamic live model discovery and real-time vector probing directly
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 
 from app.config import settings
@@ -22,9 +23,9 @@ class ModelService:
         cls,
         provider: str,
         api_key: str,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         model_type: str = "chat",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fetches live available models directly from provider REST API endpoints.
         Zero hardcoded catalogs.
@@ -73,7 +74,7 @@ class ModelService:
                 }
 
             default_model = models[0]
-            probed_dim: Optional[int] = None
+            probed_dim: int | None = None
 
             if is_embedding and default_model and api_key and api_key != "public":
                 try:
@@ -104,7 +105,7 @@ class ModelService:
         provider: str,
         api_key: str,
         model_name: str,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
     ) -> int:
         """Sends a 1-token probe embedding request to detect vector dimension."""
         provider_norm = provider.lower().strip()
@@ -117,7 +118,7 @@ class ModelService:
 
         if provider_norm in ("openai", "openrouter", "openai_compatible"):
             from langchain_openai import OpenAIEmbeddings
-            kw: Dict[str, Any] = {"model": model_name, "openai_api_key": api_key}
+            kw: dict[str, Any] = {"model": model_name, "openai_api_key": api_key}
             if base_url:
                 kw["openai_api_base"] = base_url
             emb = OpenAIEmbeddings(**kw)
@@ -127,7 +128,7 @@ class ModelService:
         return 768
 
     @staticmethod
-    async def _fetch_gemini_models(api_key: str, is_embedding: bool) -> List[str]:
+    async def _fetch_gemini_models(api_key: str, is_embedding: bool) -> list[str]:
         """Queries Google Gemini v1beta models endpoint live."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -135,7 +136,7 @@ class ModelService:
             if resp.status_code != 200:
                 raise ValueError("Kunci API tidak valid atau akses ditolak.")
             data = resp.json()
-            models: List[str] = []
+            models: list[str] = []
             for item in data.get("models", []):
                 name = item.get("name", "")
                 methods = item.get("supportedGenerationMethods", [])
@@ -152,9 +153,9 @@ class ModelService:
     async def _fetch_openai_style_models(
         provider: str,
         api_key: str,
-        base_url: Optional[str],
+        base_url: str | None,
         is_embedding: bool,
-    ) -> List[str]:
+    ) -> list[str]:
         """Queries OpenAI/OpenRouter models endpoint live."""
         if provider == "openrouter":
             url = "https://openrouter.ai/api/v1/models"
@@ -173,7 +174,7 @@ class ModelService:
             if resp.status_code != 200:
                 raise ValueError("Kunci API tidak valid atau akses ditolak.")
             data = resp.json()
-            models: List[str] = []
+            models: list[str] = []
             for item in data.get("data", []):
                 m_id = item.get("id", "")
                 if is_embedding:
@@ -184,7 +185,7 @@ class ModelService:
             return models
 
     @staticmethod
-    async def _fetch_ollama_models(base_url: str) -> List[str]:
+    async def _fetch_ollama_models(base_url: str) -> list[str]:
         """Queries Ollama local tags endpoint live."""
         url = f"{base_url.rstrip('/')}/api/tags"
         async with httpx.AsyncClient(timeout=5.0) as client:

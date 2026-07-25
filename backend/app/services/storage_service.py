@@ -6,7 +6,6 @@ Handles file uploads, deletions, and signed URL generation for the private 'docu
 """
 
 import logging
-from typing import Optional
 
 from app.database import get_supabase_client
 
@@ -69,7 +68,7 @@ class StorageService:
             raise
 
     @staticmethod
-    def create_signed_url(file_path: str, expires_in: int = SIGNED_URL_EXPIRY_SECONDS) -> Optional[str]:
+    def create_signed_url(file_path: str, expires_in: int = SIGNED_URL_EXPIRY_SECONDS) -> str | None:
         """
         Generates a temporary signed URL for reading a private PDF.
 

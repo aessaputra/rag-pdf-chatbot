@@ -1,0 +1,5 @@
+[lint]
+# BLE001: Do not catch blind exception `Exception`
+# In FastAPI and third-party API integration, catching Exception is often intended 
+# to prevent crashing the server and returning a 500 error instead.
+ignore = ["BLE001"]

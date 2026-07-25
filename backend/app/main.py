@@ -1,4 +1,4 @@
-from typing import Dict
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,5 +32,5 @@ app.include_router(settings_router.router)
 
 
 @app.get("/health", tags=["System"])
-def health_check() -> Dict[str, str]:
+def health_check() -> dict[str, str]:
     return {"status": "online"}
