@@ -12,7 +12,7 @@ import { ViewVerticalIcon } from '@radix-ui/react-icons';
 
 export default function Sidebar() {
   const { user, handleLogout } = useApp();
-  const { activeDocumentCount, setIsDocModalOpen } = useDocument();
+  const { setIsDocModalOpen } = useDocument();
   const {
     sessions,
     activeSessionId,

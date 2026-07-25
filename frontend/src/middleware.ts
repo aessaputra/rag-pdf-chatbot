@@ -1,4 +1,4 @@
-import { createServerClient, type CookieMethodsServer } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC_ROUTES = ['/login', '/register'];
@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
           response.headers.set(key, value)
         );
       },
-    } as CookieMethodsServer,
+    },
   });
 
 
