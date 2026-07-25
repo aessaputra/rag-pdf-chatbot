@@ -28,9 +28,9 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
   }, [messages, isStreaming]);
 
   const suggestionPrompts = [
-    'Rangkum poin-poin utama dokumen ini.',
-    'Apa saja syarat dan batasan yang disebutkan?',
-    'Jelaskan kesimpulan dari berkas PDF aktif.',
+    'Buat ringkasan dari dokumen ini.',
+    'Adakah informasi penting yang perlu saya perhatikan?',
+    'Apa kesimpulan utama dari dokumen ini?',
   ];
 
   return (
@@ -83,12 +83,9 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
               <div className="p-3.5 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
                 <MagicWandIcon className="w-6 h-6" aria-hidden="true" />
               </div>
-              <h2 className="text-2xl font-serif font-semibold text-primary tracking-tight mb-2">
-                Tanyakan tentang dokumen Anda.
+              <h2 className="text-2xl font-serif font-semibold text-primary tracking-tight mb-6">
+                Dari mana sebaiknya kita mulai?
               </h2>
-              <p className="text-sm text-muted mb-6">
-                {activeDocumentCount} dokumen aktif siap digunakan sebagai sumber konteks RAG.
-              </p>
 
 
               <div className="flex flex-col gap-2 w-full">

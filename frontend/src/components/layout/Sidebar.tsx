@@ -78,22 +78,17 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={() => setIsDocModalOpen(true)}
-            className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center justify-between cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
+            className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center justify-start gap-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
           >
-            <div className="flex items-center gap-1.5">
-              <FileTextIcon className="w-4 h-4" aria-hidden="true" />
-              <span>Dokumen Saya</span>
-            </div>
-            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
-              {activeDocumentCount} Aktif
-            </span>
+            <FileTextIcon className="w-4 h-4" aria-hidden="true" />
+            <span>Dokumen Saya</span>
           </button>
         </div>
 
         {sessions.length > 0 ? (
           <div className="flex-1 space-y-1.5 flex flex-col min-h-0 pt-2 border-t border-subtle">
             <div className="text-xs font-mono text-muted uppercase tracking-wider px-1">
-              PERCAKAPAN ({sessions.length})
+              PERCAKAPAN
             </div>
             <div className="overflow-y-auto space-y-1 pr-1 flex-1">
               {sessions.map((sess) => (

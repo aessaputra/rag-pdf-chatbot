@@ -64,21 +64,14 @@ export function ChatProvider({ children }: { readonly children: React.ReactNode 
 
   useEffect(() => {
     if (token) {
-      reloadSessions(token).then((sessData) => {
-        if (sessData && sessData.length > 0) {
-          const latestSessionId = sessData[0].id;
-          loadSessionMessages(latestSessionId, token).finally(() => setIsInitializingSessions(false));
-        } else {
-          setIsInitializingSessions(false);
-        }
-      });
+      reloadSessions(token).finally(() => setIsInitializingSessions(false));
     } else {
       setSessions([]);
       setMessages([]);
       setActiveSessionId(null);
       setIsInitializingSessions(false);
     }
-  }, [token, reloadSessions, loadSessionMessages]);
+  }, [token, reloadSessions]);
 
   const handleNewChat = useCallback(() => {
     setActiveSessionId(null);

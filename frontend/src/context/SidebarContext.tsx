@@ -11,7 +11,13 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | null>(null);
 
 export function SidebarProvider({ children }: { readonly children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (window.innerWidth >= 768) {
+      setIsOpen(true);
+    }
+  }, []);
   const toggle = React.useCallback(() => setIsOpen((prev) => !prev), []);
   const value = useMemo(() => ({ isOpen, toggle, setIsOpen }), [isOpen, toggle]);
 
