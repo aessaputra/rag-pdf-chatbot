@@ -261,27 +261,35 @@ export function ProviderFormCard({
           </div>
 
           {fetchedModels.length > 0 && !isCustomModel ? (
-            <select
-              id="formModelSelect"
-              value={formModelName}
-              onChange={(e) => {
-                if (e.target.value === '__custom__') {
-                  setIsCustomModel(true);
-                  setFormModelName('');
-                } else {
-                  setFormModelName(e.target.value);
-                }
-              }}
-              className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card text-primary border border-subtle"
-            >
-              <option value="" disabled>-- Pilih Model --</option>
-              {fetchedModels.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-              <option value="__custom__">-- Input Slug Custom --</option>
-            </select>
+            (() => {
+              const options = [...fetchedModels];
+              if (formModelName && !options.includes(formModelName)) {
+                options.unshift(formModelName);
+              }
+              return (
+                <select
+                  id="formModelSelect"
+                  value={formModelName}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomModel(true);
+                      setFormModelName('');
+                    } else {
+                      setFormModelName(e.target.value);
+                    }
+                  }}
+                  className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card text-primary border border-subtle"
+                >
+                  <option value="" disabled>-- Pilih Model --</option>
+                  {options.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                  <option value="__custom__">-- Input Slug Custom --</option>
+                </select>
+              );
+            })()
           ) : (
             <div className="space-y-1">
               <input

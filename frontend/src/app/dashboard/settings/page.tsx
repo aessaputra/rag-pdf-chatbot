@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabaseClient';
 import {
-  getEmbeddingConfig, listEmbeddingPresets, listProviderConfigs
+  getEmbeddingConfig, listProviderConfigs
 } from '@/lib/api';
-import type { EmbeddingConfig, EmbeddingPreset, ProviderConfig, UserPayload } from '@/types';
+import type { EmbeddingConfig, ProviderConfig, UserPayload } from '@/types';
 import ProviderSettingsSection from '@/components/settings/ProviderSettingsSection';
 import EmbeddingSettingsSection from '@/components/settings/EmbeddingSettingsSection';
 
@@ -23,7 +23,6 @@ export default function SettingsPage() {
   const [user, setUser] = useState<UserPayload | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [configs, setConfigs] = useState<ProviderConfig[]>([]);
-  const [presets, setPresets] = useState<EmbeddingPreset[]>([]);
   const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -43,16 +42,14 @@ export default function SettingsPage() {
       setUser(createUserPayload(authUser.id, authUser.email));
       setToken(session.access_token);
 
-      const [provRes, presetRes, embConfigRes] = await Promise.all([
+      const [provRes, embConfigRes] = await Promise.all([
         listProviderConfigs(session.access_token),
-        listEmbeddingPresets(),
         getEmbeddingConfig(session.access_token),
       ]);
 
       if (!mounted) return;
 
       if (provRes.success && provRes.data) setConfigs(provRes.data);
-      if (presetRes.success && presetRes.data) setPresets(presetRes.data);
       if (embConfigRes.success && embConfigRes.data) setEmbeddingConfig(embConfigRes.data);
     }
 
@@ -124,7 +121,6 @@ export default function SettingsPage() {
         {token ? (
           <EmbeddingSettingsSection
             embeddingConfig={embeddingConfig}
-            presets={presets}
             token={token}
             onSetEmbeddingConfig={setEmbeddingConfig}
             onSetSuccessMsg={setSuccessMsg}
