@@ -210,7 +210,7 @@ npm run build   # TypeScript type-check + Next.js production build
 - **Strict mode** enabled (`"strict": true` in `tsconfig.json`).
 - **Path alias**: `@/*` maps to `./src/*`.
 - **React 19** + **Next.js 15 App Router** conventions.
-- **Styling**: Dark-themed minimal UI with Tailwind CSS v4.
+- **Styling**: Minimalist UI supporting both Light and Dark themes with Tailwind CSS v4.
 
 ---
 
@@ -235,3 +235,40 @@ npm run build   # TypeScript type-check + Next.js production build
 | `GET` | `/api/chat/sessions` | ✅ Bearer | List user's chat sessions |
 
 All authenticated endpoints require a Supabase JWT in the `Authorization: Bearer <token>` header.
+
+---
+
+## Build and Deployment
+
+### Production Docker
+Use the production overrides to run optimized containers:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+```
+
+### Manual Production Builds
+- **Backend**: Uvicorn should be run with a production-ready configuration (e.g., specifying workers).
+- **Frontend**: 
+  ```bash
+  cd frontend
+  npm run build
+  npm start
+  ```
+
+---
+
+## Security Considerations
+
+- **Bring Your Own Key (BYOK)**: All API keys must be encrypted before database storage using AES-256-GCM (`CryptoService`). Do not log API keys in plain text.
+- **Row Level Security (RLS)**: Every Supabase table must have RLS enabled with policies ensuring users can only access their own data (`(select auth.uid()) = user_id`).
+- **Authentication**: JWT verification is mandatory for all protected FastAPI routes using `CurrentUserDep`.
+
+---
+
+## Pull Request Guidelines
+
+- **Title Format**: `[Frontend/Backend/Fullstack/Docs] Brief description of changes`
+- **Required Checks**:
+  - **Backend**: `python -m pytest tests/` must pass with no errors.
+  - **Frontend**: `npm run build` must successfully compile the TypeScript code.
+- **Scope**: Ensure changes to one service do not break the API contracts for the other service. Test the full RAG pipeline locally before requesting a review.
