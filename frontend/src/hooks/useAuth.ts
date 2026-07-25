@@ -43,6 +43,7 @@ export function useAuth(mode: AuthMode) {
           status: 'success',
           user: { user_id: data.user.id, email: data.user.email || email, role: 'authenticated' },
         });
+        router.refresh();
         router.push('/');
       }
     } catch (err: any) {

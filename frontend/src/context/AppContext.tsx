@@ -106,6 +106,7 @@ export function AppProvider({
 
   const handleLogout = React.useCallback(async () => {
     await supabase.auth.signOut();
+    router.refresh();
     router.push('/login');
   }, [supabase, router]);
 
