@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUpIcon, CheckIcon, ChevronDownIcon, MagicWandIcon } from '@radix-ui/react-icons';
+import { ArrowUpIcon, CheckIcon, MagicWandIcon } from '@radix-ui/react-icons';
 import { useDashboard } from '@/context/DashboardContext';
 import type { ProviderConfig } from '@/types';
 
@@ -78,7 +78,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
       >
         {/* Integrated AI Model Selector Popover */}
         {providerConfigs && providerConfigs.length > 0 ? (
-          <div ref={providerRef} className="relative flex items-center shrink-0 border-r border-subtle pr-2.5 mr-0.5 mb-1">
+          <div ref={providerRef} className="relative flex items-center shrink-0 mb-0.5 mr-1">
             <button
               type="button"
               onClick={() => setIsProviderOpen((prev) => !prev)}
@@ -86,11 +86,10 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               aria-expanded={isProviderOpen}
               aria-haspopup="listbox"
               aria-label="Pilih Provider AI"
-              className="flex items-center gap-1.5 text-xs font-mono font-medium text-secondary hover:text-primary transition-colors cursor-pointer py-1 px-1 rounded-md focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-none"
+              title={`Ganti Provider (Aktif: ${activeLabel})`}
+              className="p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-none cursor-pointer"
             >
-              <MagicWandIcon className="w-3.5 h-3.5 shrink-0 text-muted" aria-hidden="true" />
-              <span className="truncate max-w-[140px]">{activeLabel}</span>
-              <ChevronDownIcon className={`w-3 h-3 shrink-0 text-muted transition-transform duration-150 ${isProviderOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+              <MagicWandIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             </button>
 
             {/* Custom Floating Popover Dropdown Menu */}

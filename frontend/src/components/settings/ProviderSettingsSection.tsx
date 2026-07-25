@@ -125,8 +125,8 @@ export function ProviderSettingsSection({
             onClick={handleCloseForm}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-canvas border-l border-subtle shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
-            <div className="p-6 sm:p-8">
+          <div className="fixed inset-y-0 right-0 z-50 h-screen w-full max-w-md bg-canvas border-l border-subtle shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="p-6 sm:p-8 h-full flex flex-col">
               <ProviderFormCard
                 editingConfigId={editingConfig?.id || null}
                 initialProvider={editingConfig?.provider}
@@ -164,35 +164,32 @@ export function ProviderSettingsSection({
               key={config.id}
               className="p-4 rounded-lg bg-canvas border border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-zinc-400 transition-colors"
             >
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-xs text-primary">
                     {config.display_name || config.provider.toUpperCase()}
                   </span>
-                  <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
-                    {config.provider}
-                  </span>
+                  {config.display_name && config.display_name.toLowerCase() !== config.provider.toLowerCase() && (
+                    <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
+                      {config.provider}
+                    </span>
+                  )}
                   {config.is_default ? (
                     <span className="text-[10px] font-serif italic text-muted">
                       (Default)
                     </span>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono text-muted">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-zinc-500/50">key</span>
-                    <span>{config.api_key_masked}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-zinc-500/50">model</span>
-                    <span>{config.model_name || 'default'}</span>
-                  </div>
-                  {config.base_url ? (
-                    <div className="flex items-center gap-1.5 truncate max-w-xs">
-                      <span className="text-zinc-500/50">url</span>
-                      <span>{config.base_url}</span>
-                    </div>
-                  ) : null}
+                <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-muted">
+                  <span>{config.api_key_masked}</span>
+                  <span className="text-zinc-500/40">•</span>
+                  <span>{config.model_name || 'default'}</span>
+                  {config.base_url && (
+                    <>
+                      <span className="text-zinc-500/40">•</span>
+                      <span className="truncate max-w-xs">{config.base_url}</span>
+                    </>
+                  )}
                 </div>
               </div>
 
