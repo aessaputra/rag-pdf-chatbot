@@ -276,7 +276,7 @@ export function EmbeddingSettingsSection({
                 id="embBaseUrl"
                 type="url"
                 disabled={!!embeddingConfig?.locked}
-                placeholder="https://api.groq.com/openai/v1"
+                placeholder="https://api.openai.com/v1"
                 value={embBaseUrl}
                 onChange={(e) => setEmbBaseUrl(e.target.value)}
                 className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"
