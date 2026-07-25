@@ -169,25 +169,18 @@ async def update_provider_config(
                 detail="Konfigurasi provider tidak ditemukan."
             )
 
-        update_data = {}
-        if payload.display_name is not None:
-            update_data["display_name"] = payload.display_name
-        if payload.base_url is not None:
-            update_data["base_url"] = payload.base_url
-        if payload.model_name is not None:
-            update_data["model_name"] = payload.model_name
+        update_data = payload.model_dump(exclude_unset=True, exclude={"api_key"})
+        
         if payload.api_key:
             update_data["api_key_enc"] = crypto.encrypt(payload.api_key)
 
-        if payload.is_default is not None:
-            update_data["is_default"] = payload.is_default
-            if payload.is_default:
-                (
-                    supabase.table("user_provider_configs")
-                    .update({"is_default": False})
-                    .eq("user_id", user.user_id)
-                    .execute()
-                )
+        if payload.is_default:
+            (
+                supabase.table("user_provider_configs")
+                .update({"is_default": False})
+                .eq("user_id", user.user_id)
+                .execute()
+            )
 
         if not update_data:
             return _format_config_response(existing.data[0], crypto)

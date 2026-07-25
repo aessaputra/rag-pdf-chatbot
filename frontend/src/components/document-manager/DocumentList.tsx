@@ -22,7 +22,7 @@ export function DocumentList({
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-mono font-medium uppercase tracking-wider text-muted px-1">
-        DAFTAR DOKUMEN ({documents.length})
+        DAFTAR DOKUMEN
       </h3>
 
       {documents.length === 0 ? (

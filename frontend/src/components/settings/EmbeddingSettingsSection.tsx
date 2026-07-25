@@ -241,7 +241,7 @@ export function EmbeddingSettingsSection({
                 >
                   <Select.Trigger
                     id="embModelSelect"
-                    className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50 flex items-center justify-between bg-surface-card outline-none focus-visible:ring-2 border-subtle text-primary focus-visible:ring-zinc-400"
+                    className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50 flex items-center justify-between gap-2 text-left [&>span]:line-clamp-1 bg-surface-card outline-none focus-visible:ring-2 border-subtle text-primary focus-visible:ring-zinc-400"
                   >
                     <Select.Value placeholder="Pilih model…" />
                     <Select.Icon>
@@ -250,13 +250,13 @@ export function EmbeddingSettingsSection({
                   </Select.Trigger>
                   
                   <Select.Portal>
-                    <Select.Content position="popper" sideOffset={4} className="overflow-hidden bg-surface-card border border-subtle rounded-md shadow-lg shadow-black/20 z-[100] w-[var(--radix-select-trigger-width)] max-h-[60vh]">
+                    <Select.Content position="popper" sideOffset={4} className="overflow-hidden bg-surface-card border border-subtle rounded-md shadow-lg shadow-black/20 z-100 w-(--radix-select-trigger-width) max-h-[60vh]">
                       <Select.ScrollUpButton className="flex items-center justify-center h-6.25 bg-surface-card text-primary cursor-default">
                         <ChevronUpIcon className="w-3.5 h-3.5" />
                       </Select.ScrollUpButton>
                       <Select.Viewport className="p-1">
                         {options.map((m) => (
-                          <Select.Item key={m} value={m} className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-[highlighted]:bg-surface-card-hover data-[highlighted]:text-primary data-[highlighted]:outline-none cursor-pointer">
+                          <Select.Item key={m} value={m} className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-highlighted:bg-surface-card-hover data-highlighted:text-primary data-highlighted:outline-none cursor-pointer">
                             <Select.ItemText>{formatModelName(m)}</Select.ItemText>
                             <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
                               <CheckIcon className="w-3.5 h-3.5" />
@@ -264,7 +264,7 @@ export function EmbeddingSettingsSection({
                           </Select.Item>
                         ))}
                         {options.length > 0 && <Select.Separator className="h-px bg-subtle m-1" />}
-                        <Select.Item value="__custom__" className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-[highlighted]:bg-surface-card-hover data-[highlighted]:text-primary data-[highlighted]:outline-none cursor-pointer">
+                        <Select.Item value="__custom__" className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-highlighted:bg-surface-card-hover data-highlighted:text-primary data-highlighted:outline-none cursor-pointer">
                           <Select.ItemText>Kustom…</Select.ItemText>
                           <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
                             <CheckIcon className="w-3.5 h-3.5" />
@@ -283,7 +283,7 @@ export function EmbeddingSettingsSection({
                     id="embModelNameInput"
                     type="text"
                     disabled={!!embeddingConfig?.locked || !targetConfigId}
-                    placeholder="slug model embedding"
+                    placeholder="slug model"
                     value={embModelName}
                     onChange={(e) => setEmbModelName(e.target.value)}
                     className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"

@@ -6,6 +6,16 @@ import { createProviderConfig, deleteProviderConfig, updateProviderConfig } from
 import type { ProviderConfig } from '@/types';
 import ProviderFormCard from './ProviderFormCard';
 
+const getProviderLabel = (type: string) => {
+  const map: Record<string, string> = {
+    openai: 'OpenAI',
+    gemini: 'Google Gemini',
+    openrouter: 'OpenRouter',
+    openai_compatible: 'OpenAI-Compatible'
+  };
+  return map[type] || type.charAt(0).toUpperCase() + type.slice(1);
+};
+
 interface ProviderSettingsSectionProps {
   readonly configs: ProviderConfig[];
   readonly token: string;
@@ -167,13 +177,8 @@ export function ProviderSettingsSection({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-xs text-primary">
-                    {config.display_name || config.provider.toUpperCase()}
+                    {config.display_name || getProviderLabel(config.provider)}
                   </span>
-                  {config.display_name && config.display_name.toLowerCase() !== config.provider.toLowerCase() && (
-                    <span className="text-xs uppercase font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
-                      {config.provider}
-                    </span>
-                  )}
                   {config.is_default ? (
                     <span className="text-xs font-serif italic text-muted">
                       (Default)

@@ -108,18 +108,18 @@ export function ProviderFormCard({
 
     const payload: any = editingConfigId
       ? {
-          display_name: formDisplayName.trim() || undefined,
-          base_url: formBaseUrl.trim() || undefined,
-          model_name: formModelName.trim() || undefined,
+          display_name: formDisplayName.trim() || null,
+          base_url: formBaseUrl.trim() || null,
+          model_name: formModelName.trim() || null,
           is_default: formIsDefault,
           ...(formApiKey.trim() ? { api_key: formApiKey.trim() } : {}),
         }
       : {
           provider: formProvider,
           api_key: formApiKey.trim(),
-          display_name: formDisplayName.trim() || undefined,
-          base_url: formBaseUrl.trim() || undefined,
-          model_name: formModelName.trim() || undefined,
+          display_name: formDisplayName.trim() || null,
+          base_url: formBaseUrl.trim() || null,
+          model_name: formModelName.trim() || null,
           is_default: formIsDefault,
         };
 
@@ -279,7 +279,7 @@ export function ProviderFormCard({
             >
               <Select.Trigger
                 id="formModelSelect"
-                className={`minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card flex items-center justify-between outline-none focus-visible:ring-2 ${
+                className={`minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card flex items-center justify-between gap-2 text-left [&>span]:line-clamp-1 outline-none focus-visible:ring-2 ${
                   fetchError 
                     ? 'border-(--pastel-red-bg) text-(--pastel-red-text) focus-visible:ring-(--pastel-red-text)/30' 
                     : 'border-subtle text-primary focus-visible:ring-zinc-400'
@@ -295,13 +295,13 @@ export function ProviderFormCard({
               </Select.Trigger>
               
               <Select.Portal>
-                <Select.Content position="popper" sideOffset={4} className="overflow-hidden bg-surface-card border border-subtle rounded-md shadow-lg shadow-black/20 z-[100] w-[var(--radix-select-trigger-width)] max-h-[60vh]">
+                <Select.Content position="popper" sideOffset={4} className="overflow-hidden bg-surface-card border border-subtle rounded-md shadow-lg shadow-black/20 z-100 w-(--radix-select-trigger-width) max-h-[60vh]">
                   <Select.ScrollUpButton className="flex items-center justify-center h-6.25 bg-surface-card text-primary cursor-default">
                     <ChevronUpIcon className="w-3.5 h-3.5" />
                   </Select.ScrollUpButton>
                   <Select.Viewport className="p-1">
                     {options.map((m) => (
-                      <Select.Item key={m} value={m} className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-[highlighted]:bg-surface-card-hover data-[highlighted]:text-primary data-[highlighted]:outline-none cursor-pointer">
+                      <Select.Item key={m} value={m} className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-highlighted:bg-surface-card-hover data-highlighted:text-primary data-highlighted:outline-none cursor-pointer">
                         <Select.ItemText>{formatModelName(m)}</Select.ItemText>
                         <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
                           <CheckIcon className="w-3.5 h-3.5" />
@@ -309,7 +309,7 @@ export function ProviderFormCard({
                       </Select.Item>
                     ))}
                     {options.length > 0 && <Select.Separator className="h-px bg-subtle m-1" />}
-                    <Select.Item value="__custom__" className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-[highlighted]:bg-surface-card-hover data-[highlighted]:text-primary data-[highlighted]:outline-none cursor-pointer">
+                    <Select.Item value="__custom__" className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-highlighted:bg-surface-card-hover data-highlighted:text-primary data-highlighted:outline-none cursor-pointer">
                       <Select.ItemText>Kustom...</Select.ItemText>
                       <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
                         <CheckIcon className="w-3.5 h-3.5" />
