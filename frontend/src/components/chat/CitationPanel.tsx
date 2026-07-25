@@ -3,10 +3,7 @@
 import { Cross1Icon, FileTextIcon } from '@radix-ui/react-icons';
 import { useChat } from '@/context/ChatContext';
 
-/**
- * Sanitizes raw PDF text extractions by replacing unprintable PUA unicode glyphs
- * (such as missing font bullet rectangles) with clean bullet characters (`•`).
- */
+
 function sanitizeContextText(text: string): string {
   if (!text) return '';
   return text.replace(/[\uE000-\uF8FF\u25A0-\u25FF]/g, '•');
@@ -21,7 +18,7 @@ export default function CitationPanel() {
 
   return (
     <aside aria-label="Detail Sitasi Dokumen PDF" className="w-90 bg-canvas border-l border-subtle p-6 flex flex-col h-screen shrink-0 animate-in slide-in-from-right duration-200 z-20 transition-colors duration-150">
-      {/* Header */}
+
       <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-subtle">
         <h3 className="text-xs font-mono uppercase tracking-wider text-muted">
           DETAIL SITASI
@@ -36,7 +33,7 @@ export default function CitationPanel() {
         </button>
       </div>
 
-      {/* Flat Metadata Block */}
+
       <div className="space-y-1.5 mb-5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -51,7 +48,7 @@ export default function CitationPanel() {
         </div>
       </div>
 
-      {/* Editorial Quote Excerpt */}
+
       <div className="flex-1 flex flex-col min-h-0 space-y-2">
         <div className="text-xs font-mono text-muted uppercase tracking-wider">
           KONTEKS DOKUMEN

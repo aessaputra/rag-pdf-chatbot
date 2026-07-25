@@ -1,10 +1,3 @@
-"""
-RAG Service Module
-
-Thin orchestrator composing ContextRetriever, PromptBuilder, and LLM streaming
-into a unified RAG pipeline that yields ServerSentEvent objects.
-"""
-
 import logging
 from collections.abc import AsyncIterable
 from typing import Any, Dict, List, Optional
@@ -23,8 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class RAGService:
-    """Orchestrates RAG context retrieval, prompt construction, and SSE token streaming."""
-
     def __init__(
         self,
         user_id: str,
@@ -40,14 +31,6 @@ class RAGService:
         query: str,
         document_ids: Optional[List[str]] = None,
     ) -> AsyncIterable[ServerSentEvent]:
-        """
-        Yields ServerSentEvent objects for the RAG streaming pipeline.
-
-        Event sequence:
-          1. event: citations — JSON array of source citations
-          2. event: token (repeated) — streaming LLM tokens
-          3. event: done — completion signal
-        """
         # 1. Retrieve relevant chunks
         chunks = self.retriever.retrieve_relevant_chunks(
             query=query,
@@ -84,22 +67,14 @@ class RAGService:
 
     @property
     def last_response(self) -> str:
-        """Returns the full concatenated response from the last stream."""
         return getattr(self, "_last_response", "")
 
     @property
     def last_citations(self) -> List[Dict[str, Any]]:
-        """Returns the citations JSON from the last stream."""
         return getattr(self, "_last_citations", [])
 
 
 def initialize_user_models(user_id: str, provider: Optional[str] = None) -> tuple[BaseChatModel, Embeddings]:
-    """
-    Retrieves user's active ProviderConfig and EmbeddingConfig from database
-    and initializes dynamic LLM and Embeddings model instances.
-
-    Raises HTTP 403 Forbidden if user lacks configured credentials.
-    """
     supabase = get_supabase_client()
 
     # 1. Fetch User Provider Config

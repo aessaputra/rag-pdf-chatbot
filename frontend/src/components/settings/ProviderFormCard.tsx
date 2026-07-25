@@ -120,7 +120,7 @@ export function ProviderFormCard({
     }
   };
 
-  // Build model options dynamically from API response
+
   const options = [...fetchedModels];
   if (formModelName && !options.includes(formModelName) && formModelName !== '__custom__') {
     options.unshift(formModelName);
@@ -151,7 +151,7 @@ export function ProviderFormCard({
       ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Provider Selector */}
+
         <div>
           <label className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
             PROVIDER
@@ -179,7 +179,7 @@ export function ProviderFormCard({
           </div>
         </div>
 
-        {/* Display Name */}
+
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="formDisplayName" className="block text-xs font-mono uppercase tracking-wider text-muted">
@@ -199,7 +199,7 @@ export function ProviderFormCard({
           />
         </div>
 
-        {/* API Key */}
+
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="formApiKey" className="block text-xs font-mono uppercase tracking-wider text-muted">
@@ -220,7 +220,7 @@ export function ProviderFormCard({
           />
         </div>
 
-        {/* Conditional Base URL for OpenAI-Compatible */}
+
         {formProvider === 'openai_compatible' ? (
           <div>
             <label htmlFor="formBaseUrl" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
@@ -237,7 +237,7 @@ export function ProviderFormCard({
           </div>
         ) : null}
 
-        {/* 100% Dynamic Live Model Selector */}
+
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="formModelSelect" className="block text-xs font-mono uppercase tracking-wider text-muted">
@@ -314,7 +314,7 @@ export function ProviderFormCard({
           )}
         </div>
 
-        {/* Is Default */}
+
         <div className="flex items-center gap-2 pt-1">
           <input
             id="formIsDefault"
@@ -328,7 +328,7 @@ export function ProviderFormCard({
           </label>
         </div>
 
-        {/* Form Actions */}
+
         <div className="flex items-center justify-end gap-2 pt-3 border-t border-subtle">
           <button
             type="button"

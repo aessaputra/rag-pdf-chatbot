@@ -24,7 +24,7 @@ export default function Sidebar() {
       className="w-65 h-screen bg-canvas flex flex-col justify-between p-4 border-r border-subtle shrink-0 select-none relative z-20 transition-colors duration-150"
     >
       <div className="flex flex-col flex-1 min-h-0 space-y-4">
-        {/* Branding Header */}
+
         <div className="flex items-center justify-between pb-3 border-b border-subtle">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-surface-card border border-subtle flex items-center justify-center">
@@ -36,7 +36,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Action Buttons: New Chat & Manage Documents */}
+
         <div className="flex flex-col gap-1.5">
           <button
             type="button"
@@ -62,7 +62,7 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* Chat Sessions History Section */}
+
         {sessions.length > 0 ? (
           <div className="flex-1 space-y-1.5 flex flex-col min-h-0 pt-2 border-t border-subtle">
             <div className="text-xs font-mono text-muted uppercase tracking-wider px-1">
@@ -105,15 +105,15 @@ export default function Sidebar() {
         ) : null}
       </div>
 
-      {/* Footer Account & Settings Action Bar */}
+
       <div className="pt-3 border-t border-subtle space-y-2">
-        {/* Row 1: Theme Switcher */}
+
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-mono text-muted uppercase tracking-wider">TEMA</span>
           <ThemeToggle compact />
         </div>
 
-        {/* Row 2: User Profile Card with Settings & Logout */}
+
         <div className="flex items-center justify-between p-2 rounded-md bg-surface-card border border-subtle gap-2">
           <div className="flex items-center min-w-0 gap-2 flex-1">
             <div className="w-6.5 h-6.5 rounded-md bg-surface-card-hover border border-subtle flex items-center justify-center text-xs font-mono font-medium text-primary shrink-0">

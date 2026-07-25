@@ -1,11 +1,3 @@
-"""
-Chat Router Module
-
-Handles RAG query SSE streaming responses and conversation session history.
-Follows FastAPI best practices: Annotated dependencies, EventSourceResponse for SSE,
-router-declared prefix/tags, and proper exception logging.
-"""
-
 import logging
 from collections.abc import AsyncIterable
 from typing import Annotated, Any, List, Optional
@@ -34,7 +26,6 @@ router = APIRouter(
 
 
 def parse_citations(citations_raw: Any) -> List[Citation]:
-    """Safely parses raw JSONB citations data into a list of Citation DTOs."""
     if not citations_raw:
         return []
     if isinstance(citations_raw, str):
@@ -65,7 +56,6 @@ def get_rag_service(
     user: CurrentUserDep,
     request: ChatQueryRequest,
 ) -> RAGService:
-    """FastAPI dependency that initializes RAGService with user's BYOK models."""
     llm, embeddings_model = initialize_user_models(
         user_id=user.user_id,
         provider=request.provider,
@@ -89,7 +79,6 @@ async def _stream_with_session(
     request: ChatQueryRequest,
     user_id: str,
 ) -> AsyncIterable[ServerSentEvent]:
-    """Wraps RAGService stream with session creation and message persistence."""
     # Auto-create or resolve session
     active_session_id = request.session_id
     try:
@@ -149,17 +138,12 @@ async def stream_chat_response(
     user: CurrentUserDep,
     service: RAGServiceDep,
 ) -> AsyncIterable[ServerSentEvent]:
-    """
-    Submits a RAG query and streams Server-Sent Events (SSE) tokens and citations in real time.
-    Auto-persists messages to the specified or auto-created session.
-    """
     async for event in _stream_with_session(service, request, user.user_id):
         yield event
 
 
 @router.get("/sessions", response_model=List[ChatSessionResponse])
 async def list_chat_sessions(user: CurrentUserDep) -> List[ChatSessionResponse]:
-    """Retrieves all chat session history records owned by the authenticated user."""
     def fetch_sessions() -> List[ChatSessionResponse]:
         supabase = get_supabase_client()
         response = (
@@ -188,7 +172,6 @@ async def list_session_messages(
     session_id: str,
     user: CurrentUserDep,
 ) -> List[ChatMessageResponse]:
-    """Retrieves all chat messages for a specific session."""
     def fetch_messages() -> List[ChatMessageResponse]:
         supabase = get_supabase_client()
         response = (
@@ -221,7 +204,6 @@ async def create_chat_session(
     user: CurrentUserDep,
     title: Optional[str] = None,
 ) -> ChatSessionResponse:
-    """Creates a new chat session."""
     def insert_session() -> ChatSessionResponse:
         supabase = get_supabase_client()
         data = {
@@ -244,7 +226,6 @@ async def create_chat_session(
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_chat_session(session_id: str, user: CurrentUserDep) -> None:
-    """Deletes a chat session and its messages."""
     def remove_session() -> None:
         supabase = get_supabase_client()
         supabase.table("chat_sessions").delete().eq("id", session_id).eq("user_id", user.user_id).execute()

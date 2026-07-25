@@ -1,7 +1,4 @@
-/**
- * Application Type Definitions
- * Uses TypeScript Advanced Types (Discriminated Unions, Generic Wrappers, Strict Types).
- */
+
 
 export interface UserPayload {
   readonly user_id: string;
@@ -9,14 +6,14 @@ export interface UserPayload {
   readonly role: string;
 }
 
-/** Discriminated Union for UI Authentication State */
+
 export type AuthState =
   | { readonly status: 'idle' }
   | { readonly status: 'loading' }
   | { readonly status: 'success'; readonly user: UserPayload }
   | { readonly status: 'error'; readonly message: string };
 
-/** Generic API Result Wrapper */
+
 export type ApiResponse<T> =
   | { readonly success: true; readonly data: T; readonly error: null }
   | { readonly success: false; readonly data: null; readonly error: string };

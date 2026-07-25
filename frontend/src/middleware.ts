@@ -6,7 +6,7 @@ const PUBLIC_ROUTES = ['/login', '/register'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes without auth check
+
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    // Redirect to login if Supabase is not configured
+
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Validate user identity server-side (not from local storage)
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -52,13 +52,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico (browser icon)
-     * - Public assets
-     */
+
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

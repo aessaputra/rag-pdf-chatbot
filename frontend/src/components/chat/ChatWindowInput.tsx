@@ -21,7 +21,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
   const providerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Close dropdown on click outside
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (providerRef.current && !providerRef.current.contains(event.target as Node)) {
@@ -32,7 +32,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Auto-resize textarea height smoothly
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -73,7 +73,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
         onSubmit={handleSubmit}
         className="max-w-3xl mx-auto flex items-end gap-2 p-2 pl-3 rounded-2xl bg-surface-card border border-subtle focus-within:ring-2 focus-within:ring-zinc-400/40 focus-within:border-zinc-400 transition-all duration-150 shadow-xs"
       >
-        {/* Integrated AI Model Selector Popover */}
+
         {providerConfigs && providerConfigs.length > 0 ? (
           <div ref={providerRef} className="relative flex items-center shrink-0 mb-0.5 mr-1">
             <button
@@ -89,7 +89,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               <MagicWandIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             </button>
 
-            {/* Custom Floating Popover Dropdown Menu */}
+
             {isProviderOpen && (
               <div
                 role="listbox"
@@ -128,7 +128,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
           </div>
         ) : null}
 
-        {/* Auto-Resizing Multi-line Textarea */}
+
         <label htmlFor="chat-input-textarea" className="sr-only">
           Pertanyaan tentang dokumen PDF
         </label>
@@ -148,7 +148,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
           className="flex-1 bg-transparent border-none text-sm text-primary placeholder:text-muted focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed min-w-0 py-1.5 px-1 font-sans resize-none max-h-36 overflow-y-auto leading-relaxed"
         />
 
-        {/* Integrated Send Button */}
+
         <button
           type="submit"
           aria-label="Kirim Pertanyaan"

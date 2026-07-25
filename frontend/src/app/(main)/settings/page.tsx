@@ -65,7 +65,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen w-full bg-canvas text-primary font-sans transition-colors duration-150">
-      {/* Top Navbar Header */}
+
       <header className="sticky top-0 z-30 border-b border-subtle bg-canvas/80 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -89,9 +89,9 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      {/* Main Content Body */}
+
       <main className="max-w-5xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        {/* Global Toast Messages - positioned at top, spanning all columns */}
+
         {(successMsg || errorMsg) && (
           <div className="md:col-span-3 space-y-3 mb-2">
             {successMsg ? (
@@ -110,7 +110,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* SECTION 1: Chat Providers (Bento Box - 2/3 width) */}
+
         {token ? (
           <div className="md:col-span-2 h-full flex flex-col">
             <ProviderSettingsSection
@@ -123,7 +123,7 @@ export default function SettingsPage() {
           </div>
         ) : null}
 
-        {/* SECTION 2: Embedding Models (Bento Box - 1/3 width) */}
+
         {token ? (
           <div className="md:col-span-1 h-full flex flex-col">
             <EmbeddingSettingsSection

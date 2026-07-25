@@ -1,10 +1,3 @@
-"""
-LLM Factory Module
-
-Provides multi-provider initialization for Chat Models and Embedding models
-(Gemini, OpenAI, OpenRouter, OpenAI-Compatible) using user BYOK credentials.
-"""
-
 from typing import Any, Dict
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
@@ -17,11 +10,8 @@ from app.services.crypto_service import CryptoService
 
 
 class LLMFactory:
-    """Factory for creating streaming Chat Models and Embedding generators dynamically per user config."""
-
     @staticmethod
     def _resolve_api_key(config: Dict[str, Any]) -> str:
-        """Helper to resolve and decrypt API key from config dictionary."""
         if "api_key" in config and config["api_key"]:
             return config["api_key"]
 
@@ -33,10 +23,6 @@ class LLMFactory:
 
     @classmethod
     def get_llm_for_config(cls, config: Dict[str, Any]) -> BaseChatModel:
-        """
-        Returns a streaming-enabled LLM instance using decrypted BYOK configuration.
-        Supports Gemini, OpenAI, OpenRouter, and OpenAI-Compatible custom endpoints.
-        """
         provider = config.get("provider", "gemini").lower().strip()
         api_key = cls._resolve_api_key(config)
         model_name = config.get("model_name")
@@ -77,10 +63,6 @@ class LLMFactory:
 
     @classmethod
     def get_embeddings_for_config(cls, config: Dict[str, Any]) -> Embeddings:
-        """
-        Returns an Embeddings generator instance using decrypted BYOK configuration.
-        Supports customizable vector output dimensions.
-        """
         provider = config.get("provider", "gemini").lower().strip()
         api_key = cls._resolve_api_key(config)
         model_name = config.get("model_name")

@@ -8,7 +8,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import ChatWindow from '@/components/chat/ChatWindow';
 import CitationPanel from '@/components/chat/CitationPanel';
 
-// Lazy-load heavy document manager modal on demand (`bundle-dynamic-imports`)
+
 const DocumentManagerModal = dynamic(
   () => import('@/components/document-manager/DocumentManagerModal'),
   { ssr: false }

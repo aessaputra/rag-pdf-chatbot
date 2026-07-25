@@ -1,9 +1,3 @@
-"""
-FastAPI Application Main Entry Point
-
-Configures CORS middleware, registers document and chat routers, and exposes health check endpoint.
-"""
-
 from typing import Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,5 +33,4 @@ app.include_router(settings_router.router)
 
 @app.get("/health", tags=["System"])
 def health_check() -> Dict[str, str]:
-    """Simple health check endpoint returning system status."""
     return {"status": "online"}

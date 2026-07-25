@@ -24,7 +24,7 @@ export default function DocumentManagerModal({
   onDocumentsUpdated,
 }: DocumentManagerModalProps) {
   const { handleUploadDocument, handleDeleteDocument } = useDocument();
-  
+
   const [uploading, setUploading] = useState(false);
   const [actionDocId, setActionDocId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

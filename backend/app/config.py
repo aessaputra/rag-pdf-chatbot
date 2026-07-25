@@ -1,10 +1,3 @@
-"""
-Configuration Module
-
-Loads and validates environment variables using Pydantic v2 BaseSettings.
-Supports modern Supabase key conventions (SUPABASE_SECRET_KEY, SUPABASE_JWKS_URL).
-"""
-
 from functools import lru_cache
 from typing import Literal, Optional
 from pydantic import AliasChoices, Field
@@ -12,8 +5,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application Settings Model."""
-
     # Supabase Configuration
     SUPABASE_URL: str = Field(alias="SUPABASE_URL")
     SUPABASE_SECRET_KEY: str = Field(
@@ -46,7 +37,6 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Returns cached singleton Settings instance."""
     return Settings()
 
 

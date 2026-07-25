@@ -90,7 +90,7 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
                 {activeDocumentCount} dokumen aktif siap digunakan sebagai sumber konteks RAG.
               </p>
 
-              {/* Suggested Prompts Chips */}
+
               <div className="flex flex-col gap-2 w-full">
                 {suggestionPrompts.map((promptText, idx) => (
                   <button

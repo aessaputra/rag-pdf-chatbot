@@ -1,11 +1,3 @@
-"""
-Document Router Module
-
-Handles PDF document uploads, text extraction & chunk vectorization,
-listing documents, toggling RAG active status, preview URLs, and deletion.
-Follows FastAPI best practices (Annotated dependencies, explicit response models, run_in_threadpool).
-"""
-
 import logging
 from typing import List
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
@@ -86,7 +78,6 @@ async def upload_pdf_document(
 
 @router.get("", response_model=List[DocumentItemResponse])
 async def list_user_documents(user: CurrentUserDep) -> List[DocumentItemResponse]:
-    """Retrieves all uploaded PDF document metadata records owned by the authenticated user."""
     def fetch_docs():
         supabase = get_supabase_client()
         res = (
@@ -108,7 +99,6 @@ async def toggle_document_active(
     body: DocumentToggleRequest,
     user: CurrentUserDep,
 ) -> DocumentItemResponse:
-    """Toggles a document's RAG active status (Aktif vs Off)."""
     def do_toggle():
         supabase = get_supabase_client()
         res = (
@@ -136,7 +126,6 @@ async def get_document_preview(
     document_id: str,
     user: CurrentUserDep,
 ) -> DocumentPreviewResponse:
-    """Generates a temporary signed URL (1 hour) for previewing a stored PDF."""
     def fetch_and_sign():
         supabase = get_supabase_client()
         res = (
@@ -174,10 +163,6 @@ async def delete_document(
     document_id: str,
     user: CurrentUserDep,
 ) -> None:
-    """
-    Hard-deletes a document: removes the PDF from Supabase Storage
-    and deletes the database record (cascading vector chunk deletion).
-    """
     def remove_doc():
         supabase = get_supabase_client()
         # Fetch file_path before deletion

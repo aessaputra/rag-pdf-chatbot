@@ -5,12 +5,7 @@ import { createClient } from '@/lib/supabaseClient';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-/**
- * Retrieves a fresh access token from the Supabase session and returns
- * the Authorization headers for API requests.
- *
- * Falls back to the provided token if session refresh fails.
- */
+
 async function getAuthHeaders(fallbackToken?: string): Promise<Record<string, string>> {
   if (fallbackToken) {
     return { Authorization: `Bearer ${fallbackToken}` };
@@ -32,8 +27,7 @@ async function extractErrorDetail(response: Response, fallback: string): Promise
       const json = JSON.parse(text);
       const detail = json.detail || json.message || json.error;
       if (detail) return typeof detail === 'string' ? detail : JSON.stringify(detail);
-    } catch { /* non-JSON body */ }
-
+    } catch { }
     return `Error HTTP ${response.status}: ${text.substring(0, 200)}`;
   } catch {
     return `Error HTTP ${response.status}: ${fallback}`;
@@ -44,7 +38,7 @@ function isNetworkError(message: string): boolean {
   return message.includes('Failed to fetch') || message.includes('NetworkError');
 }
 
-// --- SSE Stream ---
+
 
 export interface SSEStreamCallbacks {
   onSession?: (sessionId: string) => void;
@@ -135,7 +129,7 @@ function parseSSEEvent(block: string, callbacks: SSEStreamCallbacks) {
   }
 }
 
-// --- Chat Sessions API ---
+
 
 export async function listChatSessions(token: string): Promise<ApiResponse<import('@/types').ChatSession[]>> {
   try {
@@ -196,7 +190,7 @@ export async function deleteChatSession(sessionId: string, token: string): Promi
   }
 }
 
-// --- Document CRUD ---
+
 
 export async function uploadDocument(file: File, token: string): Promise<ApiResponse<any>> {
   try {
@@ -299,7 +293,7 @@ export async function getDocumentPreviewUrl(documentId: string, token: string): 
   }
 }
 
-// --- Provider Configs API ---
+
 
 export async function listProviderConfigs(token: string): Promise<ApiResponse<ProviderConfig[]>> {
   try {
@@ -379,7 +373,7 @@ export async function deleteProviderConfig(id: string, token: string): Promise<A
   }
 }
 
-// --- Embedding Config API ---
+
 
 export async function listEmbeddingPresets(): Promise<ApiResponse<EmbeddingPreset[]>> {
   try {

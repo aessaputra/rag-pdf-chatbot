@@ -1,10 +1,3 @@
-"""
-Authentication Module
-
-Verifies Supabase JWT access tokens using JWKS (asymmetric) or HMAC (symmetric) strategies.
-Extracts and validates user identity claims into a UserPayload DTO for downstream FastAPI dependencies.
-"""
-
 import logging
 from functools import lru_cache
 from typing import Annotated, Optional
@@ -27,7 +20,6 @@ HMAC_ALGORITHMS = ["HS256", "HS384", "HS512"]
 
 @lru_cache(maxsize=1)
 def get_jwks_client() -> Optional[PyJWKClient]:
-    """Returns a cached JWKS client if the JWKS URL is configured."""
     jwks_url = getattr(settings, "SUPABASE_JWKS_URL", None)
     if not jwks_url:
         return None
@@ -39,21 +31,10 @@ def get_jwks_client() -> Optional[PyJWKClient]:
 
 
 def _is_asymmetric_algorithm(algorithm: str) -> bool:
-    """Checks if the JWT algorithm uses asymmetric key signing."""
     return algorithm.startswith(ASYMMETRIC_PREFIXES) or algorithm == "EdDSA"
 
 
 def _decode_jwt_token(token: str, secret: str, audience: str) -> dict:
-    """
-    Decodes and verifies a JWT token.
-
-    Uses JWKS for asymmetric algorithms (RS256, ES256, etc.) when a kid header is present.
-    Falls back to HMAC symmetric verification with the shared secret.
-
-    Raises:
-        jwt.ExpiredSignatureError: Token has expired.
-        jwt.PyJWTError: Token is invalid (bad signature, malformed, etc.).
-    """
     header = jwt.get_unverified_header(token)
     algorithm = header.get("alg", "HS256")
     kid = header.get("kid")
@@ -78,12 +59,6 @@ def _decode_jwt_token(token: str, secret: str, audience: str) -> dict:
 
 
 def _extract_user_payload(payload: dict) -> UserPayload:
-    """
-    Extracts and validates user identity claims from a decoded JWT payload.
-
-    Raises:
-        HTTPException: If the required 'sub' or 'email' claims are missing.
-    """
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
@@ -103,19 +78,6 @@ def _extract_user_payload(payload: dict) -> UserPayload:
 
 
 def verify_supabase_token(token: str, secret: Optional[str] = None) -> UserPayload:
-    """
-    Verifies a Supabase JWT access token and returns the authenticated user payload.
-
-    Args:
-        token: Raw JWT access token string.
-        secret: Optional override for the HMAC signing secret (used in testing).
-
-    Returns:
-        UserPayload DTO with user_id, email, and role.
-
-    Raises:
-        HTTPException: 401 if the token is expired, invalid, or missing required claims.
-    """
     effective_secret = secret or settings.SUPABASE_JWT_SECRET
     audience = settings.SUPABASE_JWT_AUDIENCE
 

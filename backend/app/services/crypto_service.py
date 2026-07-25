@@ -1,11 +1,3 @@
-"""
-Crypto Service Module
-
-Provides AES-256-GCM symmetric encryption and decryption for BYOK user API keys.
-Uses SHA-256 key derivation to map configured encryption secrets to valid 256-bit AES keys.
-Follows Clean Code principles and FastAPI dependency injection practices.
-"""
-
 import base64
 import binascii
 import hashlib
@@ -23,8 +15,6 @@ MIN_PAYLOAD_BYTES = NONCE_SIZE_BYTES + TAG_SIZE_BYTES  # 28 bytes minimum
 
 
 class CryptoService:
-    """Service managing AES-256-GCM encryption/decryption of sensitive user credentials."""
-
     def __init__(self, secret_key: Optional[str] = None):
         key_material = secret_key if secret_key is not None else settings.SETTINGS_ENCRYPTION_KEY
         # Derive fixed 32-byte key via SHA-256 hash of secret string
@@ -32,9 +22,6 @@ class CryptoService:
         self.aesgcm = AESGCM(self.key)
 
     def encrypt(self, plaintext: str) -> str:
-        """
-        Encrypts plaintext string into a base64-encoded string containing 12-byte nonce + payload.
-        """
         if not plaintext:
             return ""
 
@@ -44,10 +31,6 @@ class CryptoService:
         return base64.b64encode(combined).decode("utf-8")
 
     def decrypt(self, ciphertext_b64: str) -> str:
-        """
-        Decrypts base64-encoded ciphertext string into original plaintext string.
-        Raises ValueError if decryption fails or authentication tag is invalid.
-        """
         if not ciphertext_b64:
             return ""
 
@@ -65,10 +48,6 @@ class CryptoService:
 
     @staticmethod
     def mask_api_key(api_key: str) -> str:
-        """
-        Returns masked representation of API key displaying only last 4 characters.
-        Example: 'sk-123456789' -> '••••6789'
-        """
         if not api_key:
             return ""
         if len(api_key) <= 4:
@@ -77,6 +56,5 @@ class CryptoService:
 
 
 def get_crypto_service() -> CryptoService:
-    """FastAPI Dependency / Factory helper for CryptoService singleton."""
     return CryptoService()
 

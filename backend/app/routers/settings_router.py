@@ -1,10 +1,3 @@
-"""
-Settings Router Module
-
-Handles CRUD REST endpoints for BYOK LLM Provider Configurations.
-Follows FastAPI best practices (Annotated dependencies, explicit return types, non-blocking threadpool execution).
-"""
-
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
@@ -32,7 +25,6 @@ router = APIRouter(
 
 
 def _format_config_response(record: dict, crypto: CryptoService) -> ProviderConfigResponse:
-    """Formats raw database record into ProviderConfigResponse DTO with masked API key."""
     decrypted_key = crypto.decrypt(record.get("api_key_enc", ""))
     masked_key = crypto.mask_api_key(decrypted_key)
 
@@ -52,7 +44,6 @@ def _format_config_response(record: dict, crypto: CryptoService) -> ProviderConf
 
 @router.get("/providers", response_model=List[ProviderConfigResponse])
 async def list_provider_configs(user: CurrentUserDep) -> List[ProviderConfigResponse]:
-    """Retrieves all LLM provider configurations owned by the authenticated user."""
     def fetch_configs() -> List[ProviderConfigResponse]:
         supabase = get_supabase_client()
         crypto = CryptoService()
@@ -76,7 +67,6 @@ async def create_provider_config(
     payload: ProviderConfigCreate,
     user: CurrentUserDep,
 ) -> ProviderConfigResponse:
-    """Creates a new LLM provider configuration with encrypted API key."""
     def insert_config() -> ProviderConfigResponse:
         supabase = get_supabase_client()
         crypto = CryptoService()
@@ -119,7 +109,6 @@ async def verify_and_list_models(
     payload: VerifyModelsRequest,
     user: CurrentUserDep,
 ) -> VerifyModelsResponse:
-    """Validates API key and returns available models for the given provider."""
     api_key = payload.api_key
     base_url = payload.base_url
 
@@ -162,7 +151,6 @@ async def update_provider_config(
     payload: ProviderConfigUpdate,
     user: CurrentUserDep,
 ) -> ProviderConfigResponse:
-    """Updates an existing LLM provider configuration."""
     def modify_config() -> ProviderConfigResponse:
         supabase = get_supabase_client()
         crypto = CryptoService()
@@ -229,7 +217,6 @@ async def delete_provider_config(
     config_id: str,
     user: CurrentUserDep,
 ) -> None:
-    """Deletes an LLM provider configuration owned by the authenticated user."""
     def remove_config() -> None:
         supabase = get_supabase_client()
 
@@ -291,7 +278,6 @@ RECOMMENDED_EMBEDDING_PRESETS: List[EmbeddingPresetDTO] = [
 
 
 def _format_embedding_response(record: dict, is_locked: bool, crypto: CryptoService) -> EmbeddingConfigResponse:
-    """Formats raw database record into EmbeddingConfigResponse DTO with masked API key."""
     decrypted_key = crypto.decrypt(record.get("api_key_enc", ""))
     masked_key = crypto.mask_api_key(decrypted_key)
 
@@ -310,13 +296,11 @@ def _format_embedding_response(record: dict, is_locked: bool, crypto: CryptoServ
 
 @router.get("/embedding/presets", response_model=List[EmbeddingPresetDTO])
 async def list_embedding_presets() -> List[EmbeddingPresetDTO]:
-    """Returns static list of recommended embedding model presets."""
     return RECOMMENDED_EMBEDDING_PRESETS
 
 
 @router.get("/embedding", response_model=EmbeddingConfigResponse)
 async def get_embedding_config(user: CurrentUserDep) -> EmbeddingConfigResponse:
-    """Retrieves authenticated user's active embedding model configuration and lock status."""
     def fetch_embedding() -> EmbeddingConfigResponse:
         supabase = get_supabase_client()
         crypto = CryptoService()
@@ -354,7 +338,6 @@ async def save_embedding_config(
     payload: EmbeddingConfigSaveRequest,
     user: CurrentUserDep,
 ) -> EmbeddingConfigResponse:
-    """Saves or updates user's active embedding model configuration. Rejects if documents exist (locked)."""
     def upsert_embedding() -> EmbeddingConfigResponse:
         supabase = get_supabase_client()
         crypto = CryptoService()

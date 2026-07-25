@@ -130,7 +130,7 @@ export function EmbeddingSettingsSection({
         ) : null}
       </div>
 
-      {/* Lock Warning Banner */}
+
       {embeddingConfig?.locked ? (
         <div className="mt-8 pt-4 border-t border-subtle text-xs text-muted text-center">
           <p className="mb-2">Model terkunci karena PDF terunggah.</p>
@@ -150,7 +150,7 @@ export function EmbeddingSettingsSection({
       ) : null}
 
       <form onSubmit={handleSaveEmbedding} className="flex-1 space-y-5 flex flex-col">
-        {/* Provider Selection */}
+
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="embProvider" className="block text-xs font-mono uppercase tracking-wider text-muted">
@@ -182,7 +182,7 @@ export function EmbeddingSettingsSection({
           </select>
         </div>
 
-        {/* Dynamic Model & Dimension Config */}
+
         <div className="p-3.5 rounded-md bg-surface-card-hover border border-subtle space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
@@ -287,7 +287,7 @@ export function EmbeddingSettingsSection({
 
         <div className="flex-1" />
 
-        {/* Form Submit */}
+
         <div className="flex justify-end pt-4 border-t border-subtle mt-auto">
           <button
             type="submit"

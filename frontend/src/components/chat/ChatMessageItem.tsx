@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
-import { FaceIcon, FileTextIcon } from '@radix-ui/react-icons';
+import { FaceIcon } from '@radix-ui/react-icons';
 import type { ChatMessage, Citation } from '@/types';
 
 interface ChatMessageItemProps {
@@ -16,11 +16,11 @@ function formatInlineMarkdown(
 ) {
   const parts = text.split(/(\[\d+\]|\*\*.*?\*\*|`.*?`)/g);
   return parts.map((part, i) => {
-    // Handle inline citations
+
     if (part.startsWith('[') && part.endsWith(']')) {
       const citationIndex = parseInt(part.slice(1, -1), 10) - 1;
       const citation = citations?.[citationIndex];
-      
+
       if (citation && onSelectCitation) {
         return (
           <button
@@ -34,7 +34,7 @@ function formatInlineMarkdown(
           </button>
         );
       }
-      
+
       return (
         <span key={i} className="text-muted text-xs font-mono mx-0.5">
           {part}
@@ -60,10 +60,7 @@ function formatInlineMarkdown(
   });
 }
 
-/**
- * Lightweight inline markdown renderer for structured AI streaming text.
- * Memoized to avoid re-parsing static markdown strings across unchanged messages.
- */
+
 const FormattedMessage = memo(function FormattedMessage({ 
   content, 
   citations, 
@@ -80,7 +77,7 @@ const FormattedMessage = memo(function FormattedMessage({
         const trimmed = line.trim();
         if (!trimmed) return <div key={idx} className="h-1" />;
 
-        // Bullet lists
+
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           return (
             <div key={idx} className="flex items-start gap-2 pl-2 my-1">
@@ -90,7 +87,7 @@ const FormattedMessage = memo(function FormattedMessage({
           );
         }
 
-        // Numbered lists (e.g. "1. ")
+
         const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
         if (numMatch) {
           return (
@@ -101,7 +98,7 @@ const FormattedMessage = memo(function FormattedMessage({
           );
         }
 
-        // Headers (### or ##)
+
         if (trimmed.startsWith('### ')) {
           return (
             <h4 key={idx} className="text-sm font-semibold text-primary mt-3 mb-1 [text-wrap:balance]">
@@ -123,11 +120,7 @@ const FormattedMessage = memo(function FormattedMessage({
   );
 });
 
-/**
- * Individual Chat Message Article component.
- * Wrapped in React.memo so historical messages are NOT re-rendered
- * when streaming tokens arrive for the active assistant message.
- */
+
 export const ChatMessageItem = memo(
   function ChatMessageItem({ msg, onSelectCitation }: ChatMessageItemProps) {
     return (
