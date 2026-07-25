@@ -63,12 +63,9 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
               <div className="p-3.5 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
                 <FileTextIcon className="w-6 h-6" aria-hidden="true" />
               </div>
-              <h2 className="text-xl font-serif font-semibold text-primary tracking-tight mb-2">
-                Belum ada dokumen aktif.
+              <h2 className="text-xl font-serif font-semibold text-primary tracking-tight text-balance mb-5">
+                Tidak ada dokumen aktif
               </h2>
-              <p className="text-sm text-muted leading-relaxed mb-5 max-w-xs">
-                Aktifkan minimal 1 dokumen PDF agar asisten AI dapat menjawab pertanyaan berdasarkan konteks dokumen.
-              </p>
               <button
                 type="button"
                 onClick={() => setIsDocModalOpen(true)}

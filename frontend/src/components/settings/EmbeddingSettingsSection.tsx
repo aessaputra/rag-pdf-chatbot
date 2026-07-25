@@ -2,10 +2,21 @@
 
 import React, { useEffect, useState, useDeferredValue } from 'react';
 import Link from 'next/link';
-import { LayersIcon, LockClosedIcon } from '@radix-ui/react-icons';
+import { LayersIcon, LockClosedIcon, ChevronDownIcon, ChevronUpIcon, CheckIcon } from '@radix-ui/react-icons';
+import * as Select from '@radix-ui/react-select';
 import useSWR from 'swr';
 import { saveEmbeddingConfig, verifyAndFetchModels } from '@/lib/api';
 import type { EmbeddingConfig, ProviderConfig } from '@/types';
+
+const formatModelName = (name: string) => {
+  let clean = name.replace(/^models\//, '');
+  clean = clean.replace(/\//g, ' - ');
+  clean = clean.replace(/:/g, ' ');
+  clean = clean.replace(/[-_]/g, ' ');
+  // clean up extra spaces around the hyphen if any
+  clean = clean.replace(/\s+-\s+/g, ' - ');
+  return clean.replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 interface EmbeddingSettingsSectionProps {
   readonly configs: ProviderConfig[];
@@ -215,29 +226,57 @@ export function EmbeddingSettingsSection({
               </div>
 
               {!isCustomModelInput ? (
-                <select
-                  id="embModelSelect"
-                  disabled={!!embeddingConfig?.locked || !targetConfigId}
-                  value={embModelName}
-                  onChange={(e) => {
-                    if (e.target.value === '__custom__') {
+                <Select.Root
+                  value={embModelName || undefined}
+                  onValueChange={(val) => {
+                    if (val === '__custom__') {
                       setIsCustomModelInput(true);
                       setEmbModelName('');
                     } else {
-                      setEmbModelName(e.target.value);
+                      setEmbModelName(val);
                       setEmbDimensions('');
                     }
                   }}
-                  className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50"
+                  disabled={!!embeddingConfig?.locked || !targetConfigId}
                 >
-                  <option value="" disabled>pilih model...</option>
-                  {options.map((m) => (
-                    <option key={m} value={m} className="bg-surface-card text-primary">
-                      {m}
-                    </option>
-                  ))}
-                  <option value="__custom__" className="bg-surface-card text-primary">input custom...</option>
-                </select>
+                  <Select.Trigger
+                    id="embModelSelect"
+                    className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50 flex items-center justify-between bg-surface-card outline-none focus-visible:ring-2 border-subtle text-primary focus-visible:ring-zinc-400"
+                  >
+                    <Select.Value placeholder="Pilih model…" />
+                    <Select.Icon>
+                      <ChevronDownIcon className="w-3.5 h-3.5 opacity-50" />
+                    </Select.Icon>
+                  </Select.Trigger>
+                  
+                  <Select.Portal>
+                    <Select.Content position="popper" sideOffset={4} className="overflow-hidden bg-surface-card border border-subtle rounded-md shadow-lg shadow-black/20 z-[100] w-[var(--radix-select-trigger-width)] max-h-[60vh]">
+                      <Select.ScrollUpButton className="flex items-center justify-center h-6.25 bg-surface-card text-primary cursor-default">
+                        <ChevronUpIcon className="w-3.5 h-3.5" />
+                      </Select.ScrollUpButton>
+                      <Select.Viewport className="p-1">
+                        {options.map((m) => (
+                          <Select.Item key={m} value={m} className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-[highlighted]:bg-surface-card-hover data-[highlighted]:text-primary data-[highlighted]:outline-none cursor-pointer">
+                            <Select.ItemText>{formatModelName(m)}</Select.ItemText>
+                            <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
+                              <CheckIcon className="w-3.5 h-3.5" />
+                            </Select.ItemIndicator>
+                          </Select.Item>
+                        ))}
+                        {options.length > 0 && <Select.Separator className="h-px bg-subtle m-1" />}
+                        <Select.Item value="__custom__" className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-[highlighted]:bg-surface-card-hover data-[highlighted]:text-primary data-[highlighted]:outline-none cursor-pointer">
+                          <Select.ItemText>Kustom…</Select.ItemText>
+                          <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
+                            <CheckIcon className="w-3.5 h-3.5" />
+                          </Select.ItemIndicator>
+                        </Select.Item>
+                      </Select.Viewport>
+                      <Select.ScrollDownButton className="flex items-center justify-center h-6.25 bg-surface-card text-primary cursor-default">
+                        <ChevronDownIcon className="w-3.5 h-3.5" />
+                      </Select.ScrollDownButton>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
               ) : (
                 <div className="space-y-1">
                   <input
