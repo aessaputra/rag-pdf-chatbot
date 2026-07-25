@@ -84,7 +84,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               aria-haspopup="listbox"
               aria-label="Pilih Provider AI"
               title={`Ganti Provider (Aktif: ${activeLabel})`}
-              className="p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-none cursor-pointer"
+              className="p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-hidden cursor-pointer"
             >
               <MagicWandIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             </button>
@@ -145,7 +145,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               ? 'Konfigurasi provider AI di Pengaturan terlebih dahulu…'
               : 'Tanyakan sesuatu…'
           }
-          className="flex-1 bg-transparent border-none text-xs text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed min-w-0 py-1.5 px-1 font-sans resize-none max-h-36 overflow-y-auto leading-relaxed"
+          className="flex-1 bg-transparent border-none text-xs text-primary placeholder:text-muted focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed min-w-0 py-1.5 px-1 font-sans resize-none max-h-36 overflow-y-auto leading-relaxed"
         />
 
         {/* Integrated Send Button */}
