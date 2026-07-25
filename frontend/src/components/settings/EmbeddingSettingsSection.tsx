@@ -66,7 +66,7 @@ export function EmbeddingSettingsSection({
     }
   }, [res]);
 
-  const handleSaveEmbedding = async (e: React.FormEvent) => {
+  const handleSaveEmbedding = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (embeddingConfig?.locked) return;
 

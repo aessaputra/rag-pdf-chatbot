@@ -8,7 +8,7 @@ interface AuthFormProps {
   password: string;
   setPassword: (v: string) => void;
   authState: AuthState;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void;
 }
 
 export function AuthForm({

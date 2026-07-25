@@ -22,7 +22,7 @@ export function useAuth(mode: AuthMode) {
   const [password, setPassword] = useState('');
   const [authState, setAuthState] = useState<AuthState>({ status: 'idle' });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!email || !password) return;

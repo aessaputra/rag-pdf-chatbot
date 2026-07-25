@@ -49,7 +49,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
   };
   const activeLabel = formatProviderLabel(activeConfig);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.SyntheticEvent<HTMLFormElement>) => {
     if (e) e.preventDefault();
     if (!hasCredentials || !inputQuery.trim() || isStreaming) return;
     const query = inputQuery;
