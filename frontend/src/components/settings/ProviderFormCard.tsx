@@ -46,20 +46,26 @@ export function ProviderFormCard({
   // Dynamic live model fetching state
   const [fetchedModels, setFetchedModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isCustomModel, setIsCustomModel] = useState(false);
 
   // Auto-fetch available models via debounced API key/config verification
   useEffect(() => {
     let isCancelled = false;
+
+    // Trigger if API key is typed OR when editing an existing config
     const shouldFetch = (formApiKey.trim().length > 3) || Boolean(editingConfigId);
 
     if (!shouldFetch) {
       setFetchedModels([]);
+      setFetchError(null);
       return;
     }
 
     const timer = setTimeout(async () => {
       setIsLoadingModels(true);
+      setFetchError(null);
+
       const res = await verifyAndFetchModels(
         formProvider,
         formApiKey.trim() || undefined,
@@ -72,8 +78,14 @@ export function ProviderFormCard({
         setIsLoadingModels(false);
         if (res.success && res.data?.models && res.data.models.length > 0) {
           setFetchedModels(res.data.models);
+          setFetchError(null);
           if (!formModelName && res.data.default_model) {
             setFormModelName(res.data.default_model);
+          }
+        } else {
+          setFetchedModels([]);
+          if (res.error) {
+            setFetchError(res.error);
           }
         }
       }
@@ -183,6 +195,7 @@ export function ProviderFormCard({
                   setFetchedModels([]);
                   setFormModelName('');
                   setIsCustomModel(false);
+                  setFetchError(null);
                 }}
                 className={`text-left px-3 py-2 rounded-md border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 ${
                   formProvider === opt.type
@@ -199,12 +212,12 @@ export function ProviderFormCard({
         {/* Display Name */}
         <div>
           <label htmlFor="formDisplayName" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
-            LABEL (OPSIONAL)
+            LABEL <span className="text-[9px] text-muted lowercase">(opsional)</span>
           </label>
           <input
             id="formDisplayName"
             type="text"
-            placeholder="Label nama opsional"
+            placeholder="Label opsional"
             value={formDisplayName}
             onChange={(e) => setFormDisplayName(e.target.value)}
             className="minimal-input w-full px-3 py-2 rounded-md text-xs font-sans"
@@ -213,14 +226,19 @@ export function ProviderFormCard({
 
         {/* API Key */}
         <div>
-          <label htmlFor="formApiKey" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
-            KUNCI API {editingConfigId ? '(OPSIONAL)' : ''}
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="formApiKey" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+              KUNCI API
+            </label>
+            <span className="text-[9px] font-mono text-muted">
+              {editingConfigId ? '(tersimpan)' : '(wajib)'}
+            </span>
+          </div>
           <input
             id="formApiKey"
             type="password"
             autoComplete="new-password"
-            placeholder={editingConfigId ? '••••••••' : 'Masukkan Kunci API'}
+            placeholder={editingConfigId ? '••••••••' : 'Kunci API provider…'}
             value={formApiKey}
             onChange={(e) => setFormApiKey(e.target.value)}
             className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"
@@ -258,6 +276,10 @@ export function ProviderFormCard({
               <span className="text-[10px] text-[var(--pastel-green-text)] font-mono font-medium">
                 ● LIVE ({fetchedModels.length})
               </span>
+            ) : fetchError ? (
+              <span className="text-[9px] text-[var(--pastel-red-text)] font-mono" title={fetchError}>
+                Perlu Kunci API
+              </span>
             ) : null}
           </div>
 
@@ -279,7 +301,7 @@ export function ProviderFormCard({
                 <option value="" disabled>
                   {isLoadingModels
                     ? 'Memuat model…'
-                    : 'Pilih atau ketik kunci API…'}
+                    : 'Isi Kunci API untuk memuat model…'}
                 </option>
               ) : (
                 <option value="" disabled>Pilih Model…</option>
