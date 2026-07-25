@@ -17,7 +17,7 @@ export default function CitationPanel() {
   const cleanContent = sanitizeContextText(selectedCitation.content);
 
   return (
-    <aside aria-label="Detail Sitasi Dokumen PDF" className="w-90 bg-canvas border-l border-subtle p-6 flex flex-col h-screen shrink-0 animate-in slide-in-from-right duration-200 z-20 transition-colors duration-150">
+    <aside aria-label="Detail Sitasi Dokumen PDF" className="w-90 bg-canvas border-l border-subtle p-6 flex flex-col h-screen shrink-0 animate-in slide-in-from-right duration-200 z-20 transition-colors">
 
       <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-subtle">
         <h3 className="text-xs font-mono uppercase tracking-wider text-muted">

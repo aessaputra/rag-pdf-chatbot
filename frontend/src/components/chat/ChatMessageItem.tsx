@@ -101,14 +101,14 @@ const FormattedMessage = memo(function FormattedMessage({
 
         if (trimmed.startsWith('### ')) {
           return (
-            <h4 key={idx} className="text-sm font-semibold text-primary mt-3 mb-1 [text-wrap:balance]">
+            <h4 key={idx} className="text-sm font-semibold text-primary mt-3 mb-1 text-balance">
               {formatInlineMarkdown(trimmed.slice(4), citations, onSelectCitation)}
             </h4>
           );
         }
         if (trimmed.startsWith('## ')) {
           return (
-            <h3 key={idx} className="text-base font-semibold font-serif text-primary mt-4 mb-1 [text-wrap:balance]">
+            <h3 key={idx} className="text-base font-semibold font-serif text-primary mt-4 mb-1 text-balance">
               {formatInlineMarkdown(trimmed.slice(3), citations, onSelectCitation)}
             </h3>
           );
