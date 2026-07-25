@@ -151,6 +151,7 @@ async def verify_and_list_models(
         provider=payload.provider,
         api_key=api_key or "",
         base_url=base_url,
+        model_type=payload.model_type,
     )
     return VerifyModelsResponse(**res)
 

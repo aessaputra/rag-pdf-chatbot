@@ -219,3 +219,33 @@ def test_verify_models_success(mock_fetch):
         app.dependency_overrides.clear()
 
 
+@patch("app.routers.settings_router.ModelService.fetch_available_models")
+def test_verify_embedding_models_success(mock_fetch):
+    """Verify POST /api/settings/providers/verify-models with model_type=embedding."""
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    mock_fetch.return_value = {
+        "success": True,
+        "models": ["models/gemini-embedding-001", "models/text-embedding-004"],
+        "default_model": "models/gemini-embedding-001",
+        "default_dimensions": {"models/gemini-embedding-001": 768},
+        "error": None
+    }
+    try:
+        response = client.post(
+            "/api/settings/providers/verify-models",
+            json={
+                "provider": "gemini",
+                "model_type": "embedding",
+                "api_key": "AIzaSyTest"
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "models/gemini-embedding-001" in data["models"]
+        assert data["default_dimensions"]["models/gemini-embedding-001"] == 768
+    finally:
+        app.dependency_overrides.clear()
+
+
+

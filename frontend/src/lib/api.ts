@@ -440,6 +440,7 @@ export interface VerifyModelsResponseData {
   success: boolean;
   models: string[];
   default_model: string;
+  default_dimensions?: Record<string, number> | null;
   error?: string | null;
 }
 
@@ -448,7 +449,8 @@ export async function verifyAndFetchModels(
   apiKey?: string,
   baseUrl?: string,
   configId?: string,
-  token?: string
+  token?: string,
+  modelType: 'chat' | 'embedding' = 'chat'
 ): Promise<ApiResponse<VerifyModelsResponseData>> {
   try {
     const headers = await getAuthHeaders(token);
@@ -457,6 +459,7 @@ export async function verifyAndFetchModels(
       headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify({
         provider,
+        model_type: modelType,
         api_key: apiKey || undefined,
         base_url: baseUrl || undefined,
         config_id: configId || undefined,

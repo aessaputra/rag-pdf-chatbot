@@ -194,6 +194,7 @@ class VerifyModelsRequest(BaseModel):
     """Payload for validating an API key and fetching available LLM models."""
 
     provider: str = Field(..., description="Provider type: gemini, openai, openrouter, ollama, or openai_compatible")
+    model_type: Literal["chat", "embedding"] = Field("chat", description="Model type filter: chat or embedding")
     api_key: Optional[str] = Field(None, description="Raw API key to test")
     base_url: Optional[str] = Field(None, max_length=500, description="Optional custom base URL")
     config_id: Optional[str] = Field(None, description="Optional existing ProviderConfig ID to reuse saved encrypted key")
@@ -205,7 +206,9 @@ class VerifyModelsResponse(BaseModel):
     success: bool
     models: List[str]
     default_model: str
+    default_dimensions: Optional[Dict[str, int]] = None
     error: Optional[str] = None
+
 
 
 
