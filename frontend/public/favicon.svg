@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%" role="img" aria-label="PaperMind Favicon">
+  <g transform="translate(0, 0)">
+    <path d="M 36 14 
+             L 82 14 
+             L 106 38 
+             L 106 100 
+             C 106 107.728 99.728 114 92 114 
+             L 36 114 
+             C 28.272 114 22 107.728 22 100 
+             L 22 28 
+             C 22 20.272 28.272 14 36 14 Z" 
+          fill="#FFFFFF" 
+          stroke="#111111" 
+          stroke-width="6" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"/>
+
+    <path d="M 82 14 L 82 38 L 106 38" 
+          fill="#FFFFFF" 
+          stroke="#111111" 
+          stroke-width="6" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"/>
+
+    <path d="M 36 48 L 36 92" 
+          fill="none" stroke="#111111" stroke-width="7.5" stroke-linecap="round"/>
+    <path d="M 36 48 L 48 48 C 55 48 58 52 58 58 C 58 64 55 68 48 68 L 36 68" 
+          fill="none" stroke="#111111" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <path d="M 68 92 L 68 48 L 80 68 L 92 48 L 92 92" 
+          fill="none" stroke="#111111" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -22,6 +22,11 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: 'PaperMind | Intelligent AI Document Assistant',
   description: 'Upload documents and chat with AI in real-time with exact page citations and multi-provider LLM support.',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

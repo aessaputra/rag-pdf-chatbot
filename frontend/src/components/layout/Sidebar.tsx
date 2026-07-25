@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { FileTextIcon, ExitIcon, ChatBubbleIcon, PlusIcon, GearIcon, TrashIcon } from '@radix-ui/react-icons';
 import { useApp } from '@/context/AppContext';
@@ -21,22 +22,25 @@ export default function Sidebar() {
   return (
     <aside
       aria-label="Navigasi Utama"
-      className="w-65 h-screen bg-canvas flex flex-col justify-between p-4 border-r border-subtle shrink-0 select-none relative z-20 transition-colors duration-150"
+      className="w-65 h-screen bg-canvas flex flex-col justify-between border-r border-subtle shrink-0 select-none relative z-20 transition-colors duration-150"
     >
-      <div className="flex flex-col flex-1 min-h-0 space-y-4">
-
-        <div className="flex items-center justify-between pb-3 border-b border-subtle">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-surface-card border border-subtle flex items-center justify-center">
-              <FileTextIcon className="w-4 h-4 text-primary" aria-hidden="true" />
-            </div>
-            <span className="text-xs font-semibold text-primary tracking-tight font-serif">
-              PaperMind
-            </span>
-          </div>
+      <div className="h-13 px-4 flex items-center justify-between border-b border-subtle shrink-0">
+        <div className="flex items-center gap-2">
+          <Image
+            src="/logo.svg"
+            alt="PaperMind Logo"
+            width={28}
+            height={28}
+            className="w-7 h-7 shrink-0"
+            priority
+          />
+          <span className="text-base font-extrabold text-primary tracking-tight">
+            PaperMind
+          </span>
         </div>
+      </div>
 
-
+      <div className="flex flex-col flex-1 min-h-0 p-4 space-y-4">
         <div className="flex flex-col gap-1.5">
           <button
             type="button"
@@ -61,7 +65,6 @@ export default function Sidebar() {
             </span>
           </button>
         </div>
-
 
         {sessions.length > 0 ? (
           <div className="flex-1 space-y-1.5 flex flex-col min-h-0 pt-2 border-t border-subtle">
@@ -105,14 +108,11 @@ export default function Sidebar() {
         ) : null}
       </div>
 
-
-      <div className="pt-3 border-t border-subtle space-y-2">
-
+      <div className="p-4 pt-3 border-t border-subtle space-y-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-mono text-muted uppercase tracking-wider">TEMA</span>
           <ThemeToggle compact />
         </div>
-
 
         <div className="flex items-center justify-between p-2 rounded-md bg-surface-card border border-subtle gap-2">
           <div className="flex items-center min-w-0 gap-2 flex-1">
