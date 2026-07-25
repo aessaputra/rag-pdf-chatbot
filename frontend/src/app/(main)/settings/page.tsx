@@ -1,70 +1,28 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback } from 'react';
+
 import Link from 'next/link';
 import { ArrowLeftIcon, CheckIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { createClient } from '@/lib/supabaseClient';
-import {
-  getEmbeddingConfig, listProviderConfigs
-} from '@/lib/api';
-import type { EmbeddingConfig, ProviderConfig, UserPayload } from '@/types';
+import { useApp } from '@/context/AppContext';
+import { listProviderConfigs } from '@/lib/api';
 import ProviderSettingsSection from '@/components/settings/ProviderSettingsSection';
 import EmbeddingSettingsSection from '@/components/settings/EmbeddingSettingsSection';
 
-function createUserPayload(id: string, email: string | undefined): UserPayload {
-  return { user_id: id, email: email || '', role: 'authenticated' };
-}
-
 export default function SettingsPage() {
-  const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-
-  const [user, setUser] = useState<UserPayload | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [configs, setConfigs] = useState<ProviderConfig[]>([]);
-  const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
+  const { user, token, providerConfigs, embeddingConfig, setProviderConfigs, setEmbeddingConfig, isInitializing } = useApp();
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function init() {
-      const { data: { user: authUser }, error } = await supabase.auth.getUser();
-      if (error || !authUser) { router.push('/login'); return; }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.push('/login'); return; }
-
-      if (!mounted) return;
-      setUser(createUserPayload(authUser.id, authUser.email));
-      setToken(session.access_token);
-
-      const [provRes, embConfigRes] = await Promise.all([
-        listProviderConfigs(session.access_token),
-        getEmbeddingConfig(session.access_token),
-      ]);
-
-      if (!mounted) return;
-
-      if (provRes.success && provRes.data) setConfigs(provRes.data);
-      if (embConfigRes.success && embConfigRes.data) setEmbeddingConfig(embConfigRes.data);
-    }
-
-    init();
-    return () => { mounted = false; };
-  }, [supabase, router]);
-
   const reloadConfigs = useCallback(async () => {
     if (!token) return;
     const res = await listProviderConfigs(token);
-    if (res.success && res.data) setConfigs(res.data);
-  }, [token]);
+    if (res.success && res.data) setProviderConfigs(res.data);
+  }, [token, setProviderConfigs]);
 
   return (
-    <div className="min-h-screen w-full bg-canvas text-primary font-sans transition-colors duration-150">
+    <div className="min-h-screen w-full bg-canvas text-primary font-sans">
 
       <header className="sticky top-0 z-30 border-b border-subtle bg-canvas/80 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
@@ -110,31 +68,35 @@ export default function SettingsPage() {
           </div>
         )}
 
-
-        {token ? (
-          <div className="md:col-span-2 h-full flex flex-col">
-            <ProviderSettingsSection
-              configs={configs}
-              token={token}
-              onReloadConfigs={reloadConfigs}
-              onSetSuccessMsg={setSuccessMsg}
-              onSetErrorMsg={setErrorMsg}
-            />
+        {isInitializing ? (
+          <div className="md:col-span-3 flex items-center justify-center p-12">
+            <div className="flex items-center gap-3 text-muted text-sm font-mono animate-pulse">
+              <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Memuat konfigurasi...
+            </div>
           </div>
-        ) : null}
-
-
-        {token ? (
-          <div className="md:col-span-1 h-full flex flex-col">
-            <EmbeddingSettingsSection
-              configs={configs}
-              embeddingConfig={embeddingConfig}
-              token={token}
-              onSetEmbeddingConfig={setEmbeddingConfig}
-              onSetSuccessMsg={setSuccessMsg}
-              onSetErrorMsg={setErrorMsg}
-            />
-          </div>
+        ) : token ? (
+          <>
+            <div className="md:col-span-2 h-full flex flex-col">
+              <ProviderSettingsSection
+                configs={providerConfigs}
+                token={token}
+                onReloadConfigs={reloadConfigs}
+                onSetSuccessMsg={setSuccessMsg}
+                onSetErrorMsg={setErrorMsg}
+              />
+            </div>
+            <div className="md:col-span-1 h-full flex flex-col">
+              <EmbeddingSettingsSection
+                configs={providerConfigs}
+                embeddingConfig={embeddingConfig}
+                token={token}
+                onSetEmbeddingConfig={setEmbeddingConfig}
+                onSetSuccessMsg={setSuccessMsg}
+                onSetErrorMsg={setErrorMsg}
+              />
+            </div>
+          </>
         ) : null}
       </main>
     </div>

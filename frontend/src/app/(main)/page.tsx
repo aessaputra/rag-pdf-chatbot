@@ -1,13 +1,12 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { AppProvider, useApp } from '@/context/AppContext';
-import { DocumentProvider, useDocument } from '@/context/DocumentContext';
-import { ChatProvider } from '@/context/ChatContext';
+import { useApp } from '@/context/AppContext';
+import { useDocument } from '@/context/DocumentContext';
+import { useChat } from '@/context/ChatContext';
 import Sidebar from '@/components/layout/Sidebar';
 import ChatWindow from '@/components/chat/ChatWindow';
 import CitationPanel from '@/components/chat/CitationPanel';
-import { SidebarProvider } from '@/context/SidebarContext';
 
 
 const DocumentManagerModal = dynamic(
@@ -16,11 +15,25 @@ const DocumentManagerModal = dynamic(
 );
 
 function ChatInner() {
-  const { token } = useApp();
-  const { isDocModalOpen, setIsDocModalOpen, documents, handleDocumentsUpdated } = useDocument();
+  const { token, isInitializing } = useApp();
+  const { isDocModalOpen, setIsDocModalOpen, documents, handleDocumentsUpdated, isInitializingDocs } = useDocument();
+  const { isInitializingSessions } = useChat();
+
+  const isPageLoading = isInitializing || isInitializingDocs || isInitializingSessions;
+
+  if (isPageLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-canvas text-primary">
+        <div className="flex items-center gap-3 text-muted text-sm font-mono animate-pulse">
+          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          Memuat aplikasi...
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-canvas text-primary transition-colors duration-150">
+    <div className="flex h-screen w-screen overflow-hidden bg-canvas text-primary">
       <Sidebar />
       <ChatWindow />
       <CitationPanel />
@@ -38,15 +51,5 @@ function ChatInner() {
 }
 
 export default function ChatPage() {
-  return (
-    <AppProvider>
-      <DocumentProvider>
-        <SidebarProvider>
-          <ChatProvider>
-            <ChatInner />
-          </ChatProvider>
-        </SidebarProvider>
-      </DocumentProvider>
-    </AppProvider>
-  );
+  return <ChatInner />;
 }

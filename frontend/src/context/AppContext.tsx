@@ -19,20 +19,32 @@ interface AppContextType {
   embeddingConfig: EmbeddingConfig | null;
   hasCredentials: boolean;
   setProvider: (provider: string) => void;
+  setProviderConfigs: React.Dispatch<React.SetStateAction<ProviderConfig[]>>;
+  setEmbeddingConfig: React.Dispatch<React.SetStateAction<EmbeddingConfig | null>>;
   handleLogout: () => Promise<void>;
+  isInitializing: boolean;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
-export function AppProvider({ children }: { readonly children: React.ReactNode }) {
+export function AppProvider({ 
+  children,
+  initialSession
+}: { 
+  readonly children: React.ReactNode;
+  readonly initialSession: Session;
+}) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
-  const [user, setUser] = useState<UserPayload | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<UserPayload | null>(() => 
+    initialSession ? createUserPayload(initialSession.user.id, initialSession.user.email) : null
+  );
+  const [token, setToken] = useState<string | null>(initialSession?.access_token || null);
   const [provider, setProvider] = useState('');
   const [providerConfigs, setProviderConfigs] = useState<ProviderConfig[]>([]);
   const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const hasCredentials = useMemo(
     () => providerConfigs.length > 0 && embeddingConfig !== null,
@@ -43,20 +55,11 @@ export function AppProvider({ children }: { readonly children: React.ReactNode }
     let mounted = true;
 
     async function initializeApp() {
-      const { data: { user: authUser }, error } = await supabase.auth.getUser();
-      if (error || !authUser) { router.push('/login'); return; }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.push('/login'); return; }
-
-      if (!mounted) return;
-
-      setUser(createUserPayload(authUser.id, authUser.email));
-      setToken(session.access_token);
+      if (!initialSession) return;
 
       const [provRes, embRes] = await Promise.all([
-        listProviderConfigs(session.access_token),
-        getEmbeddingConfig(session.access_token),
+        listProviderConfigs(initialSession.access_token),
+        getEmbeddingConfig(initialSession.access_token),
       ]);
 
       if (!mounted) return;
@@ -71,6 +74,8 @@ export function AppProvider({ children }: { readonly children: React.ReactNode }
         }
       }
       if (embRes.success && embRes.data) setEmbeddingConfig(embRes.data);
+      
+      setIsInitializing(false);
     }
 
     initializeApp();
@@ -113,9 +118,12 @@ export function AppProvider({ children }: { readonly children: React.ReactNode }
       embeddingConfig,
       hasCredentials,
       setProvider,
+      setProviderConfigs,
+      setEmbeddingConfig,
       handleLogout,
+      isInitializing,
     }),
-    [user, token, provider, providerConfigs, embeddingConfig, hasCredentials, handleLogout]
+    [user, token, provider, providerConfigs, embeddingConfig, hasCredentials, isInitializing, handleLogout]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

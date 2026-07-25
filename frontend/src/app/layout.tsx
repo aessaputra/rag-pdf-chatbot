@@ -40,7 +40,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen font-sans bg-canvas text-primary antialiased transition-colors duration-150">
+      <body className="min-h-screen font-sans bg-canvas text-primary antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

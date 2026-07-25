@@ -20,6 +20,7 @@ interface ChatContextType {
   activeSessionId: string | null;
   messages: ChatMessage[];
   isStreaming: boolean;
+  isInitializingSessions: boolean;
   selectedCitation: Citation | null;
   setSelectedCitation: (citation: Citation | null) => void;
   handleNewChat: () => void;
@@ -39,6 +40,7 @@ export function ChatProvider({ children }: { readonly children: React.ReactNode 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
+  const [isInitializingSessions, setIsInitializingSessions] = useState(true);
 
   const reloadSessions = useCallback(async (accessToken: string) => {
     const res = await listChatSessions(accessToken);
@@ -65,13 +67,16 @@ export function ChatProvider({ children }: { readonly children: React.ReactNode 
       reloadSessions(token).then((sessData) => {
         if (sessData && sessData.length > 0) {
           const latestSessionId = sessData[0].id;
-          loadSessionMessages(latestSessionId, token);
+          loadSessionMessages(latestSessionId, token).finally(() => setIsInitializingSessions(false));
+        } else {
+          setIsInitializingSessions(false);
         }
       });
     } else {
       setSessions([]);
       setMessages([]);
       setActiveSessionId(null);
+      setIsInitializingSessions(false);
     }
   }, [token, reloadSessions, loadSessionMessages]);
 
@@ -153,6 +158,7 @@ export function ChatProvider({ children }: { readonly children: React.ReactNode 
       messages,
       isStreaming,
       selectedCitation,
+      isInitializingSessions,
       setSelectedCitation,
       handleNewChat,
       handleSelectSession,
@@ -165,6 +171,7 @@ export function ChatProvider({ children }: { readonly children: React.ReactNode 
       messages,
       isStreaming,
       selectedCitation,
+      isInitializingSessions,
       handleNewChat,
       handleSelectSession,
       handleDeleteSession,

@@ -12,6 +12,7 @@ interface DocumentContextType {
   activeDocumentCount: number;
   primaryDoc: DocumentItem | undefined;
   extraDocsCount: number;
+  isInitializingDocs: boolean;
   setIsDocModalOpen: (isOpen: boolean) => void;
   handleUploadDocument: (file: File) => Promise<void>;
   handleDeleteDocument: (id: string) => Promise<void>;
@@ -24,6 +25,7 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
   const { token } = useApp();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+  const [isInitializingDocs, setIsInitializingDocs] = useState(true);
 
   const activeDocuments = useMemo(
     () => documents.filter((d) => (d.is_active ?? true) && d.status === 'ready'),
@@ -45,9 +47,10 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
 
   useEffect(() => {
     if (token) {
-      reloadDocuments(token);
+      reloadDocuments(token).finally(() => setIsInitializingDocs(false));
     } else {
       setDocuments([]);
+      setIsInitializingDocs(false);
     }
   }, [token, reloadDocuments]);
 
@@ -78,6 +81,7 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
       activeDocumentCount,
       primaryDoc,
       extraDocsCount,
+      isInitializingDocs,
       setIsDocModalOpen,
       handleUploadDocument,
       handleDeleteDocument,
@@ -90,6 +94,7 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
       activeDocumentCount,
       primaryDoc,
       extraDocsCount,
+      isInitializingDocs,
       handleUploadDocument,
       handleDeleteDocument,
       handleDocumentsUpdated,
