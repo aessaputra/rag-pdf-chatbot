@@ -62,14 +62,12 @@ export function EmbeddingSettingsSection({
 
   useEffect(() => {
     if (res?.success && res.data?.models && res.data.models.length > 0) {
-      if (!embModelName && res.data.default_model) {
-        setEmbModelName(res.data.default_model);
-      }
+      setEmbModelName((current) => current ? current : (res.data.default_model || ''));
       if (res.data.probed_dimension) {
         setEmbDimensions(res.data.probed_dimension);
       }
     }
-  }, [res, embModelName]);
+  }, [res]);
 
   const handleSaveEmbedding = async (e: React.FormEvent) => {
     e.preventDefault();

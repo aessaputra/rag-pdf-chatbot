@@ -121,7 +121,7 @@ export function ProviderSettingsSection({
       {isFormOpen ? (
         <>
           <div 
-            className="fixed inset-0 z-40 bg-black/5 backdrop-blur-[2px] transition-opacity cursor-pointer"
+            className="fixed inset-0 z-40 h-screen w-screen bg-black/5 backdrop-blur-[2px] transition-opacity cursor-pointer"
             onClick={handleCloseForm}
             aria-hidden="true"
           />

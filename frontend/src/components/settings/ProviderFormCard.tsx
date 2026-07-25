@@ -64,11 +64,9 @@ export function ProviderFormCard({
 
   useEffect(() => {
     if (res?.success && res.data?.models && res.data.models.length > 0) {
-      if (!formModelName && res.data.default_model) {
-        setFormModelName(res.data.default_model);
-      }
+      setFormModelName((current) => current ? current : (res.data.default_model || ''));
     }
-  }, [res, formModelName]);
+  }, [res]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
