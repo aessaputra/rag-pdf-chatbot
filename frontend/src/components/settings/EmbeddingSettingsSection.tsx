@@ -26,7 +26,7 @@ export function EmbeddingSettingsSection({
 }: EmbeddingSettingsSectionProps) {
   const [embProvider, setEmbProvider] = useState<string>('gemini');
   const [embModelName, setEmbModelName] = useState<string>('');
-  const [embDimensions, setEmbDimensions] = useState<number>(768);
+  const [embDimensions, setEmbDimensions] = useState<number | ''>('');
   const [embBaseUrl, setEmbBaseUrl] = useState<string>('');
   const [embError, setEmbError] = useState<string | null>(null);
   const [isSavingEmbedding, setIsSavingEmbedding] = useState(false);
@@ -63,9 +63,6 @@ export function EmbeddingSettingsSection({
   useEffect(() => {
     if (res?.success && res.data?.models && res.data.models.length > 0) {
       setEmbModelName((current) => current ? current : (res.data.default_model || ''));
-      if (res.data.probed_dimension) {
-        setEmbDimensions(res.data.probed_dimension);
-      }
     }
   }, [res]);
 
@@ -173,6 +170,7 @@ export function EmbeddingSettingsSection({
               const newProv = e.target.value;
               setEmbProvider(newProv);
               setEmbModelName('');
+              setEmbDimensions('');
               setIsCustomModelInput(false);
             }}
             className="minimal-input w-full px-3 py-2 rounded-md text-xs cursor-pointer disabled:opacity-50"
@@ -218,6 +216,7 @@ export function EmbeddingSettingsSection({
                       setEmbModelName('');
                     } else {
                       setEmbModelName(e.target.value);
+                      setEmbDimensions('');
                     }
                   }}
                   className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50"
@@ -260,9 +259,9 @@ export function EmbeddingSettingsSection({
                 id="embDimensions"
                 type="number"
                 disabled={!!embeddingConfig?.locked}
-                placeholder="768"
-                value={embDimensions}
-                onChange={(e) => setEmbDimensions(parseInt(e.target.value) || 768)}
+                placeholder="contoh: 768"
+                value={embDimensions === '' ? '' : embDimensions}
+                onChange={(e) => setEmbDimensions(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
                 className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"
               />
             </div>
