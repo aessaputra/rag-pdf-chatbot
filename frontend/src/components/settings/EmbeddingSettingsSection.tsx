@@ -44,7 +44,7 @@ export function EmbeddingSettingsSection({
   const deferredBaseUrl = useDeferredValue(embBaseUrl.trim());
   const targetConfigId = configs.find((c) => c.provider === embProvider)?.id;
 
-  const fetcherKey = embeddingConfig?.locked 
+  const fetcherKey = embeddingConfig?.locked || !targetConfigId
     ? null 
     : ['verifyAndFetchModels', embProvider, deferredBaseUrl, targetConfigId, token, 'embedding'];
 
@@ -157,9 +157,16 @@ export function EmbeddingSettingsSection({
       <form onSubmit={handleSaveEmbedding} className="flex-1 space-y-5 flex flex-col">
         {/* Provider Selection */}
         <div>
-          <label htmlFor="embProvider" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
-            PROVIDER
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="embProvider" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+              PROVIDER
+            </label>
+            {!targetConfigId && !embeddingConfig?.locked ? (
+              <span className="text-[9px] font-mono text-[var(--pastel-red-text)]">
+                Belum dikonfigurasi di Chat
+              </span>
+            ) : null}
+          </div>
           <select
             id="embProvider"
             disabled={!!embeddingConfig?.locked}
@@ -191,9 +198,9 @@ export function EmbeddingSettingsSection({
                   <span className="text-[10px] font-mono text-muted animate-pulse">
                     Loading…
                   </span>
-                ) : fetchedEmbModels.length > 0 ? (
-                  <span className="text-[10px] font-mono text-muted">
-                    {fetchedEmbModels.length} models
+                ) : !targetConfigId ? (
+                  <span className="text-[10px] font-mono text-zinc-500/50">
+                    Menunggu API Key...
                   </span>
                 ) : fetchError ? (
                   <span className="text-[10px] font-mono text-[var(--pastel-red-text)]" title={fetchError}>
@@ -205,7 +212,7 @@ export function EmbeddingSettingsSection({
               {!isCustomModelInput ? (
                 <select
                   id="embModelSelect"
-                  disabled={!!embeddingConfig?.locked}
+                  disabled={!!embeddingConfig?.locked || !targetConfigId}
                   value={embModelName}
                   onChange={(e) => {
                     if (e.target.value === '__custom__') {
@@ -217,21 +224,21 @@ export function EmbeddingSettingsSection({
                   }}
                   className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono cursor-pointer disabled:opacity-50"
                 >
-                  <option value="" disabled>Pilih Model…</option>
+                  <option value="" disabled>pilih model...</option>
                   {options.map((m) => (
                     <option key={m} value={m} className="bg-surface-card text-primary">
                       {m}
                     </option>
                   ))}
-                  <option value="__custom__" className="bg-surface-card text-primary">Input Custom…</option>
+                  <option value="__custom__" className="bg-surface-card text-primary">input custom...</option>
                 </select>
               ) : (
                 <div className="space-y-1">
                   <input
                     id="embModelNameInput"
                     type="text"
-                    disabled={!!embeddingConfig?.locked}
-                    placeholder="Slug model embedding"
+                    disabled={!!embeddingConfig?.locked || !targetConfigId}
+                    placeholder="slug model embedding"
                     value={embModelName}
                     onChange={(e) => setEmbModelName(e.target.value)}
                     className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"
@@ -241,7 +248,7 @@ export function EmbeddingSettingsSection({
                     onClick={() => setIsCustomModelInput(false)}
                     className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
                   >
-                    Pilih dari daftar
+                    pilih dari daftar
                   </button>
                 </div>
               )}

@@ -183,13 +183,18 @@ export function ProviderFormCard({
 
         {/* Display Name */}
         <div>
-          <label htmlFor="formDisplayName" className="block text-[10px] font-mono uppercase tracking-wider text-muted mb-1.5">
-            LABEL <span className="text-[9px] text-muted lowercase">(opsional)</span>
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="formDisplayName" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
+              LABEL
+            </label>
+            <span className="text-[9px] font-mono text-muted/50">
+              opsional
+            </span>
+          </div>
           <input
             id="formDisplayName"
             type="text"
-            placeholder="Label opsional"
+            placeholder="nama tampilan..."
             value={formDisplayName}
             onChange={(e) => setFormDisplayName(e.target.value)}
             className="minimal-input w-full px-3 py-2 rounded-md text-xs font-sans"
@@ -202,15 +207,15 @@ export function ProviderFormCard({
             <label htmlFor="formApiKey" className="block text-[10px] font-mono uppercase tracking-wider text-muted">
               KUNCI API
             </label>
-            <span className="text-[9px] font-mono text-muted">
-              {editingConfigId ? '(tersimpan)' : '(wajib)'}
+            <span className="text-[9px] font-mono text-muted/50">
+              {editingConfigId ? 'tersimpan' : 'wajib'}
             </span>
           </div>
           <input
             id="formApiKey"
             type="password"
             autoComplete="new-password"
-            placeholder={editingConfigId ? '••••••••' : 'Kunci API provider…'}
+            placeholder={editingConfigId ? '••••••••' : 'kunci api...'}
             value={formApiKey}
             onChange={(e) => setFormApiKey(e.target.value)}
             className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"
@@ -244,10 +249,6 @@ export function ProviderFormCard({
               <span className="text-[10px] font-mono text-muted animate-pulse">
                 Loading…
               </span>
-            ) : fetchedModels.length > 0 ? (
-              <span className="text-[10px] font-mono text-muted">
-                {fetchedModels.length} models
-              </span>
             ) : fetchError ? (
               <span className="text-[10px] font-mono text-[var(--pastel-red-text)]" title={fetchError}>
                 Error
@@ -276,13 +277,13 @@ export function ProviderFormCard({
               {options.length === 0 ? (
                 <option value="" disabled>
                   {isLoadingModels
-                    ? 'Memuat model…'
+                    ? 'memuat model...'
                     : fetchError
                     ? fetchError
-                    : 'Pilih atau ketik Kunci API…'}
+                    : 'pilih model...'}
                 </option>
               ) : (
-                <option value="" disabled>Pilih Model…</option>
+                <option value="" disabled>pilih model...</option>
               )}
 
               {options.map((m) => (
@@ -290,7 +291,7 @@ export function ProviderFormCard({
                   {m}
                 </option>
               ))}
-              <option value="__custom__" className="bg-surface-card text-primary">Input Custom…</option>
+              <option value="__custom__" className="bg-surface-card text-primary">input custom...</option>
             </select>
           ) : (
             <div className="space-y-1">
@@ -299,7 +300,7 @@ export function ProviderFormCard({
                 type="text"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="Slug model (mis. gpt-4o)"
+                placeholder="slug model"
                 value={formModelName}
                 onChange={(e) => setFormModelName(e.target.value)}
                 className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono"
@@ -309,7 +310,7 @@ export function ProviderFormCard({
                 onClick={() => setIsCustomModel(false)}
                 className="text-[10px] text-muted hover:text-primary underline cursor-pointer font-mono"
               >
-                Pilih dari daftar
+                pilih dari daftar
               </button>
             </div>
           )}

@@ -119,14 +119,14 @@ export function ProviderSettingsSection({
       </div>
 
       {isFormOpen ? (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <>
           <div 
-            className="fixed inset-0 bg-black/5 backdrop-blur-[2px] transition-opacity cursor-pointer"
+            className="fixed inset-0 z-40 bg-black/5 backdrop-blur-[2px] transition-opacity cursor-pointer"
             onClick={handleCloseForm}
             aria-hidden="true"
           />
-          <div className="relative w-full max-w-md bg-canvas h-full border-l border-subtle shadow-2xl overflow-y-auto z-10 animate-in slide-in-from-right duration-300">
-            <div className="p-8">
+          <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-canvas border-l border-subtle shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="p-6 sm:p-8">
               <ProviderFormCard
                 editingConfigId={editingConfig?.id || null}
                 initialProvider={editingConfig?.provider}
@@ -140,7 +140,7 @@ export function ProviderSettingsSection({
               />
             </div>
           </div>
-        </div>
+        </>
       ) : null}
 
       {configs.length === 0 ? (
@@ -178,13 +178,20 @@ export function ProviderSettingsSection({
                     </span>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted">
-                  <span>Kunci: {config.api_key_masked}</span>
-                  <span>
-                    Model: {config.model_name || 'Model Default Provider'}
-                  </span>
+                <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono text-muted">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-zinc-500/50">key</span>
+                    <span>{config.api_key_masked}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-zinc-500/50">model</span>
+                    <span>{config.model_name || 'default'}</span>
+                  </div>
                   {config.base_url ? (
-                    <span className="truncate max-w-xs">URL: {config.base_url}</span>
+                    <div className="flex items-center gap-1.5 truncate max-w-xs">
+                      <span className="text-zinc-500/50">url</span>
+                      <span>{config.base_url}</span>
+                    </div>
                   ) : null}
                 </div>
               </div>

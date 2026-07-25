@@ -66,23 +66,23 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen w-full bg-canvas text-primary font-sans transition-colors duration-150">
       {/* Top Navbar Header */}
-      <header className="border-b border-subtle bg-canvas">
-        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-subtle bg-canvas/80 backdrop-blur-md">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 rounded px-2 py-1"
+              className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 rounded py-1 -ml-1 pr-2"
             >
               <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Dashboard</span>
             </Link>
-            <span className="text-subtle">/</span>
-            <h1 className="text-xs font-semibold text-primary font-serif tracking-tight">
+            <span className="text-subtle text-xs">/</span>
+            <h1 className="text-xs font-medium text-primary font-sans tracking-tight">
               Pengaturan
             </h1>
           </div>
           {user ? (
-            <div className="text-[11px] font-mono text-muted bg-surface-card border border-subtle px-2.5 py-1 rounded-md">
+            <div className="text-[10px] font-mono text-muted bg-surface-card border border-subtle px-2 py-1 rounded shadow-sm">
               {user.email}
             </div>
           ) : null}
