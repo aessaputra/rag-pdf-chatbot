@@ -181,6 +181,12 @@
       "skillPath": "skills/personal/obsidian-vault/SKILL.md",
       "computedHash": "6c8409ce9dd8419abc38f2a665e862e2a22758fe98e1cdd42e16ecab4f562e23"
     },
+    "prompt-engineering-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/llm-application-dev/skills/prompt-engineering-patterns/SKILL.md",
+      "computedHash": "83b6b8e021901722b54057a90b03960af6a0c97ade68bce4010e9698ddb810ee"
+    },
     "prototype": {
       "source": "mattpocock/skills",
       "sourceType": "github",

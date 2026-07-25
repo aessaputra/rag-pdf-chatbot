@@ -9,9 +9,40 @@ interface ChatMessageItemProps {
   readonly onSelectCitation: (citation: Citation) => void;
 }
 
-function formatInlineMarkdown(text: string) {
-  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+function formatInlineMarkdown(
+  text: string, 
+  citations?: readonly Citation[], 
+  onSelectCitation?: (c: Citation) => void
+) {
+  const parts = text.split(/(\[\d+\]|\*\*.*?\*\*|`.*?`)/g);
   return parts.map((part, i) => {
+    // Handle inline citations
+    if (part.startsWith('[') && part.endsWith(']')) {
+      const citationIndex = parseInt(part.slice(1, -1), 10) - 1;
+      const citation = citations?.[citationIndex];
+      
+      if (citation && onSelectCitation) {
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onSelectCitation(citation)}
+            aria-label={`Buka sitasi ${citation.filename} halaman ${citation.page_number}`}
+            className="inline-flex items-center gap-1 px-1.5 mx-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20 text-xs font-mono transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-400 align-baseline"
+          >
+            <FileTextIcon className="w-3 h-3" aria-hidden="true" />
+            <span className="font-medium [font-variant-numeric:tabular-nums]">Hal {citation.page_number}</span>
+          </button>
+        );
+      }
+      
+      return (
+        <span key={i} className="text-muted text-xs font-mono mx-0.5">
+          {part}
+        </span>
+      );
+    }
+
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
       return (
         <strong key={i} className="font-semibold text-primary">
@@ -34,7 +65,15 @@ function formatInlineMarkdown(text: string) {
  * Lightweight inline markdown renderer for structured AI streaming text.
  * Memoized to avoid re-parsing static markdown strings across unchanged messages.
  */
-const FormattedMessage = memo(function FormattedMessage({ content }: { readonly content: string }) {
+const FormattedMessage = memo(function FormattedMessage({ 
+  content, 
+  citations, 
+  onSelectCitation 
+}: { 
+  readonly content: string;
+  readonly citations?: readonly Citation[];
+  readonly onSelectCitation?: (c: Citation) => void;
+}) {
   const lines = content.split('\n');
   return (
     <div className="space-y-2.5 text-sm leading-relaxed text-primary">
@@ -47,7 +86,7 @@ const FormattedMessage = memo(function FormattedMessage({ content }: { readonly 
           return (
             <div key={idx} className="flex items-start gap-2 pl-2 my-1">
               <span className="text-muted text-xs mt-0.5 select-none">•</span>
-              <span className="flex-1">{formatInlineMarkdown(trimmed.slice(2))}</span>
+              <span className="flex-1">{formatInlineMarkdown(trimmed.slice(2), citations, onSelectCitation)}</span>
             </div>
           );
         }
@@ -58,7 +97,7 @@ const FormattedMessage = memo(function FormattedMessage({ content }: { readonly 
           return (
             <div key={idx} className="flex items-start gap-2 pl-2 my-1">
               <span className="text-muted font-mono text-xs mt-0.5 select-none">{numMatch[1]}.</span>
-              <span className="flex-1">{formatInlineMarkdown(numMatch[2])}</span>
+              <span className="flex-1">{formatInlineMarkdown(numMatch[2], citations, onSelectCitation)}</span>
             </div>
           );
         }
@@ -67,19 +106,19 @@ const FormattedMessage = memo(function FormattedMessage({ content }: { readonly 
         if (trimmed.startsWith('### ')) {
           return (
             <h4 key={idx} className="text-sm font-semibold text-primary mt-3 mb-1 [text-wrap:balance]">
-              {formatInlineMarkdown(trimmed.slice(4))}
+              {formatInlineMarkdown(trimmed.slice(4), citations, onSelectCitation)}
             </h4>
           );
         }
         if (trimmed.startsWith('## ')) {
           return (
             <h3 key={idx} className="text-base font-semibold font-serif text-primary mt-4 mb-1 [text-wrap:balance]">
-              {formatInlineMarkdown(trimmed.slice(3))}
+              {formatInlineMarkdown(trimmed.slice(3), citations, onSelectCitation)}
             </h3>
           );
         }
 
-        return <p key={idx}>{formatInlineMarkdown(line)}</p>;
+        return <div key={idx}>{formatInlineMarkdown(trimmed, citations, onSelectCitation)}</div>;
       })}
     </div>
   );
@@ -108,30 +147,11 @@ export const ChatMessageItem = memo(
               <FaceIcon className="w-4 h-4 text-muted" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0 p-5 rounded-xl bg-surface-card/60 border border-subtle text-primary shadow-2xs font-sans">
-              <FormattedMessage content={msg.content} />
-
-              {/* Source Citations Horizontal Strip */}
-              {msg.citations && msg.citations.length > 0 ? (
-                <div className="mt-4 pt-3 border-t border-subtle">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {msg.citations.map((c, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => onSelectCitation(c)}
-                        aria-label={`Buka sitasi ${c.filename} halaman ${c.page_number}`}
-                        className="py-1.5 px-3 rounded-md bg-surface-card hover:bg-surface-card-hover border border-subtle text-secondary hover:text-primary text-xs font-mono transition-colors flex items-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
-                      >
-                        <FileTextIcon className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
-                        <span className="font-medium [font-variant-numeric:tabular-nums]">Hal {c.page_number}</span>
-                        <span className="text-muted text-xs truncate max-w-40">
-                          ({c.filename})
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+              <FormattedMessage 
+                content={msg.content} 
+                citations={msg.citations} 
+                onSelectCitation={onSelectCitation} 
+              />
             </div>
           </div>
         )}
