@@ -2,7 +2,10 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-canvas text-primary transition-colors duration-150 relative">
+    <div 
+      className="min-h-screen flex flex-col items-center justify-center p-4 bg-canvas text-primary transition-colors duration-150 relative"
+      suppressHydrationWarning
+    >
 
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />

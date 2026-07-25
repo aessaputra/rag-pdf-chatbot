@@ -61,7 +61,7 @@ export function AppProvider({
           return;
         }
 
-        if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        if (session) {
           setToken(session.access_token);
           setUser(createUserPayload(session.user.id, session.user.email));
         }

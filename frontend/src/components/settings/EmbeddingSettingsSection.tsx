@@ -211,15 +211,15 @@ export function EmbeddingSettingsSection({
                   MODEL
                 </label>
                 {isLoadingEmbModels ? (
-                  <span className="text-xs font-mono text-muted animate-pulse">
+                  <span className="text-xs font-mono text-muted animate-pulse truncate text-right ml-2" title="Memuat model">
                     Loading…
                   </span>
                 ) : !targetConfigId ? (
-                  <span className="text-xs font-mono text-zinc-500/50">
-                    Menunggu API Key...
+                  <span className="text-xs font-mono text-zinc-500/50 truncate text-right ml-2" title="Menunggu konfigurasi kunci API di bagian Provider Chat">
+                    Menunggu kunci…
                   </span>
                 ) : fetchError ? (
-                  <span className="text-xs font-mono text-(--pastel-red-text)" title={fetchError}>
+                  <span className="text-xs font-mono text-(--pastel-red-text) truncate text-right ml-2" title={fetchError}>
                     Error
                   </span>
                 ) : null}
@@ -307,7 +307,7 @@ export function EmbeddingSettingsSection({
                 id="embDimensions"
                 type="number"
                 disabled={!!embeddingConfig?.locked}
-                placeholder="e.g. 768"
+                placeholder="768"
                 value={embDimensions === '' ? '' : embDimensions}
                 onChange={(e) => setEmbDimensions(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
                 className="minimal-input w-full px-3 py-2 rounded-md text-xs font-mono disabled:opacity-50"

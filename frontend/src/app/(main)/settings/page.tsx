@@ -48,7 +48,7 @@ export default function SettingsPage() {
       </header>
 
 
-      <main className="max-w-5xl mx-auto px-4 md:px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+      <main className="max-w-5xl mx-auto px-4 md:px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
         {(successMsg || errorMsg) && (
           <div className="md:col-span-3 space-y-3 mb-2">
@@ -69,7 +69,7 @@ export default function SettingsPage() {
         )}
 
         {isInitializing ? (
-          <div className="md:col-span-3 flex items-center justify-center p-12">
+          <div className="md:col-span-2 flex items-center justify-center p-12">
             <div className="flex items-center gap-3 text-muted text-sm font-mono animate-pulse">
               <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               Memuat konfigurasi...
@@ -77,7 +77,7 @@ export default function SettingsPage() {
           </div>
         ) : token ? (
           <>
-            <div className="md:col-span-2 h-full flex flex-col">
+            <div className="md:col-span-1 h-full flex flex-col min-w-0">
               <ProviderSettingsSection
                 configs={providerConfigs}
                 token={token}
@@ -86,7 +86,7 @@ export default function SettingsPage() {
                 onSetErrorMsg={setErrorMsg}
               />
             </div>
-            <div className="md:col-span-1 h-full flex flex-col">
+            <div className="md:col-span-1 h-full flex flex-col min-w-0">
               <EmbeddingSettingsSection
                 configs={providerConfigs}
                 embeddingConfig={embeddingConfig}
