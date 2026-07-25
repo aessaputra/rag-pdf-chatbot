@@ -82,7 +82,7 @@ export default function SettingsPage() {
             </h1>
           </div>
           {user ? (
-            <div className="text-[10px] font-mono text-muted bg-surface-card border border-subtle px-2 py-1 rounded shadow-sm">
+            <div className="text-[10px] font-mono text-muted/80 tracking-wide">
               {user.email}
             </div>
           ) : null}
@@ -95,14 +95,14 @@ export default function SettingsPage() {
         {(successMsg || errorMsg) && (
           <div className="md:col-span-3 space-y-3 mb-2">
             {successMsg ? (
-              <div role="status" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-green-bg)] border border-[var(--pastel-green-text)]/20 text-[var(--pastel-green-text)] text-xs leading-normal flex items-center gap-2 shadow-sm">
+              <div role="status" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-green-bg)] border border-[var(--pastel-green-text)]/20 text-[var(--pastel-green-text)] text-xs leading-normal flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[var(--pastel-green-text)] shrink-0" aria-hidden="true" />
                 <span>{successMsg}</span>
               </div>
             ) : null}
 
             {errorMsg ? (
-              <div role="alert" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal flex items-center gap-2 shadow-sm">
+              <div role="alert" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal flex items-center gap-2">
                 <AlertCircle className="w-3.5 h-3.5 text-[var(--pastel-red-text)] shrink-0" aria-hidden="true" />
                 <span>{errorMsg}</span>
               </div>
