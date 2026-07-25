@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, Cpu } from 'lucide-react';
+import { FileTextIcon, LightningBoltIcon } from '@radix-ui/react-icons';
 import { useDashboard } from '@/context/DashboardContext';
 
 export function ChatWindowHeader() {
@@ -14,7 +14,7 @@ export function ChatWindowHeader() {
   return (
     <header className="h-13 border-b border-subtle bg-canvas/80 backdrop-blur-xs flex items-center justify-between px-6 shrink-0 z-20 select-none">
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        <FileText className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
+        <FileTextIcon className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
         {primaryDoc ? (
           <button
             type="button"
@@ -44,7 +44,7 @@ export function ChatWindowHeader() {
 
       {/* Active LLM Provider & Model Badge */}
       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-card border border-subtle text-[11px] font-mono text-muted shrink-0">
-        <Cpu className="w-3 h-3 text-[var(--pastel-green-text)] shrink-0" aria-hidden="true" />
+        <LightningBoltIcon className="w-3 h-3 text-[var(--pastel-green-text)] shrink-0" aria-hidden="true" />
         <span className="font-medium text-primary">{activeProviderLabel}</span>
         <span className="text-zinc-500">•</span>
         <span className="text-muted truncate max-w-[180px]">{activeModelName}</span>

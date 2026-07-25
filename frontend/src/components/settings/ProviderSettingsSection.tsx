@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Edit3, Key, Plus, Trash2 } from 'lucide-react';
+import { Pencil2Icon, LockClosedIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { createProviderConfig, deleteProviderConfig, updateProviderConfig } from '@/lib/api';
 import type { ProviderConfig } from '@/types';
 import ProviderFormCard from './ProviderFormCard';
@@ -103,7 +103,7 @@ export function ProviderSettingsSection({
     <section aria-label="Konfigurasi Provider Chat LLM" className="p-6 rounded-xl bg-surface-card border border-subtle h-full flex flex-col space-y-6">
       <div className="flex items-center justify-between border-b border-subtle pb-4">
         <h2 className="text-sm font-serif tracking-tight text-primary flex items-center gap-2">
-          <Key className="w-4 h-4 text-muted" aria-hidden="true" />
+          <LockClosedIcon className="w-4 h-4 text-muted" aria-hidden="true" />
           <span>Provider Chat</span>
         </h2>
         {!isFormOpen ? (
@@ -112,7 +112,7 @@ export function ProviderSettingsSection({
             onClick={handleOpenCreate}
             className="minimal-button-primary px-3 py-1.5 rounded-md text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
           >
-            <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+            <PlusIcon className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Tambah Provider</span>
           </button>
         ) : null}
@@ -152,7 +152,7 @@ export function ProviderSettingsSection({
               onClick={handleOpenCreate}
               className="minimal-button-primary px-3.5 py-1.5 rounded-md text-xs inline-flex items-center gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+              <PlusIcon className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Tambah Provider</span>
             </button>
           ) : null}
@@ -213,7 +213,7 @@ export function ProviderSettingsSection({
                   title="Edit Provider"
                   className="p-1.5 rounded-md border border-subtle text-muted hover:text-primary hover:bg-surface-card-hover transition-colors"
                 >
-                  <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
+                  <Pencil2Icon className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -222,7 +222,7 @@ export function ProviderSettingsSection({
                   title="Hapus Provider"
                   className="p-1.5 rounded-md border border-subtle text-muted hover:text-rose-500 hover:bg-[var(--pastel-red-bg)] transition-colors"
                 >
-                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  <TrashIcon className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>

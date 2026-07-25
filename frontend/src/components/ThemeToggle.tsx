@@ -2,7 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { SunIcon, MoonIcon, DesktopIcon } from '@radix-ui/react-icons';
 
 export function ThemeToggle({ className = '', compact = false }: { className?: string; compact?: boolean }) {
   const { theme, setTheme } = useTheme();
@@ -26,9 +26,9 @@ export function ThemeToggle({ className = '', compact = false }: { className?: s
   }
 
   const options = [
-    { id: 'light', label: 'Terang', icon: Sun },
-    { id: 'dark', label: 'Gelap', icon: Moon },
-    { id: 'system', label: 'Sistem', icon: Monitor },
+    { id: 'light', label: 'Terang', icon: SunIcon },
+    { id: 'dark', label: 'Gelap', icon: MoonIcon },
+    { id: 'system', label: 'Sistem', icon: DesktopIcon },
   ] as const;
 
   return (

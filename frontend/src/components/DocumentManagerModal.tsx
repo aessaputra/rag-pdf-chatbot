@@ -1,15 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  X,
-  FileText,
-  UploadCloud,
-  Trash2,
-  ExternalLink,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+import { Cross1Icon, FileTextIcon, UploadIcon, TrashIcon, ExternalLinkIcon, UpdateIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { DocumentItem } from '@/types';
 import {
   uploadDocument,
@@ -153,7 +145,7 @@ export default function DocumentManagerModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-subtle bg-surface-card">
           <div className="flex items-center gap-2.5">
-            <FileText className="w-5 h-5 text-muted" />
+            <FileTextIcon className="w-5 h-5 text-muted" />
             <h2 id="document-modal-title" className="text-base font-semibold text-primary">
               Dokumen
             </h2>
@@ -163,7 +155,7 @@ export default function DocumentManagerModal({
             className="p-1 text-muted hover:text-primary rounded-lg hover:bg-surface-card-hover transition-colors"
             aria-label="Tutup modal"
           >
-            <X className="w-5 h-5" />
+            <Cross1Icon className="w-5 h-5" />
           </button>
         </div>
 
@@ -171,7 +163,7 @@ export default function DocumentManagerModal({
         <div className="p-6 overflow-y-auto space-y-5 flex-1">
           {error && (
             <div className="flex items-center gap-2.5 p-3 text-xs text-rose-500 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+              <ExclamationTriangleIcon className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -202,12 +194,12 @@ export default function DocumentManagerModal({
             <div className="flex flex-col items-center justify-center gap-2">
               {uploading ? (
                 <>
-                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                  <UpdateIcon className="w-8 h-8 text-emerald-500 animate-spin" />
                   <p className="text-xs font-medium text-secondary">Mengunggah & Memproses PDF…</p>
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-8 h-8 text-muted" />
+                  <UploadIcon className="w-8 h-8 text-muted" />
                   <p className="text-sm font-medium text-primary">Unggah PDF</p>
                   <p className="text-xs text-muted">Maks. 50 MB</p>
                 </>
@@ -240,7 +232,7 @@ export default function DocumentManagerModal({
                     >
                       {/* Left: Info & Badges */}
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <FileText className="w-4 h-4 text-muted shrink-0" />
+                        <FileTextIcon className="w-4 h-4 text-muted shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-primary truncate" title={doc.filename}>
@@ -249,7 +241,7 @@ export default function DocumentManagerModal({
                             {/* Status Badge */}
                             {isProcessing ? (
                               <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0">
-                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                <UpdateIcon className="w-2.5 h-2.5 animate-spin" />
                                 PROSES
                               </span>
                             ) : isFailed ? (
@@ -300,7 +292,7 @@ export default function DocumentManagerModal({
                           title="Preview PDF"
                           aria-label={`Preview ${doc.filename}`}
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <ExternalLinkIcon className="w-3.5 h-3.5" />
                         </button>
 
                         {/* Delete Button */}
@@ -328,7 +320,7 @@ export default function DocumentManagerModal({
                             title="Hapus Dokumen"
                             aria-label={`Hapus ${doc.filename}`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <TrashIcon className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>

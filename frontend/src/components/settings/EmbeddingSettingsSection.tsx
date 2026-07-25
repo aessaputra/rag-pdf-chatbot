@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useDeferredValue } from 'react';
 import Link from 'next/link';
-import { Layers, Lock } from 'lucide-react';
+import { LayersIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import useSWR from 'swr';
 import { saveEmbeddingConfig, verifyAndFetchModels } from '@/lib/api';
 import type { EmbeddingConfig, ProviderConfig } from '@/types';
@@ -125,12 +125,12 @@ export function EmbeddingSettingsSection({
     >
       <div className="flex items-center justify-between border-b border-subtle pb-4">
         <h2 className="text-sm font-serif tracking-tight text-primary flex items-center gap-2">
-          <Layers className="w-4 h-4 text-muted" aria-hidden="true" />
+          <LayersIcon className="w-4 h-4 text-muted" aria-hidden="true" />
           <span>Embedding</span>
         </h2>
         {embeddingConfig?.locked ? (
           <span className="text-xs font-serif text-muted flex items-center gap-1.5" aria-hidden="true">
-            <Lock className="w-3.5 h-3.5" /> Terkunci
+            <LockClosedIcon className="w-3.5 h-3.5" /> Terkunci
           </span>
         ) : null}
       </div>

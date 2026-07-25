@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeftIcon, CheckIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { createClient } from '@/lib/supabaseClient';
 import {
   getEmbeddingConfig, listProviderConfigs
@@ -73,7 +73,7 @@ export default function SettingsPage() {
               href="/dashboard"
               className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 rounded py-1 -ml-1 pr-2"
             >
-              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+              <ArrowLeftIcon className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Dashboard</span>
             </Link>
             <span className="text-subtle text-xs">/</span>
@@ -96,14 +96,14 @@ export default function SettingsPage() {
           <div className="md:col-span-3 space-y-3 mb-2">
             {successMsg ? (
               <div role="status" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-green-bg)] border border-[var(--pastel-green-text)]/20 text-[var(--pastel-green-text)] text-xs leading-normal flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-[var(--pastel-green-text)] shrink-0" aria-hidden="true" />
+                <CheckIcon className="w-3.5 h-3.5 text-[var(--pastel-green-text)] shrink-0" aria-hidden="true" />
                 <span>{successMsg}</span>
               </div>
             ) : null}
 
             {errorMsg ? (
               <div role="alert" aria-live="polite" className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal flex items-center gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-[var(--pastel-red-text)] shrink-0" aria-hidden="true" />
+                <ExclamationTriangleIcon className="w-3.5 h-3.5 text-[var(--pastel-red-text)] shrink-0" aria-hidden="true" />
                 <span>{errorMsg}</span>
               </div>
             ) : null}

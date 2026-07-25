@@ -1,6 +1,6 @@
 'use client';
 
-import { X, FileText } from 'lucide-react';
+import { Cross1Icon, FileTextIcon } from '@radix-ui/react-icons';
 import { useDashboard } from '@/context/DashboardContext';
 
 /**
@@ -32,7 +32,7 @@ export default function CitationPanel() {
           aria-label="Tutup Detail Sitasi"
           className="p-1 rounded text-muted hover:text-primary hover:bg-surface-card-hover transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400"
         >
-          <X className="w-3.5 h-3.5" aria-hidden="true" />
+          <Cross1Icon className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
 
@@ -40,7 +40,7 @@ export default function CitationPanel() {
       <div className="space-y-1.5 mb-5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <FileText className="w-3.5 h-3.5 text-muted shrink-0" aria-hidden="true" />
+            <FileTextIcon className="w-3.5 h-3.5 text-muted shrink-0" aria-hidden="true" />
             <span className="text-xs font-semibold text-primary truncate" title={selectedCitation.filename}>
               {selectedCitation.filename}
             </span>

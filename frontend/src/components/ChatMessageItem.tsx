@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
-import { Bot, FileText } from 'lucide-react';
+import { FaceIcon, FileTextIcon } from '@radix-ui/react-icons';
 import type { ChatMessage, Citation } from '@/types';
 
 interface ChatMessageItemProps {
@@ -105,7 +105,7 @@ export const ChatMessageItem = memo(
         ) : (
           <div className="flex items-start gap-3 w-full">
             <div className="w-6 h-6 rounded bg-surface-card border border-subtle flex items-center justify-center shrink-0 mt-0.5">
-              <Bot className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
+              <FaceIcon className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0 p-4 rounded-xl bg-surface-card/60 border border-subtle text-primary shadow-2xs font-sans">
               <FormattedMessage content={msg.content} />
@@ -122,7 +122,7 @@ export const ChatMessageItem = memo(
                         aria-label={`Buka sitasi ${c.filename} halaman ${c.page_number}`}
                         className="py-1 px-2.5 rounded-md bg-surface-card hover:bg-surface-card-hover border border-subtle text-secondary hover:text-primary text-[11px] font-mono transition-colors flex items-center gap-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
                       >
-                        <FileText className="w-3 h-3 text-muted" aria-hidden="true" />
+                        <FileTextIcon className="w-3 h-3 text-muted" aria-hidden="true" />
                         <span className="font-medium">Hal {c.page_number}</span>
                         <span className="text-muted text-[10px] truncate max-w-[120px]">
                           ({c.filename})

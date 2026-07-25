@@ -20,7 +20,7 @@ rag-pdf-chatbot/
 
 | Layer | Stack |
 |---|---|
-| **Frontend** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, `@supabase/ssr`, Lucide React |
+| **Frontend** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, `@supabase/ssr`, `@radix-ui/react-icons` |
 | **Backend** | FastAPI, Pydantic v2, PyJWT, Cryptography (AES-256-GCM), Uvicorn |
 | **RAG Pipeline** | LangChain (`langchain-google-genai`, `langchain-openai`, `langchain-ollama`), PyPDF |
 | **Database** | Supabase PostgreSQL, `pgvector` (flexible unconstrained VECTOR), Supabase Auth (JWT) |

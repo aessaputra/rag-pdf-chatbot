@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Check, ChevronDown, Sparkles } from 'lucide-react';
+import { ArrowUpIcon, CheckIcon, ChevronDownIcon, MagicWandIcon } from '@radix-ui/react-icons';
 import { useDashboard } from '@/context/DashboardContext';
 import type { ProviderConfig } from '@/types';
 
@@ -88,9 +88,9 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               aria-label="Pilih Provider AI"
               className="flex items-center gap-1.5 text-xs font-mono font-medium text-secondary hover:text-primary transition-colors cursor-pointer py-1 px-1 rounded-md focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-none"
             >
-              <Sparkles className="w-3.5 h-3.5 shrink-0 text-muted" aria-hidden="true" />
+              <MagicWandIcon className="w-3.5 h-3.5 shrink-0 text-muted" aria-hidden="true" />
               <span className="truncate max-w-[140px]">{activeLabel}</span>
-              <ChevronDown className={`w-3 h-3 shrink-0 text-muted transition-transform duration-150 ${isProviderOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+              <ChevronDownIcon className={`w-3 h-3 shrink-0 text-muted transition-transform duration-150 ${isProviderOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
 
             {/* Custom Floating Popover Dropdown Menu */}
@@ -123,7 +123,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
                       }`}
                     >
                       <span className="truncate">{label}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-2" aria-hidden="true" />}
+                      {isSelected && <CheckIcon className="w-3.5 h-3.5 text-primary shrink-0 ml-2" aria-hidden="true" />}
                     </button>
                   );
                 })}
@@ -162,7 +162,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
           {isStreaming ? (
             <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" aria-label="Mengirim…" />
           ) : (
-            <ArrowUp className="w-3.5 h-3.5" aria-hidden="true" />
+            <ArrowUpIcon className="w-3.5 h-3.5" aria-hidden="true" />
           )}
         </button>
       </form>
