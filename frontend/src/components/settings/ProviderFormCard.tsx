@@ -144,7 +144,7 @@ export function ProviderFormCard({
       {formError ? (
         <div
           role="alert"
-          className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal"
+          className="p-3 rounded-md bg-(--pastel-red-bg) border border-(--pastel-red-text)/20 text-(--pastel-red-text) text-xs leading-normal"
         >
           {formError}
         </div>
@@ -248,7 +248,7 @@ export function ProviderFormCard({
                 Loading…
               </span>
             ) : fetchError ? (
-              <span className="text-[10px] font-mono text-[var(--pastel-red-text)]" title={fetchError}>
+              <span className="text-[10px] font-mono text-(--pastel-red-text)" title={fetchError}>
                 Error
               </span>
             ) : null}
@@ -268,7 +268,7 @@ export function ProviderFormCard({
               }}
               className={`minimal-input w-full px-3 py-2 rounded-md text-xs font-mono bg-surface-card cursor-pointer focus-visible:ring-2 ${
                 fetchError 
-                  ? 'border-[var(--pastel-red-bg)] text-[var(--pastel-red-text)] focus-visible:ring-[var(--pastel-red-text)]/30' 
+                  ? 'border-(--pastel-red-bg) text-(--pastel-red-text) focus-visible:ring-(--pastel-red-text)/30' 
                   : 'border-subtle text-primary focus-visible:ring-zinc-400'
               }`}
             >

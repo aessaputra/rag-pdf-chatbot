@@ -106,7 +106,7 @@ export default function LoginPage() {
 
         {/* Status Alerts using Muted Pastels */}
         {authState.status === 'error' ? (
-          <div className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal">
+          <div className="p-3 rounded-md bg-(--pastel-red-bg) border border-(--pastel-red-text)/20 text-(--pastel-red-text) text-xs leading-normal">
             {authState.message}
           </div>
         ) : null}

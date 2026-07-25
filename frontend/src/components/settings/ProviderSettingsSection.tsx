@@ -217,7 +217,7 @@ export function ProviderSettingsSection({
                   onClick={() => handleDelete(config.id)}
                   aria-label={`Hapus ${config.display_name || config.provider}`}
                   title="Hapus Provider"
-                  className="p-1.5 rounded-md border border-subtle text-muted hover:text-rose-500 hover:bg-[var(--pastel-red-bg)] transition-colors"
+                  className="p-1.5 rounded-md border border-subtle text-muted hover:text-rose-500 hover:bg-(--pastel-red-bg) transition-colors"
                 >
                   <TrashIcon className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>

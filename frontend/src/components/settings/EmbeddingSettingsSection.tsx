@@ -146,7 +146,7 @@ export function EmbeddingSettingsSection({
       {embError ? (
         <div
           role="alert"
-          className="p-3 rounded-md bg-[var(--pastel-red-bg)] border border-[var(--pastel-red-text)]/20 text-[var(--pastel-red-text)] text-xs leading-normal"
+          className="p-3 rounded-md bg-(--pastel-red-bg) border border-(--pastel-red-text)/20 text-(--pastel-red-text) text-xs leading-normal"
         >
           {embError}
         </div>
@@ -160,7 +160,7 @@ export function EmbeddingSettingsSection({
               PROVIDER
             </label>
             {!targetConfigId && !embeddingConfig?.locked ? (
-              <span className="text-[9px] font-mono text-[var(--pastel-red-text)]">
+              <span className="text-[9px] font-mono text-(--pastel-red-text)">
                 Belum dikonfigurasi di Chat
               </span>
             ) : null}
@@ -201,7 +201,7 @@ export function EmbeddingSettingsSection({
                     Menunggu API Key...
                   </span>
                 ) : fetchError ? (
-                  <span className="text-[10px] font-mono text-[var(--pastel-red-text)]" title={fetchError}>
+                  <span className="text-[10px] font-mono text-(--pastel-red-text)" title={fetchError}>
                     Error
                   </span>
                 ) : null}
