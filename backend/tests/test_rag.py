@@ -5,7 +5,7 @@ Verifies prompt context assembly, citation metadata extraction, and SSE streamin
 Tests adapted for the decomposed module structure: ContextRetriever, PromptBuilder, RAGService.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 import pytest
 from app.schemas import Citation
 from app.services.context_retriever import ContextRetriever

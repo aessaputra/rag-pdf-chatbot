@@ -4,7 +4,6 @@ API Routers Integration Tests
 Verifies health check endpoint, CORS middleware, route protection, and upload file validations.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 

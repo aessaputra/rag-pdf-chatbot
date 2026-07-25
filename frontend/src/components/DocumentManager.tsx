@@ -5,7 +5,6 @@ import type { DocumentItem } from '@/types';
 
 interface DocumentManagerProps {
   documents: DocumentItem[];
-  hasCredentials?: boolean;
   onUpload?: (file: File) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onOpenModal?: () => void;
@@ -13,7 +12,6 @@ interface DocumentManagerProps {
 
 export default function DocumentManager({
   documents,
-  hasCredentials = true,
   onDelete,
   onOpenModal,
 }: DocumentManagerProps) {

@@ -1,0 +1,125 @@
+'use client';
+
+import React, { useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { ArrowUp, FileText, Lock, Settings, Sparkles } from 'lucide-react';
+import { useDashboard } from '@/context/DashboardContext';
+import { ChatMessageItem } from '../ChatMessageItem';
+
+interface ChatWindowMessagesProps {
+  readonly onSetInputQuery: (text: string) => void;
+}
+
+export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps) {
+  const {
+    messages,
+    isStreaming,
+    hasCredentials,
+    activeDocumentCount,
+    setSelectedCitation,
+    setIsDocModalOpen,
+  } = useDashboard();
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isStreaming]);
+
+  const suggestionPrompts = [
+    'Rangkum poin-poin utama dokumen ini.',
+    'Apa saja syarat dan batasan yang disebutkan?',
+    'Jelaskan kesimpulan dari berkas PDF aktif.',
+  ];
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      {!hasCredentials ? (
+        <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-xs mx-auto">
+          <div className="w-10 h-10 rounded-md bg-surface-card border border-subtle flex items-center justify-center mb-4">
+            <Lock className="w-4 h-4 text-muted" aria-hidden="true" />
+          </div>
+          <h2 className="text-base font-serif font-semibold text-primary mb-1.5">
+            Konfigurasi Kunci API
+          </h2>
+          <p className="text-xs text-muted mb-4 leading-normal">
+            Atur provider AI di Pengaturan untuk memulai.
+          </p>
+          <Link
+            href="/dashboard/settings"
+            className="minimal-button-primary py-2 px-4 rounded-md text-xs font-medium flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
+          >
+            <Settings className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Pengaturan</span>
+          </Link>
+        </div>
+      ) : messages.length === 0 ? (
+        <div className="h-full flex flex-col items-center justify-center text-center py-16 max-w-md mx-auto">
+          {activeDocumentCount === 0 ? (
+            <>
+              <div className="p-3.5 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
+                <FileText className="w-6 h-6" aria-hidden="true" />
+              </div>
+              <h2 className="text-xl font-serif font-semibold text-primary tracking-tight mb-2">
+                Belum ada dokumen aktif.
+              </h2>
+              <p className="text-xs text-muted leading-relaxed mb-5 max-w-xs">
+                Aktifkan minimal 1 dokumen PDF agar asisten AI dapat menjawab pertanyaan berdasarkan konteks dokumen.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsDocModalOpen(true)}
+                className="minimal-button-primary py-2 px-4 rounded-md text-xs font-medium flex items-center gap-2 cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Kelola Dokumen</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="p-3.5 rounded-full bg-surface-card border border-subtle mb-4 text-muted">
+                <Sparkles className="w-6 h-6" aria-hidden="true" />
+              </div>
+              <h2 className="text-2xl font-serif font-semibold text-primary tracking-tight mb-2">
+                Tanyakan tentang dokumen Anda.
+              </h2>
+              <p className="text-xs text-muted mb-6">
+                {activeDocumentCount} dokumen aktif siap digunakan sebagai sumber konteks RAG.
+              </p>
+
+              {/* Suggested Prompts Chips */}
+              <div className="flex flex-col gap-2 w-full">
+                {suggestionPrompts.map((promptText, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => onSetInputQuery(promptText)}
+                    className="w-full text-left p-3 rounded-lg bg-surface-card hover:bg-surface-card-hover border border-subtle text-xs text-secondary hover:text-primary transition-all cursor-pointer flex items-center justify-between group"
+                  >
+                    <span>{promptText}</span>
+                    <ArrowUp className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted" />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        messages.map((msg) => (
+          <ChatMessageItem
+            key={msg.id}
+            msg={msg}
+            onSelectCitation={setSelectedCitation}
+          />
+        ))
+      )}
+      <div ref={messagesEndRef} />
+    </div>
+  );
+}
+
+export default ChatWindowMessages;

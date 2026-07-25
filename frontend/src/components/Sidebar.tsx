@@ -2,42 +2,22 @@
 
 import Link from 'next/link';
 import { FileText, LogOut, MessageSquare, Plus, Settings, Trash2 } from 'lucide-react';
-import type { ChatSession, DocumentItem, ProviderConfig, UserPayload } from '@/types';
+import { useDashboard } from '@/context/DashboardContext';
 import { ThemeToggle } from './ThemeToggle';
 
-interface SidebarProps {
-  user: UserPayload | null;
-  provider: string;
-  providerConfigs: ProviderConfig[];
-  documents: DocumentItem[];
-  sessions?: ChatSession[];
-  activeSessionId?: string | null;
-  hasCredentials: boolean;
-  onProviderChange: (provider: string) => void;
-  onNewChat: () => void;
-  onSelectSession?: (sessionId: string) => void;
-  onDeleteSession?: (sessionId: string) => void;
-  onLogout: () => void;
-  onUpload?: (file: File) => Promise<void>;
-  onDelete?: (id: string) => Promise<void>;
-  onOpenDocumentModal?: () => void;
-}
+export default function Sidebar() {
+  const {
+    user,
+    documents,
+    sessions,
+    activeSessionId,
+    handleNewChat,
+    handleSelectSession,
+    handleDeleteSession,
+    handleLogout,
+    setIsDocModalOpen,
+  } = useDashboard();
 
-export default function Sidebar({
-  user,
-  provider,
-  providerConfigs,
-  documents,
-  sessions = [],
-  activeSessionId = null,
-  hasCredentials,
-  onProviderChange,
-  onNewChat,
-  onSelectSession,
-  onDeleteSession,
-  onLogout,
-  onOpenDocumentModal,
-}: SidebarProps) {
   const activeDocCount = documents.filter((d) => (d.is_active ?? true) && d.status === 'ready').length;
 
   return (
@@ -62,28 +42,26 @@ export default function Sidebar({
         <div className="flex flex-col gap-1.5">
           <button
             type="button"
-            onClick={onNewChat}
+            onClick={handleNewChat}
             className="w-full minimal-button-primary py-2 px-3 rounded-md text-xs flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
           >
             <Plus className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Percakapan Baru</span>
           </button>
 
-          {onOpenDocumentModal && (
-            <button
-              type="button"
-              onClick={onOpenDocumentModal}
-              className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center justify-between cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
-            >
-              <div className="flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Dokumen</span>
-              </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
-                {activeDocCount} Aktif
-              </span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsDocModalOpen(true)}
+            className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-secondary hover:text-primary bg-surface-card hover:bg-surface-card-hover border border-subtle transition-colors flex items-center justify-between cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
+          >
+            <div className="flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Dokumen</span>
+            </div>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
+              {activeDocCount} Aktif
+            </span>
+          </button>
         </div>
 
         {/* Chat Sessions History Section */}
@@ -104,25 +82,23 @@ export default function Sidebar({
                 >
                   <button
                     type="button"
-                    onClick={() => onSelectSession?.(sess.id)}
+                    onClick={() => handleSelectSession(sess.id)}
                     className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer focus:outline-hidden"
                   >
                     <MessageSquare className="w-3.5 h-3.5 shrink-0 text-muted" aria-hidden="true" />
                     <span className="truncate text-[11px]">{sess.title}</span>
                   </button>
-                  {onDeleteSession ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteSession(sess.id);
-                      }}
-                      title="Hapus percakapan"
-                      className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-rose-500 transition-opacity cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" aria-hidden="true" />
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSession(sess.id);
+                    }}
+                    title="Hapus percakapan"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-rose-500 transition-opacity cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" aria-hidden="true" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -161,7 +137,7 @@ export default function Sidebar({
 
             <button
               type="button"
-              onClick={onLogout}
+              onClick={handleLogout}
               title="Keluar"
               aria-label="Keluar"
               className="p-1.5 text-muted hover:text-rose-500 hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 cursor-pointer"
