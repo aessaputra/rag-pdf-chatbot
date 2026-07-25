@@ -132,10 +132,19 @@ export function EmbeddingSettingsSection({
 
 
       {embeddingConfig?.locked ? (
-        <div className="mt-8 pt-4 border-t border-subtle text-xs text-muted text-center">
-          <p className="mb-2">Model terkunci karena PDF terunggah.</p>
-          <Link href="/" className="text-primary hover:underline font-mono">
-            &larr; KEMBALI KE CHAT
+        <div className="p-5 mt-2 rounded-xl bg-surface-card-hover/50 border border-subtle text-sm flex flex-col items-center justify-center space-y-4 text-center">
+          <div className="w-10 h-10 rounded-full bg-canvas border border-subtle flex items-center justify-center text-muted shadow-xs">
+            <LockClosedIcon className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-primary font-medium tracking-tight mb-0.5">Model Terkunci</p>
+            <p className="text-muted text-xs">Sedang digunakan oleh dokumen aktif.</p>
+          </div>
+          <Link 
+            href="/" 
+            className="minimal-button-secondary px-4 py-2 rounded-md text-xs font-medium inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
+          >
+            &larr; Chat
           </Link>
         </div>
       ) : null}

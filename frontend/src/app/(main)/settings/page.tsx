@@ -67,7 +67,7 @@ export default function SettingsPage() {
     <div className="min-h-screen w-full bg-canvas text-primary font-sans transition-colors duration-150">
 
       <header className="sticky top-0 z-30 border-b border-subtle bg-canvas/80 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/"
@@ -90,7 +90,7 @@ export default function SettingsPage() {
       </header>
 
 
-      <main className="max-w-5xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+      <main className="max-w-5xl mx-auto px-4 md:px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
 
         {(successMsg || errorMsg) && (
           <div className="md:col-span-3 space-y-3 mb-2">

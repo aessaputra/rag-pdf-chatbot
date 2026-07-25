@@ -7,6 +7,7 @@ import { ChatProvider } from '@/context/ChatContext';
 import Sidebar from '@/components/layout/Sidebar';
 import ChatWindow from '@/components/chat/ChatWindow';
 import CitationPanel from '@/components/chat/CitationPanel';
+import { SidebarProvider } from '@/context/SidebarContext';
 
 
 const DocumentManagerModal = dynamic(
@@ -40,9 +41,11 @@ export default function ChatPage() {
   return (
     <AppProvider>
       <DocumentProvider>
-        <ChatProvider>
-          <ChatInner />
-        </ChatProvider>
+        <SidebarProvider>
+          <ChatProvider>
+            <ChatInner />
+          </ChatProvider>
+        </SidebarProvider>
       </DocumentProvider>
     </AppProvider>
   );

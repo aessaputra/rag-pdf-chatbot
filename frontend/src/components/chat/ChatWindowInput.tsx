@@ -68,7 +68,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
   };
 
   return (
-    <div className="p-4 border-t border-subtle bg-canvas">
+    <div className="p-4 md:px-6 md:pb-6 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-subtle bg-canvas">
       <form
         onSubmit={handleSubmit}
         className="max-w-3xl mx-auto flex items-end gap-2 p-2 pl-3 rounded-2xl bg-surface-card border border-subtle focus-within:ring-2 focus-within:ring-zinc-400/40 focus-within:border-zinc-400 transition-all duration-150 shadow-xs"
@@ -84,7 +84,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
               aria-haspopup="listbox"
               aria-label="Pilih Provider AI"
               title={`Ganti Provider (Aktif: ${activeLabel})`}
-              className="p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-hidden cursor-pointer"
+              className="p-3 md:p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors focus-visible:ring-1 focus-visible:ring-zinc-400 focus:outline-hidden cursor-pointer"
             >
               <MagicWandIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             </button>
@@ -153,7 +153,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
           type="submit"
           aria-label="Kirim Pertanyaan"
           disabled={!hasCredentials || isStreaming || !inputQuery.trim()}
-          className="minimal-button-primary w-8 h-8 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer mb-0.5"
+          className="minimal-button-primary w-11 h-11 md:w-8 md:h-8 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer mb-0.5"
         >
           {isStreaming ? (
             <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" aria-label="Mengirim…" />

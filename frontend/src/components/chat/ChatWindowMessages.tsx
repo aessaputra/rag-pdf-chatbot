@@ -34,7 +34,7 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
       {!hasCredentials ? (
         <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-xs mx-auto">
           <div className="w-10 h-10 rounded-md bg-surface-card border border-subtle flex items-center justify-center mb-4">

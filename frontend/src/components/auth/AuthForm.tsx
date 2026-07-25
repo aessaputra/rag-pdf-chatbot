@@ -42,7 +42,7 @@ export function AuthForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="nama@email.com"
-          className="w-full px-3 py-2.5 rounded-md minimal-input text-xs"
+          className="w-full px-3 py-3 md:py-2.5 rounded-md minimal-input text-xs"
         />
       </div>
 
@@ -63,14 +63,14 @@ export function AuthForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          className="w-full px-3 py-2.5 rounded-md minimal-input text-xs"
+          className="w-full px-3 py-3 md:py-2.5 rounded-md minimal-input text-xs"
         />
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full mt-2 py-2.5 px-4 rounded-md minimal-button-primary text-xs flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full mt-2 py-3 md:py-2.5 px-4 rounded-md minimal-button-primary text-xs flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <span className="flex items-center gap-2">

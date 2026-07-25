@@ -101,14 +101,14 @@ export default function DocumentManagerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/60 backdrop-blur-xs">
       <div
-        className="w-full max-w-2xl bg-canvas border border-subtle rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-full text-primary"
+        className="w-full h-full sm:h-auto sm:max-w-2xl bg-canvas border border-subtle sm:rounded-xl shadow-2xl overflow-hidden flex flex-col sm:max-h-full text-primary"
         role="dialog"
         aria-modal="true"
         aria-labelledby="document-modal-title"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-subtle bg-surface-card">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-subtle bg-surface-card">
           <div className="flex items-center gap-2.5">
             <FileTextIcon className="w-5 h-5 text-muted" />
             <h2 id="document-modal-title" className="text-base font-semibold text-primary">
@@ -117,13 +117,13 @@ export default function DocumentManagerModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-muted hover:text-primary rounded-lg hover:bg-surface-card-hover transition-colors cursor-pointer focus-visible:ring-2"
+            className="p-3 md:p-1 text-muted hover:text-primary rounded-lg hover:bg-surface-card-hover transition-colors cursor-pointer focus-visible:ring-2"
           >
             <Cross1Icon className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
           {error && (
             <div className="flex items-center gap-2.5 p-3 text-xs text-rose-500 bg-rose-500/10 border border-rose-500/20 rounded-lg">
               <ExclamationTriangleIcon className="w-4 h-4 shrink-0" />

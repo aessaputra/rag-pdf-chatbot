@@ -6,7 +6,9 @@ import { FileTextIcon, ExitIcon, ChatBubbleIcon, PlusIcon, GearIcon, TrashIcon }
 import { useApp } from '@/context/AppContext';
 import { useDocument } from '@/context/DocumentContext';
 import { useChat } from '@/context/ChatContext';
+import { useSidebar } from '@/context/SidebarContext';
 import { ThemeToggle } from '../theme/ThemeToggle';
+import { ViewVerticalIcon } from '@radix-ui/react-icons';
 
 export default function Sidebar() {
   const { user, handleLogout } = useApp();
@@ -18,13 +20,25 @@ export default function Sidebar() {
     handleSelectSession,
     handleDeleteSession,
   } = useChat();
+  const { isOpen, toggle } = useSidebar();
 
   return (
-    <aside
-      aria-label="Navigasi Utama"
-      className="w-65 h-screen bg-canvas flex flex-col justify-between border-r border-subtle shrink-0 select-none relative z-20 transition-colors duration-150"
-    >
-      <div className="h-13 px-4 flex items-center justify-between border-b border-subtle shrink-0">
+    <>
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden animate-in fade-in duration-200"
+          onClick={toggle}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        aria-label="Navigasi Utama"
+        className={`fixed inset-y-0 left-0 md:relative h-screen bg-canvas shrink-0 select-none z-40 md:z-20 transition-all duration-300 ease-in-out overflow-hidden md:shadow-none shadow-2xl ${
+          isOpen ? 'w-65 border-r border-subtle' : 'w-0 border-r-0 opacity-0'
+        }`}
+      >
+      <div className="w-65 h-full flex flex-col justify-between">
+        <div className="h-13 px-4 flex items-center justify-between border-b border-subtle shrink-0">
         <div className="flex items-center gap-2">
           <Image
             src="/logo.svg"
@@ -38,6 +52,16 @@ export default function Sidebar() {
             PaperMind
           </span>
         </div>
+        <button
+          type="button"
+          onClick={toggle}
+          className="p-3 md:p-1.5 text-muted hover:text-primary hover:bg-surface-card-hover rounded-md transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-zinc-400"
+          title="Tutup Sidebar"
+          aria-label="Tutup Sidebar"
+          aria-expanded={isOpen}
+        >
+          <ViewVerticalIcon className="w-4 h-4" aria-hidden="true" />
+        </button>
       </div>
 
       <div className="flex flex-col flex-1 min-h-0 p-4 space-y-4">
@@ -146,6 +170,9 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
+      </div>
     </aside>
+    </>
   );
 }
+
