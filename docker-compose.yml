@@ -1,5 +1,5 @@
 # ==============================================================================
-# Docker Compose Setup for RAG PDF Chatbot (Development Environment)
+# Docker Compose Setup for PaperMind (Development Environment)
 # Follows .agents/skills/docker-patterns/SKILL.md best practices:
 # - Target: dev stage (Hot-reloading enabled via bind mounts)
 # - Service discovery & dependency order via service_healthy condition
@@ -13,7 +13,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: dev
-    container_name: rag_pdf_backend
+    container_name: papermind_backend
     ports:
       - "8000:8000"
     volumes:
@@ -39,7 +39,7 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    container_name: rag_pdf_frontend
+    container_name: papermind_frontend
     ports:
       - "3000:3000"
     volumes:

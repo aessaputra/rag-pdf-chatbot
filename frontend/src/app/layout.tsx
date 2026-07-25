@@ -20,8 +20,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: 'RAG PDF Chatbot | Intelligent AI Document Assistant',
-  description: 'Upload PDF documents and chat with AI in real-time with exact page citations and multi-provider LLM support.',
+  title: 'PaperMind | Intelligent AI Document Assistant',
+  description: 'Upload documents and chat with AI in real-time with exact page citations and multi-provider LLM support.',
 };
 
 export default function RootLayout({

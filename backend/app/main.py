@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import chat_router, document_router, settings_router
 
 app = FastAPI(
-    title="RAG PDF Chatbot API",
-    description="Production-grade Backend REST & SSE Streaming API for RAG PDF Chatbot System",
+    title="PaperMind API",
+    description="Production-grade Backend REST & SSE Streaming API for PaperMind System",
     version="1.0.0"
 )
 

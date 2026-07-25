@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**RAG PDF Chatbot** — A production-grade full-stack Retrieval-Augmented Generation (RAG) system for chatting with PDF documents using Bring Your Own Key (BYOK). Users upload PDFs, which are parsed, chunked, and embedded into Supabase `pgvector` with customizable vector dimensions. Questions are answered via LLMs (Gemini, OpenAI, OpenRouter, OpenAI-Compatible) with page-level citations streamed back as Server-Sent Events (SSE).
+**PaperMind** — A production-grade full-stack Retrieval-Augmented Generation (RAG) system for chatting with PDF documents using Bring Your Own Key (BYOK). Users upload PDFs, which are parsed, chunked, and embedded into Supabase `pgvector` with customizable vector dimensions. Questions are answered via LLMs (Gemini, OpenAI, OpenRouter, OpenAI-Compatible) with page-level citations streamed back as Server-Sent Events (SSE).
 
 ### Architecture
 

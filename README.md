@@ -1,4 +1,4 @@
-# 📚 RAG PDF Chatbot System
+# 📚 PaperMind System
 
 > **A Production-Grade Full-Stack RAG (Retrieval-Augmented Generation) PDF Chatbot**  
 > Built with **FastAPI**, **LangChain**, **Supabase (`pgvector` & Auth)**, **Next.js 15 (App Router)**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
@@ -115,4 +115,4 @@ venv/Scripts/python -m pytest tests/ -v
 
 ## 📄 License
 
-MIT License - Created for Production RAG PDF Chatbot Applications.
+MIT License - Created for Production PaperMind Applications.

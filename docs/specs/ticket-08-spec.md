@@ -88,7 +88,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: rag_pdf_backend
+    container_name: papermind_backend
     ports:
       - "8000:8000"
     env_file:

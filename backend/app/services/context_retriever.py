@@ -44,5 +44,5 @@ class ContextRetriever:
         citations: list[Citation] = []
         for chunk in chunks:
             metadata = chunk.get('metadata', {})
-            citations.append(Citation(filename=metadata.get('filename', 'Unknown Document'), page_number=metadata.get('page_number', 1), content=chunk.get('content', '')[:200]))
+            citations.append(Citation(filename=metadata.get('filename', 'Unknown Document'), page_number=metadata.get('page_number', 1), content=chunk.get('content', '')))
         return citations

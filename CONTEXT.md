@@ -1,4 +1,4 @@
-# RAG PDF Chatbot
+# PaperMind
 
 A full-stack Retrieval-Augmented Generation system where users upload PDF documents, ask questions, and receive LLM-generated answers with page-level citations.
 

@@ -62,7 +62,7 @@ export function DocumentDropzone({ onFileUpload, uploading }: DocumentDropzonePr
         ) : (
           <>
             <UploadIcon className="w-8 h-8 text-muted" />
-            <p className="text-sm font-medium text-primary">Unggah PDF</p>
+            <p className="text-sm font-medium text-primary">Unggah</p>
             <p className="text-xs text-muted">Maks. 50 MB</p>
           </>
         )}

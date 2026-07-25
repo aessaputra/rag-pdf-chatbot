@@ -1,5 +1,5 @@
 # ==============================================================================
-# Docker Compose Production Override Setup for RAG PDF Chatbot
+# Docker Compose Production Override Setup for PaperMind
 # Follows .agents/skills/docker-patterns/SKILL.md best practices:
 # - Target: production stage (Minimal standalone image, hardened security)
 # - Run using: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build

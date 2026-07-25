@@ -31,7 +31,7 @@ export default function Sidebar() {
               <FileTextIcon className="w-4 h-4 text-primary" aria-hidden="true" />
             </div>
             <span className="text-xs font-semibold text-primary tracking-tight font-serif">
-              RAG PDF
+              PaperMind
             </span>
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function Sidebar() {
           >
             <div className="flex items-center gap-1.5">
               <FileTextIcon className="w-4 h-4" aria-hidden="true" />
-              <span>Dokumen</span>
+              <span>Dokumen Saya</span>
             </div>
             <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
               {activeDocumentCount} Aktif
