@@ -301,8 +301,10 @@ export function ProviderFormCard({
                   </Select.ScrollUpButton>
                   <Select.Viewport className="p-1">
                     {options.map((m) => (
-                      <Select.Item key={m} value={m} className="relative flex items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-highlighted:bg-surface-card-hover data-highlighted:text-primary data-highlighted:outline-none cursor-pointer">
-                        <Select.ItemText>{formatModelName(m)}</Select.ItemText>
+                      <Select.Item key={m} value={m} className="relative flex min-w-0 items-center pl-6 pr-3 py-2 text-xs font-mono text-primary rounded-[3px] select-none data-highlighted:bg-surface-card-hover data-highlighted:text-primary data-highlighted:outline-none cursor-pointer">
+                        <Select.ItemText asChild>
+                          <span className="block truncate min-w-0 max-w-full">{formatModelName(m)}</span>
+                        </Select.ItemText>
                         <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
                           <CheckIcon className="w-3.5 h-3.5" />
                         </Select.ItemIndicator>

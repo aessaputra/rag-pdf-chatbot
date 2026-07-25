@@ -186,8 +186,6 @@ export function ProviderSettingsSection({
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted">
-                  <span>{config.api_key_masked}</span>
-                  <span className="text-zinc-500/40">•</span>
                   <span>{config.model_name || 'default'}</span>
                   {config.base_url && (
                     <>
