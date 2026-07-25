@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import ChatWindowHeader from './chat/ChatWindowHeader';
-import ChatWindowMessages from './chat/ChatWindowMessages';
-import ChatWindowInput from './chat/ChatWindowInput';
+import ChatWindowHeader from './ChatWindowHeader';
+import ChatWindowMessages from './ChatWindowMessages';
+import ChatWindowInput from './ChatWindowInput';
 
 export default function ChatWindow() {
   const [inputQuery, setInputQuery] = useState('');

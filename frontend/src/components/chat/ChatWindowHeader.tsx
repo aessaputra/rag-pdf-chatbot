@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { FileTextIcon } from '@radix-ui/react-icons';
-import { useDashboard } from '@/context/DashboardContext';
+import { useDocument } from '@/context/DocumentContext';
 
 export function ChatWindowHeader() {
-  const { primaryDoc, extraDocsCount, setIsDocModalOpen } = useDashboard();
+  const { primaryDoc, extraDocsCount, setIsDocModalOpen } = useDocument();
 
   return (
     <header className="h-13 border-b border-subtle bg-canvas/80 backdrop-blur-xs flex items-center justify-between px-6 shrink-0 z-20 select-none">

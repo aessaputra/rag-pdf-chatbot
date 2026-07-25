@@ -2,23 +2,21 @@
 
 import Link from 'next/link';
 import { FileTextIcon, ExitIcon, ChatBubbleIcon, PlusIcon, GearIcon, TrashIcon } from '@radix-ui/react-icons';
-import { useDashboard } from '@/context/DashboardContext';
-import { ThemeToggle } from './ThemeToggle';
+import { useApp } from '@/context/AppContext';
+import { useDocument } from '@/context/DocumentContext';
+import { useChat } from '@/context/ChatContext';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 export default function Sidebar() {
+  const { user, handleLogout } = useApp();
+  const { activeDocumentCount, setIsDocModalOpen } = useDocument();
   const {
-    user,
-    documents,
     sessions,
     activeSessionId,
     handleNewChat,
     handleSelectSession,
     handleDeleteSession,
-    handleLogout,
-    setIsDocModalOpen,
-  } = useDashboard();
-
-  const activeDocCount = documents.filter((d) => (d.is_active ?? true) && d.status === 'ready').length;
+  } = useChat();
 
   return (
     <aside
@@ -59,7 +57,7 @@ export default function Sidebar() {
               <span>Dokumen</span>
             </div>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-card-hover text-muted border border-subtle">
-              {activeDocCount} Aktif
+              {activeDocumentCount} Aktif
             </span>
           </button>
         </div>

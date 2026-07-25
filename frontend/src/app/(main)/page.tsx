@@ -1,19 +1,22 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
-import Sidebar from '@/components/Sidebar';
-import ChatWindow from '@/components/ChatWindow';
-import CitationPanel from '@/components/CitationPanel';
+import { AppProvider, useApp } from '@/context/AppContext';
+import { DocumentProvider, useDocument } from '@/context/DocumentContext';
+import { ChatProvider } from '@/context/ChatContext';
+import Sidebar from '@/components/layout/Sidebar';
+import ChatWindow from '@/components/chat/ChatWindow';
+import CitationPanel from '@/components/chat/CitationPanel';
 
 // Lazy-load heavy document manager modal on demand (`bundle-dynamic-imports`)
 const DocumentManagerModal = dynamic(
-  () => import('@/components/DocumentManagerModal'),
+  () => import('@/components/document-manager/DocumentManagerModal'),
   { ssr: false }
 );
 
-function DashboardInner() {
-  const { token, isDocModalOpen, setIsDocModalOpen, documents, handleDocumentsUpdated } = useDashboard();
+function ChatInner() {
+  const { token } = useApp();
+  const { isDocModalOpen, setIsDocModalOpen, documents, handleDocumentsUpdated } = useDocument();
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-canvas text-primary transition-colors duration-150">
@@ -33,10 +36,14 @@ function DashboardInner() {
   );
 }
 
-export default function DashboardPage() {
+export default function ChatPage() {
   return (
-    <DashboardProvider>
-      <DashboardInner />
-    </DashboardProvider>
+    <AppProvider>
+      <DocumentProvider>
+        <ChatProvider>
+          <ChatInner />
+        </ChatProvider>
+      </DocumentProvider>
+    </AppProvider>
   );
 }

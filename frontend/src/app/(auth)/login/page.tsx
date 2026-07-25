@@ -1,0 +1,33 @@
+'use client';
+
+import { useAuth } from '@/hooks/useAuth';
+import { AuthHeader } from '@/components/auth/AuthHeader';
+import { AuthError } from '@/components/auth/AuthError';
+import { AuthForm } from '@/components/auth/AuthForm';
+
+export default function LoginPage() {
+  const {
+    email,
+    password,
+    authState,
+    setEmail,
+    setPassword,
+    handleSubmit,
+  } = useAuth('signin');
+
+  return (
+    <>
+      <AuthHeader mode="signin" />
+      <AuthError message={authState.status === 'error' ? authState.message : undefined} />
+      <AuthForm
+        mode="signin"
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        authState={authState}
+        onSubmit={handleSubmit}
+      />
+    </>
+  );
+}

@@ -3,22 +3,19 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowUpIcon, FileTextIcon, LockClosedIcon, GearIcon, MagicWandIcon } from '@radix-ui/react-icons';
-import { useDashboard } from '@/context/DashboardContext';
-import { ChatMessageItem } from '../ChatMessageItem';
+import { useApp } from '@/context/AppContext';
+import { useDocument } from '@/context/DocumentContext';
+import { useChat } from '@/context/ChatContext';
+import { ChatMessageItem } from './ChatMessageItem';
 
 interface ChatWindowMessagesProps {
   readonly onSetInputQuery: (text: string) => void;
 }
 
 export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps) {
-  const {
-    messages,
-    isStreaming,
-    hasCredentials,
-    activeDocumentCount,
-    setSelectedCitation,
-    setIsDocModalOpen,
-  } = useDashboard();
+  const { hasCredentials } = useApp();
+  const { activeDocumentCount, setIsDocModalOpen } = useDocument();
+  const { messages, isStreaming, setSelectedCitation } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +44,7 @@ export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps)
             Konfigurasi Kunci API
           </h2>
           <p className="text-xs text-muted mb-4 leading-normal">
-            Minta LLM Anda untuk memecahkan masalah atau mulai menjelajahi PDF.
+            Minta LLM Anda untuk memecahkan masalah.
           </p>
           <div className="mt-4">
             <Link

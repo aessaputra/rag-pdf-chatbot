@@ -74,7 +74,7 @@ export default function SettingsPage() {
               className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400 rounded py-1 -ml-1 pr-2"
             >
               <ArrowLeftIcon className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Dashboard</span>
+              <span>Chat</span>
             </Link>
             <span className="text-subtle text-xs">/</span>
             <h1 className="text-xs font-medium text-primary font-sans tracking-tight">

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowUpIcon, CheckIcon, MagicWandIcon } from '@radix-ui/react-icons';
-import { useDashboard } from '@/context/DashboardContext';
+import { useApp } from '@/context/AppContext';
+
+import { useChat } from '@/context/ChatContext';
 import type { ProviderConfig } from '@/types';
 
 interface ChatWindowInputProps {
@@ -11,14 +13,9 @@ interface ChatWindowInputProps {
 }
 
 export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowInputProps) {
-  const {
-    isStreaming,
-    hasCredentials,
-    provider,
-    providerConfigs,
-    setProvider,
-    handleSendMessage,
-  } = useDashboard();
+  const { hasCredentials, provider, providerConfigs, setProvider } = useApp();
+
+  const { isStreaming, handleSendMessage } = useChat();
 
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const providerRef = useRef<HTMLDivElement>(null);

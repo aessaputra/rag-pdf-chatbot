@@ -1,7 +1,7 @@
 'use client';
 
 import { Cross1Icon, FileTextIcon } from '@radix-ui/react-icons';
-import { useDashboard } from '@/context/DashboardContext';
+import { useChat } from '@/context/ChatContext';
 
 /**
  * Sanitizes raw PDF text extractions by replacing unprintable PUA unicode glyphs
@@ -13,7 +13,7 @@ function sanitizeContextText(text: string): string {
 }
 
 export default function CitationPanel() {
-  const { selectedCitation, setSelectedCitation } = useDashboard();
+  const { selectedCitation, setSelectedCitation } = useChat();
 
   if (!selectedCitation) return null;
 
