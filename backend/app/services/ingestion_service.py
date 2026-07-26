@@ -9,6 +9,7 @@ import pymupdf4llm
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from supabase import Client
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from app.database import get_supabase_client
 from app.schemas import DocumentChunkDTO
@@ -30,6 +31,12 @@ QUESTION_GENERATION_SYSTEM_PROMPT = (
     "Provide each question on a new line without headings. "
 )
 
+
+def is_retryable_error(exception: BaseException) -> bool:
+    """Returns True if the exception is a rate limit (429) or server error (50x)."""
+    error_str = str(exception).lower()
+    retryable_keywords = ["429", "rate limit", "resource_exhausted", "500", "502", "503", "504", "timeout"]
+    return any(keyword in error_str for keyword in retryable_keywords)
 
 class PDFIngestionService:
     """Orchestrates PDF parsing, paragraph chunking, and asynchronous ingestion.
@@ -111,7 +118,12 @@ class PDFIngestionService:
             all_chunks.extend(page_chunks)
         return all_chunks
 
-    def generate_questions(self, paragraph_content: str, llm: BaseChatModel, attempt: int = 1) -> list[str]:
+    @retry(
+        retry=retry_if_exception(is_retryable_error),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5)
+    )
+    def generate_questions(self, paragraph_content: str, llm: BaseChatModel) -> list[str]:
         """Generates up to QUESTIONS_PER_PARAGRAPH synthetic HyDE questions via the user's LLM.
 
         The prompt asks for exactly QUESTIONS_PER_PARAGRAPH questions; the
@@ -125,9 +137,7 @@ class PDFIngestionService:
         raw_text = response.content if hasattr(response, 'content') else str(response)
         questions = self._parse_questions(raw_text)
         if not questions:
-            if attempt < 3:
-                return self.generate_questions(paragraph_content, llm, attempt + 1)
-            raise ValueError('LLM tidak menghasilkan pertanyaan sintetis yang valid.')
+            raise ValueError('LLM did not produce valid synthetic questions.')
         return questions[:QUESTIONS_PER_PARAGRAPH]
 
     @staticmethod

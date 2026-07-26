@@ -7,9 +7,11 @@ boilerplate removal, and background document processing outcomes.
 
 from unittest.mock import MagicMock, patch
 
+from unittest.mock import MagicMock, call, patch
+
 import pytest
 from app.schemas import DocumentChunkDTO
-from app.services.ingestion_service import PDFIngestionService
+from app.services.ingestion_service import PDFIngestionService, is_retryable_error
 
 
 def test_paragraph_chunking_should_split_on_double_newlines_with_exact_line_numbers():
@@ -300,13 +302,21 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
     tables["user_embedding_configs"].update.assert_called_once_with({"locked": True})
     tables["documents"].update.assert_called_once_with({"status": "ready", "total_pages": 1})
 
+def test_is_retryable_error():
+    assert is_retryable_error(Exception("429 Too Many Requests")) is True
+    assert is_retryable_error(Exception("503 Service Unavailable")) is True
+    assert is_retryable_error(Exception("Timeout occurred")) is True
+    assert is_retryable_error(Exception("401 Unauthorized")) is False
+    assert is_retryable_error(Exception("400 Bad Request")) is False
 
+
+@patch("time.sleep") # Prevent tenacity from actually sleeping during tests
 @patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
 @patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
 @patch("app.services.rag_service.get_supabase_client")
 @patch("app.services.ingestion_service.get_supabase_client")
-def test_process_document_should_mark_failed_when_llm_rate_limit_exhausted(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm):
-    """Verify an LLM rate-limit failure during question generation marks the document failed."""
+def test_process_document_should_retry_on_429_then_fail_when_exhausted(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, mock_sleep):
+    """Verify an LLM rate-limit failure retries 5 times then marks the document failed."""
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
     mock_rag_supabase.return_value = mock_supabase
@@ -327,8 +337,78 @@ def test_process_document_should_mark_failed_when_llm_rate_limit_exhausted(mock_
         pdf_bytes=pdf_bytes,
     )
 
+    assert mock_llm.invoke.call_count == 5 # 5 attempts
     tables["documents"].update.assert_called_once_with({"status": "failed"})
     tables["document_chunks"].insert.assert_not_called()
+
+@patch("time.sleep")
+@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
+@patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
+@patch("app.services.rag_service.get_supabase_client")
+@patch("app.services.ingestion_service.get_supabase_client")
+def test_process_document_should_retry_on_429_and_succeed(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, mock_sleep):
+    """Verify that a transient 429 error is retried and succeeds eventually."""
+    mock_supabase, tables = _make_supabase_mock()
+    mock_get_supabase.return_value = mock_supabase
+    mock_rag_supabase.return_value = mock_supabase
+    _configure_default_provider_config(tables)
+    
+    mock_embeddings = MagicMock()
+    mock_embeddings.embed_documents.return_value = [[0.1, 0.2]] * 2
+    mock_get_embeddings.return_value = mock_embeddings
+
+    mock_llm = MagicMock()
+    success_response = MagicMock()
+    success_response.content = "Q1?\nQ2?\nQ3?\nQ4?\nQ5?"
+    # Fail twice with 429, then succeed
+    mock_llm.invoke.side_effect = [
+        Exception("429 Too Many Requests"),
+        Exception("503 Service Unavailable"),
+        success_response
+    ]
+    mock_get_llm.return_value = mock_llm
+
+    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
+
+    ingestion_service = PDFIngestionService()
+    ingestion_service.process_document(
+        document_id=MOCK_DOC_ID,
+        user_id=MOCK_USER_ID,
+        filename="paper.pdf",
+        pdf_bytes=pdf_bytes,
+    )
+
+    assert mock_llm.invoke.call_count == 3
+    tables["documents"].update.assert_called_once_with({"status": "ready", "total_pages": 1})
+
+@patch("time.sleep")
+@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
+@patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
+@patch("app.services.rag_service.get_supabase_client")
+@patch("app.services.ingestion_service.get_supabase_client")
+def test_process_document_should_fail_fast_on_401(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, mock_sleep):
+    """Verify that a fatal 401 error is NOT retried and fails fast."""
+    mock_supabase, tables = _make_supabase_mock()
+    mock_get_supabase.return_value = mock_supabase
+    mock_rag_supabase.return_value = mock_supabase
+    _configure_default_provider_config(tables)
+
+    mock_llm = MagicMock()
+    mock_llm.invoke.side_effect = Exception("401 Unauthorized API Key")
+    mock_get_llm.return_value = mock_llm
+
+    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
+
+    ingestion_service = PDFIngestionService()
+    ingestion_service.process_document(
+        document_id=MOCK_DOC_ID,
+        user_id=MOCK_USER_ID,
+        filename="paper.pdf",
+        pdf_bytes=pdf_bytes,
+    )
+
+    assert mock_llm.invoke.call_count == 1 # 1 attempt only!
+    tables["documents"].update.assert_called_once_with({"status": "failed"})
 
 
 @patch("app.services.ingestion_service.get_supabase_client")
