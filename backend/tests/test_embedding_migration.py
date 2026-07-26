@@ -2,7 +2,6 @@
 Tests for Flexible Embedding Dimensions and RPC Compatibility
 """
 
-import pytest
 from app.services.crypto_service import CryptoService
 
 

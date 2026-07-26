@@ -3,6 +3,7 @@ Unit tests for CryptoService (AES-256-GCM encryption/decryption)
 """
 
 import pytest
+
 from app.services.crypto_service import CryptoService
 
 

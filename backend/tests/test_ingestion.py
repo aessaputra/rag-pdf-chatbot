@@ -5,11 +5,10 @@ Verifies paragraph-based chunking with exact line number metadata,
 boilerplate removal, and background document processing outcomes.
 """
 
-from unittest.mock import MagicMock, patch, AsyncMock
-
-from unittest.mock import MagicMock, call, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from app.schemas import DocumentChunkDTO
 from app.services.ingestion_service import PDFIngestionService, is_retryable_error
 
@@ -321,7 +320,7 @@ def test_is_retryable_error():
 @patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
 @patch("app.services.rag_service.get_supabase_client")
 @patch("app.services.ingestion_service.get_supabase_client")
-async def test_process_document_should_retry_on_429_then_fail_when_exhausted(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, mock_sleep):
+async def test_process_document_should_retry_on_429_then_fail_when_exhausted(mock_get_supabase, mock_rag_supabase, _mock_get_embeddings, mock_get_llm, _mock_sleep):
     """Verify an LLM rate-limit failure retries 5 times then marks the document failed."""
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
@@ -353,7 +352,7 @@ async def test_process_document_should_retry_on_429_then_fail_when_exhausted(moc
 @patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
 @patch("app.services.rag_service.get_supabase_client")
 @patch("app.services.ingestion_service.get_supabase_client")
-async def test_process_document_should_retry_on_429_and_succeed(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, mock_sleep):
+async def test_process_document_should_retry_on_429_and_succeed(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, _mock_sleep):
     """Verify that a transient 429 error is retried and succeeds eventually."""
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
@@ -394,7 +393,7 @@ async def test_process_document_should_retry_on_429_and_succeed(mock_get_supabas
 @patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
 @patch("app.services.rag_service.get_supabase_client")
 @patch("app.services.ingestion_service.get_supabase_client")
-async def test_process_document_should_fail_fast_on_401(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, mock_sleep):
+async def test_process_document_should_fail_fast_on_401(mock_get_supabase, mock_rag_supabase, _mock_get_embeddings, mock_get_llm, _mock_sleep):
     """Verify that a fatal 401 error is NOT retried and fails fast."""
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase

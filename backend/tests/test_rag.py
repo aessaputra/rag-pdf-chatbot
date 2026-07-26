@@ -59,7 +59,7 @@ async def test_generate_rag_stream_emits_valid_sse_events():
     # Mock LLM
     mock_llm = MagicMock()
 
-    async def mock_astream(prompt):
+    async def mock_astream(_prompt):
         yield MagicMock(content="Hello ")
         yield MagicMock(content="world!")
 
@@ -137,7 +137,7 @@ async def test_execute_query_offloads_sync_execute():
 async def test_context_retriever_awaits_awaitable_embedding_wrapper():
     embeddings = MagicMock()
 
-    async def async_embed_query(query):
+    async def async_embed_query(_query):
         await asyncio.sleep(0)
         return [0.1, 0.2]
 
