@@ -14,6 +14,36 @@ class ContextRetriever:
         self.embeddings_model = embeddings_model
         self.user_id = user_id
 
+    def _merge_contexts(self, chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        unique_results = {}
+        for r in chunks:
+            meta = r.get('metadata', {})
+            key = (r.get('document_id'), meta.get('page_number'), meta.get('line_start'), meta.get('line_end'))
+            if key not in unique_results:
+                unique_results[key] = r
+        deduped = list(unique_results.values())
+        deduped.sort(key=lambda x: (
+            x.get('document_id', ''),
+            x.get('metadata', {}).get('page_number', 0),
+            x.get('metadata', {}).get('line_start', 0)
+        ))
+        merged = []
+        for r in deduped:
+            if not merged:
+                merged.append(r)
+                continue
+            prev = merged[-1]
+            prev_meta = prev.get('metadata', {})
+            r_meta = r.get('metadata', {})
+            if (prev.get('document_id') == r.get('document_id') and
+                prev_meta.get('page_number') == r_meta.get('page_number') and
+                prev_meta.get('line_end', 0) >= r_meta.get('line_start', 0) - 2):
+                prev['content'] += "\n\n" + r.get('content', '')
+                prev_meta['line_end'] = max(prev_meta.get('line_end', 0), r_meta.get('line_end', 0))
+            else:
+                merged.append(r)
+        return merged
+
     def retrieve_relevant_chunks(self, query: str, top_k: int=4, fetch_k: int=20, lambda_mult: float=0.5, document_ids: list[str] | None=None) -> list[dict[str, Any]]:
         supabase = get_supabase_client()
         query_embedding = self.embeddings_model.embed_query(query)
@@ -26,12 +56,7 @@ class ContextRetriever:
             return []
         if 'embedding' not in results[0]:
             logger.warning("RPC 'match_document_chunks' did not return 'embedding'. Falling back to Dense Retrieval without MMR.")
-            final_results = results[:top_k]
-            for result in final_results:
-                metadata = result.get('metadata', {})
-                if metadata.get('type') == 'question' and 'paragraph_content' in metadata:
-                    result['content'] = metadata['paragraph_content']
-            return final_results
+            return self._merge_contexts(results[:top_k])
         import numpy as np
         from langchain_community.vectorstores.utils import maximal_marginal_relevance
 
@@ -43,11 +68,7 @@ class ContextRetriever:
         candidate_embeddings = [parse_embedding(r['embedding']) for r in results]
         mmr_indices = maximal_marginal_relevance(np.array(query_embedding), candidate_embeddings, k=top_k, lambda_mult=lambda_mult)
         final_results = [results[i] for i in mmr_indices]
-        for result in final_results:
-            metadata = result.get('metadata', {})
-            if metadata.get('type') == 'question' and 'paragraph_content' in metadata:
-                result['content'] = metadata['paragraph_content']
-        return final_results
+        return self._merge_contexts(final_results)
 
     @staticmethod
     def extract_citations(chunks: list[dict[str, Any]]) -> list[Citation]:

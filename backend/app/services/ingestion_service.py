@@ -1,6 +1,7 @@
 import io
 import logging
 import re
+import uuid
 from collections import Counter
 from typing import Any
 
@@ -20,11 +21,13 @@ PARAGRAPH_DELIMITER = '\n\n'
 QUESTIONS_PER_PARAGRAPH = 5
 
 QUESTION_GENERATION_SYSTEM_PROMPT = (
-    'Anda adalah asisten yang membangun indeks pencarian dokumen.\n'
-    f'Buat TEPAT {QUESTIONS_PER_PARAGRAPH} pertanyaan berbeda yang jawabannya terdapat '
-    'dalam paragraf yang diberikan pengguna.\n'
-    'Tulis setiap pertanyaan pada baris baru, diawali nomor urut (1., 2., ...).\n'
-    'Jawab HANYA dengan daftar pertanyaan, tanpa penjelasan tambahan.'
+    f"Generate {QUESTIONS_PER_PARAGRAPH} diverse questions that can be "
+    "answered by this paragraph:\n\n{paragraph_content}\n\n"
+    "Some simple query(s) in non-technical language. "
+    "Some intermediate query(s) that require some reasoning. "
+    "Some advanced query(s) that require deep understanding, using more technical words. "
+    "Make sure the questions are clear and concise. "
+    "Provide each question on a new line without headings. "
 )
 
 
@@ -60,6 +63,7 @@ class PDFIngestionService:
             ]
             if kept_lines and ''.join(line for _, line in kept_lines).strip():
                 chunks.append(DocumentChunkDTO(
+                    id=str(uuid.uuid4()),
                     content='\n'.join(line for _, line in kept_lines).strip(),
                     page_number=page_number,
                     filename=filename,
@@ -114,10 +118,8 @@ class PDFIngestionService:
         nothing parseable comes back, which callers treat as a generation
         failure.
         """
-        response = llm.invoke([
-            ('system', QUESTION_GENERATION_SYSTEM_PROMPT),
-            ('user', paragraph_content),
-        ])
+        prompt = QUESTION_GENERATION_SYSTEM_PROMPT.format(paragraph_content=paragraph_content)
+        response = llm.invoke(prompt)
         raw_text = response.content if hasattr(response, 'content') else str(response)
         questions = self._parse_questions(raw_text)
         if not questions:
@@ -186,22 +188,21 @@ class PDFIngestionService:
     def _attach_synthetic_questions(self, chunks: list[DocumentChunkDTO], llm: BaseChatModel) -> list[DocumentChunkDTO]:
         """Expands paragraph chunks with their synthetic question chunks.
 
-        Question chunks share the paragraph's location metadata and carry the
-        original paragraph text in 'paragraph_content' so retrieval can swap
-        the matched question back to the real context.
+        Question chunks link to the original paragraph via 'parent_chunk_id'.
         """
         expanded: list[DocumentChunkDTO] = []
         for chunk in chunks:
             expanded.append(chunk)
             for question in self.generate_questions(chunk.content, llm):
                 expanded.append(DocumentChunkDTO(
+                    id=str(uuid.uuid4()),
+                    parent_chunk_id=chunk.id,
                     content=question,
                     page_number=chunk.page_number,
                     filename=chunk.filename,
                     metadata={
                         **chunk.metadata,
                         'type': 'question',
-                        'paragraph_content': chunk.content,
                     },
                 ))
         return expanded
@@ -211,7 +212,16 @@ class PDFIngestionService:
         vector_embeddings = embeddings_model.embed_documents(chunk_texts)
         chunk_records = []
         for chunk, embedding_vector in zip(chunks, vector_embeddings):
-            chunk_records.append({'document_id': document_id, 'user_id': user_id, 'content': chunk.content, 'page_number': chunk.page_number, 'metadata': chunk.metadata, 'embedding': embedding_vector})
+            chunk_records.append({
+                'id': chunk.id,
+                'parent_chunk_id': chunk.parent_chunk_id,
+                'document_id': document_id, 
+                'user_id': user_id, 
+                'content': chunk.content, 
+                'page_number': chunk.page_number, 
+                'metadata': chunk.metadata, 
+                'embedding': embedding_vector
+            })
         for i in range(0, len(chunk_records), batch_size):
             batch = chunk_records[i:i + batch_size]
             supabase.table('document_chunks').insert(batch).execute()

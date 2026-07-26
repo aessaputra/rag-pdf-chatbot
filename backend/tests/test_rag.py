@@ -29,8 +29,8 @@ def test_format_context_prompt_should_include_page_numbers_and_content():
     prompt = "".join(msg.content for msg in prompt_messages)
 
     assert "First chunk content about RAG." in prompt
-    assert "Halaman: 2" in prompt
-    assert "Halaman: 5" in prompt
+    assert "Page: 2" in prompt
+    assert "Page: 5" in prompt
     assert "What is RAG?" in prompt
 
 
@@ -98,28 +98,28 @@ def test_system_prompt_contains_cot_reasoning_steps():
     """Verify system prompt includes chain-of-thought reasoning guidance."""
     system = PromptBuilder.SYSTEM_INSTRUCTION
 
-    assert "IDENTIFIKASI" in system
-    assert "ANALISIS" in system
-    assert "SINTESIS" in system
-    assert "VERIFIKASI" in system
+    assert "IDENTIFY" in system
+    assert "ANALYZE" in system
+    assert "SYNTHESIZE" in system
+    assert "VERIFY" in system
 
 
 def test_system_prompt_contains_verification_step():
     """Verify system prompt instructs LLM to verify answers against context."""
     system = PromptBuilder.SYSTEM_INSTRUCTION
 
-    assert "VERIFIKASI" in system
-    assert "klaim" in system.lower()
-    assert "konteks" in system.lower()
+    assert "VERIFY" in system
+    assert "claim" in system.lower()
+    assert "context" in system.lower()
 
 
 def test_system_prompt_contains_confidence_strategy():
     """Verify system prompt includes confidence-based response strategy."""
     system = PromptBuilder.SYSTEM_INSTRUCTION
 
-    assert "LENGKAP" in system
-    assert "SEBAGIAN" in system
-    assert "TIDAK RELEVAN" in system
+    assert "FULL" in system
+    assert "PARTIAL" in system
+    assert "NO RELEVANT" in system
 
 
 def test_context_formatting_includes_source_labels():
@@ -127,8 +127,8 @@ def test_context_formatting_includes_source_labels():
     prompt_messages = PromptBuilder.format_context_prompt(query="Test?", chunks=MOCK_CHUNKS)
     prompt = "".join(msg.content for msg in prompt_messages)
 
-    assert "Sumber [1]" in prompt
-    assert "Sumber [2]" in prompt
+    assert "Source [1]" in prompt
+    assert "Source [2]" in prompt
     assert "---" in prompt
 
 
@@ -148,5 +148,60 @@ def test_build_context_string_handles_missing_metadata():
 
     assert "Content without metadata." in result
     assert "Content with partial metadata." in result
-    assert "Sumber [1]" in result
-    assert "Sumber [2]" in result
+    assert "Source [1]" in result
+    assert "Source [2]" in result
+
+
+def test_merge_contexts_combines_adjacent_paragraphs():
+    """Verify that _merge_contexts merges adjacent chunks from the same document and page."""
+    retriever = ContextRetriever(embeddings_model=MagicMock(), user_id="test")
+    chunks = [
+        {
+            "document_id": "doc1",
+            "content": "Line 1-5",
+            "metadata": {"page_number": 1, "line_start": 1, "line_end": 5}
+        },
+        {
+            "document_id": "doc1",
+            "content": "Line 6-10",
+            "metadata": {"page_number": 1, "line_start": 6, "line_end": 10}
+        },
+        {
+            "document_id": "doc1",
+            "content": "Line 20-25",
+            "metadata": {"page_number": 1, "line_start": 20, "line_end": 25}
+        }
+    ]
+    
+    merged = retriever._merge_contexts(chunks)
+    
+    assert len(merged) == 2
+    assert merged[0]["content"] == "Line 1-5\n\nLine 6-10"
+    assert merged[0]["metadata"]["line_start"] == 1
+    assert merged[0]["metadata"]["line_end"] == 10
+    
+    assert merged[1]["content"] == "Line 20-25"
+    assert merged[1]["metadata"]["line_start"] == 20
+    assert merged[1]["metadata"]["line_end"] == 25
+
+
+def test_merge_contexts_deduplicates_exact_chunks():
+    """Verify that _merge_contexts deduplicates chunks with the same coordinates."""
+    retriever = ContextRetriever(embeddings_model=MagicMock(), user_id="test")
+    chunks = [
+        {
+            "document_id": "doc1",
+            "content": "Same content",
+            "metadata": {"page_number": 1, "line_start": 1, "line_end": 5}
+        },
+        {
+            "document_id": "doc1",
+            "content": "Same content again from another question match",
+            "metadata": {"page_number": 1, "line_start": 1, "line_end": 5}
+        }
+    ]
+    
+    merged = retriever._merge_contexts(chunks)
+    
+    assert len(merged) == 1
+    assert merged[0]["content"] == "Same content"

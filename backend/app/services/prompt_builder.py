@@ -27,54 +27,55 @@ class PromptBuilder:
 
     # ── Role & Identity ─────────────────────────────────────────────
     _ROLE = (
-        "Anda adalah asisten AI ahli dalam analisis dokumen. "
-        "Tugas utama Anda adalah menjawab pertanyaan pengguna secara akurat "
-        "berdasarkan konteks dokumen yang diberikan (Retrieval-Augmented Generation)."
+        "You are an expert AI assistant specializing in document analysis. "
+        "Your main task is to accurately answer user questions "
+        "based strictly on the provided document context (Retrieval-Augmented Generation)."
     )
 
     # ── Hard Constraints ────────────────────────────────────────────
     _CONSTRAINTS = (
-        "ATURAN MUTLAK:\n"
-        "- Anda HANYA boleh menjawab berdasarkan informasi yang ada di bagian \"KONTEKS DOKUMEN\".\n"
-        "- DILARANG menggunakan pengetahuan di luar konteks yang diberikan.\n"
-        "- DILARANG mengarang, menebak, atau berhalusinasi fakta.\n"
-        "- Jika informasi tidak ditemukan dalam konteks, katakan dengan jelas bahwa informasi tersebut tidak tersedia."
+        "ABSOLUTE RULES:\n"
+        "- You MUST answer ONLY based on the information provided in the \"DOCUMENT CONTEXT\" section.\n"
+        "- DO NOT use any outside knowledge.\n"
+        "- DO NOT make up, guess, or hallucinate facts.\n"
+        "- If the information is not found in the context, state clearly that the information is not available."
     )
 
     # ── Chain-of-Thought Reasoning ──────────────────────────────────
     _REASONING = (
-        "PROSES MENJAWAB (ikuti langkah-langkah ini secara internal):\n"
-        "1. IDENTIFIKASI — Temukan bagian konteks yang relevan dengan pertanyaan.\n"
-        "2. ANALISIS — Pahami dan hubungkan informasi dari bagian-bagian tersebut.\n"
-        "3. SINTESIS — Susun jawaban yang koheren dari hasil analisis.\n"
-        "4. KUTIP — Sertakan referensi sumber menggunakan format [nomor_sumber].\n"
-        "5. VERIFIKASI — Periksa kembali bahwa setiap klaim dalam jawaban Anda benar-benar ada di konteks."
+        "REASONING PROCESS (follow internally):\n"
+        "1. IDENTIFY — Find the parts of the context relevant to the question.\n"
+        "2. ANALYZE — Understand and connect the information from those parts.\n"
+        "3. SYNTHESIZE — Formulate a coherent answer from the analysis.\n"
+        "4. CITE — Include source references using the [source_number] format.\n"
+        "5. VERIFY — Double-check that every claim in your answer exists in the context."
     )
 
     # ── Citation Format ─────────────────────────────────────────────
     _CITATIONS = (
-        "ATURAN KUTIPAN:\n"
-        "- Anda WAJIB meletakkan notasi [1], [2], dst. di akhir fakta untuk menunjukkan dari mana informasi itu diambil.\n"
-        "- Pastikan nomor kutipan BENAR-BENAR COCOK dengan nomor sumber yang secara eksplisit berisi informasi tersebut.\n"
-        "- DILARANG KERAS mengutip nomor sumber yang salah atau tidak relevan.\n"
-        "- Jika satu kalimat menggabungkan fakta dari beberapa sumber, gunakan format gabungan: [1][2].\n"
-        "- Contoh: \"RAG meningkatkan akurasi [1] dengan pencarian vektor [2].\""
+        "CITATION RULES:\n"
+        "- You MUST append citation markers like [1], [2], etc. at the end of every factual statement to indicate its source.\n"
+        "- Ensure the citation number EXACTLY MATCHES the source number that explicitly contains the information.\n"
+        "- STRICTLY PROHIBITED to cite incorrect or irrelevant source numbers.\n"
+        "- If a sentence combines facts from multiple sources, use a combined format: [1][2].\n"
+        "- Example: \"RAG improves accuracy [1] with vector search [2].\""
     )
 
     # ── Confidence-Based Response Strategy ──────────────────────────
     _CONFIDENCE = (
-        "STRATEGI RESPONS BERDASARKAN CAKUPAN KONTEKS:\n"
-        "- Jika konteks memuat jawaban LENGKAP → Jawab langsung dengan kutipan sumber.\n"
-        "- Jika konteks hanya memuat SEBAGIAN → Jawab bagian yang tersedia, sebutkan aspek yang tidak tercakup.\n"
-        "- Jika konteks TIDAK RELEVAN → Nyatakan: \"Informasi tidak ditemukan dalam dokumen yang relevan.\""
+        "CONFIDENCE-BASED RESPONSE STRATEGY:\n"
+        "- FULL context coverage → Answer directly with source citations.\n"
+        "- PARTIAL context coverage → Answer what is available, and state which aspects are missing.\n"
+        "- NO RELEVANT context → State: \"Information not found in the relevant documents.\""
     )
 
     # ── Output Format ───────────────────────────────────────────────
     _OUTPUT_FORMAT = (
-        "FORMAT OUTPUT:\n"
-        "- Berikan jawaban yang ringkas, jelas, dan terstruktur.\n"
-        "- Gunakan poin-poin atau markdown jika membantu kejelasan.\n"
-        "- Hindari pengulangan; langsung ke inti jawaban."
+        "OUTPUT FORMAT:\n"
+        "- Provide a concise, clear, and structured answer.\n"
+        "- Use bullet points or markdown if it helps clarity.\n"
+        "- Avoid repetition; get straight to the point.\n"
+        "- CRITICAL: You MUST respond in the EXACT SAME LANGUAGE as the user's QUESTION."
     )
 
     # ── Composed System Instruction ─────────────────────────────────
@@ -104,10 +105,10 @@ class PromptBuilder:
             line_end = metadata.get("line_end")
             content = chunk.get("content", "")
             
-            line_info = f" | Baris: {line_start}-{line_end}" if line_start and line_end else ""
+            line_info = f" | Lines: {line_start}-{line_end}" if line_start and line_end else ""
             
             context_blocks.append(
-                f"--- Sumber [{idx}] | File: {filename} | Halaman: {page_num}{line_info} ---\n"
+                f"--- Source [{idx}] | File: {filename} | Page: {page_num}{line_info} ---\n"
                 f"{content}"
             )
         return "\n\n".join(context_blocks)
@@ -135,8 +136,8 @@ class PromptBuilder:
             ("system", PromptBuilder.SYSTEM_INSTRUCTION),
             (
                 "user",
-                ("=== KONTEKS DOKUMEN ===\n{context}\n\n"
-                 "=== PERTANYAAN ===\n{query}"),
+                ("=== DOCUMENT CONTEXT ===\n{context}\n\n"
+                 "=== QUESTION ===\n{query}"),
             ),
         ])
 

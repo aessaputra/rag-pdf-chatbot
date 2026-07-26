@@ -291,7 +291,8 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
         assert record["metadata"]["page_number"] == 1
         assert record["metadata"]["line_start"] == 1
         assert record["metadata"]["line_end"] == 2
-        assert record["metadata"]["paragraph_content"] == paragraph_content
+        assert "paragraph_content" not in record["metadata"]
+        assert record["parent_chunk_id"] == paragraph_record["id"]
 
     mock_embeddings.embed_documents.assert_called_once()
     embedded_texts = mock_embeddings.embed_documents.call_args[0][0]

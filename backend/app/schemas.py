@@ -30,6 +30,8 @@ class ChatMessageResponse(BaseModel):
 
 
 class DocumentChunkDTO(BaseModel):
+    id: str | None = None
+    parent_chunk_id: str | None = None
     content: str
     page_number: int
     filename: str
