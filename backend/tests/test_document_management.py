@@ -12,7 +12,6 @@ from app.auth import get_current_user
 from app.main import app
 from app.schemas import (
     DocumentItemResponse,
-    DocumentPreviewResponse,
     DocumentToggleRequest,
 )
 
@@ -42,7 +41,6 @@ def test_document_item_response_serialization():
         filename="report.pdf",
         file_size=102400,
         total_pages=5,
-        file_path=MOCK_FILE_PATH,
         is_active=True,
         status="ready",
         created_at=datetime(2026, 7, 24, tzinfo=timezone.utc),
@@ -51,22 +49,12 @@ def test_document_item_response_serialization():
     assert data["id"] == MOCK_DOC_ID
     assert data["is_active"] is True
     assert data["status"] == "ready"
-    assert data["file_path"] == MOCK_FILE_PATH
 
 
 def test_document_toggle_request_validation():
     """Verify DocumentToggleRequest accepts boolean is_active."""
     req = DocumentToggleRequest(is_active=False)
     assert req.is_active is False
-
-
-def test_document_preview_response_defaults():
-    """Verify DocumentPreviewResponse has default expires_in of 3600."""
-    resp = DocumentPreviewResponse(
-        document_id=MOCK_DOC_ID,
-        signed_url="https://example.com/signed",
-    )
-    assert resp.expires_in == 3600
 
 
 # --- API Endpoint Tests ---
@@ -85,7 +73,6 @@ def test_list_documents_returns_items(mock_get_supabase):
                 "filename": "report.pdf",
                 "file_size": 102400,
                 "total_pages": 5,
-                "file_path": MOCK_FILE_PATH,
                 "is_active": True,
                 "status": "ready",
                 "created_at": "2026-07-24T00:00:00+00:00",
@@ -119,7 +106,6 @@ def test_toggle_document_active(mock_get_supabase):
                 "filename": "report.pdf",
                 "file_size": 102400,
                 "total_pages": 5,
-                "file_path": MOCK_FILE_PATH,
                 "is_active": False,
                 "status": "ready",
                 "created_at": "2026-07-24T00:00:00+00:00",

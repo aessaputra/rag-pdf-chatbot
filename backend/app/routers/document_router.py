@@ -77,7 +77,6 @@ async def upload_pdf_document(
         filename=file.filename,
         file_size=len(pdf_bytes),
         total_pages=0,
-        total_chunks=0,
         created_at=document["created_at"],
     )
 
@@ -87,7 +86,7 @@ async def list_user_documents(user: CurrentUserDep) -> list[DocumentItemResponse
     supabase = await get_supabase_client()
     res = await execute_query(
         supabase.table("documents")
-        .select("id, filename, file_size, total_pages, file_path, is_active, status, created_at")
+        .select("id, filename, file_size, total_pages, is_active, status, created_at")
         .eq("user_id", user.user_id)
         .order("created_at", desc=True)
     )

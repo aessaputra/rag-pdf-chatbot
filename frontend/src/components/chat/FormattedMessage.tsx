@@ -3,7 +3,7 @@ import type { Citation } from '@/types';
 
 const INLINE_MARKDOWN_REGEX = /(\[\d+\]|\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
 
-export function formatInlineMarkdown(
+function formatInlineMarkdown(
   text: string, 
   citations?: readonly Citation[], 
   onSelectCitation?: (c: Citation) => void

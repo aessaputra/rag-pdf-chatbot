@@ -159,7 +159,6 @@ class PDFIngestionService:
             llm.rate_limiter = _RATE_LIMITER
             expanded_chunks = await self._attach_synthetic_questions(chunks, llm)
             await self._store_chunks(supabase, document_id, user_id, expanded_chunks, embeddings_model, batch_size)
-            await execute_query(supabase.table('user_embedding_configs').update({'locked': True}).eq('user_id', user_id))
             total_pages = max(chunk.page_number for chunk in chunks)
             await execute_query(supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id))
             logger.info('Document %s processed: %d chunks stored (%d paragraphs).', document_id, len(expanded_chunks), len(chunks))

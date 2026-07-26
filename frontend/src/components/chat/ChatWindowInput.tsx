@@ -12,7 +12,7 @@ interface ChatWindowInputProps {
   readonly onChangeInputQuery: (query: string) => void;
 }
 
-export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowInputProps) {
+function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowInputProps) {
   const { hasCredentials, provider, providerConfigs, setProvider } = useApp();
 
   const { isStreaming, handleSendMessage } = useChat();

@@ -39,10 +39,7 @@ export function useAuth(mode: AuthMode) {
       if (error) throw error;
 
       if (data.user) {
-        setAuthState({
-          status: 'success',
-          user: { user_id: data.user.id, email: data.user.email || email, role: 'authenticated' },
-        });
+        setAuthState({ status: 'success' });
         router.refresh();
         router.push('/');
       }

@@ -23,7 +23,7 @@ interface ProviderFormCardProps {
   readonly onCancel: () => void;
 }
 
-export function ProviderFormCard({
+function ProviderFormCard({
   editingConfigId,
   initialProvider = PROVIDER_OPTIONS[0].type,
   initialDisplayName = '',
@@ -78,20 +78,14 @@ export function ProviderFormCard({
       return;
     }
 
-    if (formProvider === 'openai_compatible') {
-      if (!formBaseUrl.trim()) {
-        setFormError('Base URL wajib diisi untuk OpenAI-Compatible.');
-        return;
-      }
-      if (!formModelName.trim()) {
-        setFormError('Nama model wajib diisi untuk OpenAI-Compatible.');
-        return;
-      }
-    } else if (formProvider === 'openrouter') {
-      if (!formModelName.trim()) {
-        setFormError('Nama model wajib diisi untuk OpenRouter.');
-        return;
-      }
+    if (formProvider === 'openai_compatible' && !formBaseUrl.trim()) {
+      setFormError('Base URL wajib diisi untuk OpenAI-Compatible.');
+      return;
+    }
+
+    if (!formModelName.trim()) {
+      setFormError('Nama model wajib diisi.');
+      return;
     }
 
     setIsSubmitting(true);
@@ -100,7 +94,7 @@ export function ProviderFormCard({
       ? {
           display_name: formDisplayName.trim() || null,
           base_url: formBaseUrl.trim() || null,
-          model_name: formModelName.trim() || null,
+          model_name: formModelName.trim(),
           is_default: formIsDefault,
           ...(formApiKey.trim() ? { api_key: formApiKey.trim() } : {}),
         }
@@ -109,7 +103,7 @@ export function ProviderFormCard({
           api_key: formApiKey.trim(),
           display_name: formDisplayName.trim() || null,
           base_url: formBaseUrl.trim() || null,
-          model_name: formModelName.trim() || null,
+          model_name: formModelName.trim(),
           is_default: formIsDefault,
         };
 

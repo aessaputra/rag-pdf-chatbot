@@ -8,7 +8,7 @@ import type { EmbeddingConfig, ProviderConfig, UserPayload } from '@/types';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 function createUserPayload(id: string, email: string | undefined): UserPayload {
-  return { user_id: id, email: email || '', role: 'authenticated' };
+  return { user_id: id, email: email || '' };
 }
 
 interface AppContextType {

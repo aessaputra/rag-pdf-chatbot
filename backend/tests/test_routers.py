@@ -79,6 +79,6 @@ def test_upload_returns_201_immediately_and_defers_parsing(mock_get_supabase, mo
         assert data["filename"] == "report.pdf"
         assert data["file_size"] == len(b"definitely not a real pdf")
         assert data["total_pages"] == 0
-        assert data["total_chunks"] == 0
+        assert "total_chunks" not in data
     finally:
         app.dependency_overrides.clear()

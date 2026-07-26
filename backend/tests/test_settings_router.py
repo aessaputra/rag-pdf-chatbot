@@ -1,10 +1,7 @@
-"""
-Integration tests for Settings Router (BYOK Provider Configs REST API)
-"""
-
 from unittest.mock import MagicMock, patch
-import pytest
+
 from fastapi.testclient import TestClient
+
 from app.auth import get_current_user
 from app.main import app
 from app.schemas import UserPayload
@@ -62,7 +59,7 @@ def test_create_provider_config_success(mock_get_supabase):
         "display_name": "My Gemini Key",
         "api_key_enc": "enc_data_string",
         "base_url": None,
-        "model_name": None,
+        "model_name": "gemini-2.5-flash",
         "is_default": True,
         "created_at": "2026-07-24T12:00:00Z",
         "updated_at": "2026-07-24T12:00:00Z"
@@ -75,8 +72,6 @@ def test_create_provider_config_success(mock_get_supabase):
         with patch("app.routers.settings_router.CryptoService") as mock_crypto_cls:
             mock_crypto = MagicMock()
             mock_crypto.encrypt.return_value = "enc_data_string"
-            mock_crypto.decrypt.return_value = "AIzaSy123456789"
-            mock_crypto.mask_api_key.return_value = "••••6789"
             mock_crypto_cls.return_value = mock_crypto
 
             response = client.post(
@@ -85,6 +80,7 @@ def test_create_provider_config_success(mock_get_supabase):
                     "provider": "gemini",
                     "api_key": "AIzaSy123456789",
                     "display_name": "My Gemini Key",
+                    "model_name": "gemini-2.5-flash",
                     "is_default": True
                 }
             )
@@ -93,7 +89,6 @@ def test_create_provider_config_success(mock_get_supabase):
             data = response.json()
             assert data["id"] == "c1111111-2222-3333-4444-555555555555"
             assert data["provider"] == "gemini"
-            assert data["api_key_masked"] == "••••6789"
             assert data["is_default"] is True
     finally:
         app.dependency_overrides.clear()
@@ -124,31 +119,14 @@ def test_list_provider_configs_success(mock_get_supabase):
     mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = mock_select_response
 
     try:
-        with patch("app.routers.settings_router.CryptoService") as mock_crypto_cls:
-            mock_crypto = MagicMock()
-            mock_crypto.decrypt.return_value = "sk-proj-987654321"
-            mock_crypto.mask_api_key.return_value = "••••4321"
-            mock_crypto_cls.return_value = mock_crypto
+        response = client.get("/api/settings/providers")
+        assert response.status_code == 200
 
-            response = client.get("/api/settings/providers")
-            assert response.status_code == 200
-
-            data = response.json()
-            assert len(data) == 1
-            assert data[0]["provider"] == "openai"
-            assert data[0]["api_key_masked"] == "••••4321"
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["provider"] == "openai"
     finally:
         app.dependency_overrides.clear()
-
-
-def test_list_embedding_presets_returns_recommended_list():
-    """Verify GET /api/settings/embedding/presets returns preset items."""
-    response = client.get("/api/settings/embedding/presets")
-    assert response.status_code == 200
-    presets = response.json()
-    assert len(presets) >= 4
-    assert any(p["id"] == "gemini-embedding-001" for p in presets)
-    assert any(p["embedding_dimensions"] == 1536 for p in presets)
 
 
 @patch("app.routers.settings_router.get_supabase_client")

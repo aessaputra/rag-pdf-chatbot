@@ -21,7 +21,7 @@ interface EmbeddingSettingsSectionProps {
   readonly onSetErrorMsg: (msg: string | null) => void;
 }
 
-export function EmbeddingSettingsSection({
+function EmbeddingSettingsSection({
   configs,
   embeddingConfig,
   token,

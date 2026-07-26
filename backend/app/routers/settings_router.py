@@ -6,7 +6,6 @@ from app.database import execute_query, get_supabase_client
 from app.schemas import (
     EmbeddingConfigResponse,
     EmbeddingConfigSaveRequest,
-    EmbeddingPresetDTO,
     ProviderConfigCreate,
     ProviderConfigResponse,
     ProviderConfigUpdate,
@@ -22,38 +21,29 @@ router = APIRouter(
 )
 
 
-def _format_config_response(record: dict, crypto: CryptoService) -> ProviderConfigResponse:
-    decrypted_key = crypto.decrypt(record.get("api_key_enc", ""))
-    masked_key = crypto.mask_api_key(decrypted_key)
-
+def _format_config_response(record: dict) -> ProviderConfigResponse:
     return ProviderConfigResponse(
         id=str(record["id"]),
-        user_id=str(record["user_id"]),
         provider=record["provider"],
         display_name=record.get("display_name"),
-        api_key_masked=masked_key,
         base_url=record.get("base_url"),
         model_name=record.get("model_name"),
         is_default=record.get("is_default", False),
-        created_at=record["created_at"],
-        updated_at=record["updated_at"],
     )
 
 
 @router.get("/providers", response_model=list[ProviderConfigResponse])
 async def list_provider_configs(user: CurrentUserDep) -> list[ProviderConfigResponse]:
     supabase = await get_supabase_client()
-    crypto = CryptoService()
-
     response = await execute_query(
         supabase.table("user_provider_configs")
-        .select("*")
+        .select("id, provider, display_name, base_url, model_name, is_default")
         .eq("user_id", user.user_id)
         .order("created_at", desc=True)
     )
 
     records = response.data if response.data else []
-    return [_format_config_response(r, crypto) for r in records]
+    return [_format_config_response(r) for r in records]
 
 
 @router.post("/providers", response_model=ProviderConfigResponse, status_code=status.HTTP_201_CREATED)
@@ -90,7 +80,7 @@ async def create_provider_config(
             detail="Gagal menyimpan konfigurasi provider."
         )
 
-    return _format_config_response(response.data[0], crypto)
+    return _format_config_response(response.data[0])
 
 
 @router.post("/providers/verify-models", response_model=VerifyModelsResponse)
@@ -137,7 +127,7 @@ async def update_provider_config(
 
     existing = await execute_query(
         supabase.table("user_provider_configs")
-        .select("*")
+        .select("id, provider, display_name, base_url, model_name, is_default")
         .eq("id", config_id)
         .eq("user_id", user.user_id)
     )
@@ -161,7 +151,7 @@ async def update_provider_config(
         )
 
     if not update_data:
-        return _format_config_response(existing.data[0], crypto)
+        return _format_config_response(existing.data[0])
 
     response = await execute_query(
         supabase.table("user_provider_configs")
@@ -176,7 +166,7 @@ async def update_provider_config(
             detail="Gagal memperbarui konfigurasi provider."
         )
 
-    return _format_config_response(response.data[0], crypto)
+    return _format_config_response(response.data[0])
 
 
 @router.delete("/providers/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -202,72 +192,22 @@ async def delete_provider_config(
     await execute_query(supabase.table("user_provider_configs").delete().eq("id", config_id).eq("user_id", user.user_id))
 
 
-RECOMMENDED_EMBEDDING_PRESETS: list[EmbeddingPresetDTO] = [
-    EmbeddingPresetDTO(
-        id="gemini-embedding-001",
-        name="Google Gemini (768d)",
-        provider="gemini",
-        model_name="models/gemini-embedding-001",
-        embedding_dimensions=768,
-        description="Default"
-    ),
-    EmbeddingPresetDTO(
-        id="openai-text-embedding-3-small-1536",
-        name="OpenAI text-embedding-3-small (1536d)",
-        provider="openai",
-        model_name="text-embedding-3-small",
-        embedding_dimensions=1536,
-        description="Standard"
-    ),
-    EmbeddingPresetDTO(
-        id="openai-text-embedding-3-small-768",
-        name="OpenAI text-embedding-3-small (768d)",
-        provider="openai",
-        model_name="text-embedding-3-small",
-        embedding_dimensions=768,
-        description="MRL Sliced"
-    ),
-    EmbeddingPresetDTO(
-        id="openai-text-embedding-3-large-3072",
-        name="OpenAI text-embedding-3-large (3072d)",
-        provider="openai",
-        model_name="text-embedding-3-large",
-        embedding_dimensions=3072,
-        description="High Precision"
-    ),
-]
-
-
-def _format_embedding_response(record: dict, is_locked: bool, crypto: CryptoService) -> EmbeddingConfigResponse:
-    decrypted_key = crypto.decrypt(record.get("api_key_enc", ""))
-    masked_key = crypto.mask_api_key(decrypted_key)
-
+def _format_embedding_response(record: dict, is_locked: bool) -> EmbeddingConfigResponse:
     return EmbeddingConfigResponse(
-        user_id=str(record["user_id"]),
         provider=record["provider"],
-        api_key_masked=masked_key,
         base_url=record.get("base_url"),
         model_name=record["model_name"],
         embedding_dimensions=record.get("embedding_dimensions", 768),
         locked=is_locked,
-        created_at=record["created_at"],
-        updated_at=record["updated_at"],
     )
-
-
-@router.get("/embedding/presets", response_model=list[EmbeddingPresetDTO])
-async def list_embedding_presets() -> list[EmbeddingPresetDTO]:
-    return RECOMMENDED_EMBEDDING_PRESETS
 
 
 @router.get("/embedding", response_model=EmbeddingConfigResponse)
 async def get_embedding_config(user: CurrentUserDep) -> EmbeddingConfigResponse:
     supabase = await get_supabase_client()
-    crypto = CryptoService()
-
     config_res = await execute_query(
         supabase.table("user_embedding_configs")
-        .select("*")
+        .select("provider, base_url, model_name, embedding_dimensions")
         .eq("user_id", user.user_id)
     )
 
@@ -284,7 +224,7 @@ async def get_embedding_config(user: CurrentUserDep) -> EmbeddingConfigResponse:
     )
     is_locked = (doc_count_res.count or 0) > 0
 
-    return _format_embedding_response(config_res.data[0], is_locked, crypto)
+    return _format_embedding_response(config_res.data[0], is_locked)
 
 
 @router.post("/embedding", response_model=EmbeddingConfigResponse)
@@ -304,7 +244,7 @@ async def save_embedding_config(
 
     existing_res = await execute_query(
         supabase.table("user_embedding_configs")
-        .select("*")
+        .select("provider, base_url, model_name, embedding_dimensions")
         .eq("user_id", user.user_id)
     )
 
@@ -341,7 +281,6 @@ async def save_embedding_config(
         "base_url": payload.base_url,
         "model_name": payload.model_name,
         "embedding_dimensions": payload.embedding_dimensions,
-        "locked": has_documents,
     }
 
     upsert_res = await execute_query(
@@ -355,5 +294,5 @@ async def save_embedding_config(
             detail="Gagal menyimpan konfigurasi model embedding."
         )
 
-    return _format_embedding_response(upsert_res.data[0], has_documents, crypto)
+    return _format_embedding_response(upsert_res.data[0], has_documents)
 

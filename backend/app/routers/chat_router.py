@@ -2,7 +2,7 @@ import logging
 from collections.abc import AsyncIterable
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 
 from app.auth import CurrentUserDep
@@ -152,7 +152,6 @@ async def list_chat_sessions(user: CurrentUserDep) -> list[ChatSessionResponse]:
     return [
         ChatSessionResponse(
             id=str(r["id"]),
-            user_id=str(r["user_id"]),
             title=r.get("title", "Percakapan"),
             created_at=str(r["created_at"]),
         )
@@ -178,7 +177,6 @@ async def list_session_messages(
         ChatMessageResponse(
             id=str(r["id"]),
             session_id=str(r["session_id"]),
-            user_id=str(r["user_id"]),
             sender=r["sender"],
             content=r["content"],
             citations=parse_citations(r.get("citations")),
@@ -186,28 +184,6 @@ async def list_session_messages(
         )
         for r in records
     ]
-
-
-@router.post("/sessions", response_model=ChatSessionResponse, status_code=status.HTTP_201_CREATED)
-async def create_chat_session(
-    user: CurrentUserDep,
-    title: str | None = None,
-) -> ChatSessionResponse:
-    supabase = await get_supabase_client()
-    data = {
-        "user_id": user.user_id,
-        "title": title or "Percakapan Baru",
-    }
-    response = await execute_query(supabase.table("chat_sessions").insert(data))
-    if not response.data:
-        raise HTTPException(status_code=500, detail="Gagal membuat sesi percakapan.")
-    record = response.data[0]
-    return ChatSessionResponse(
-        id=str(record["id"]),
-        user_id=str(record["user_id"]),
-        title=record["title"],
-        created_at=str(record["created_at"]),
-    )
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)

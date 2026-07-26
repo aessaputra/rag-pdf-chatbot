@@ -24,7 +24,7 @@ interface ProviderSettingsSectionProps {
   readonly onSetErrorMsg: (msg: string | null) => void;
 }
 
-export function ProviderSettingsSection({
+function ProviderSettingsSection({
   configs,
   token,
   onReloadConfigs,

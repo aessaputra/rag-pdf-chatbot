@@ -5,7 +5,7 @@ import { FileTextIcon, ViewVerticalIcon } from '@radix-ui/react-icons';
 import { useDocument } from '@/context/DocumentContext';
 import { useSidebar } from '@/context/SidebarContext';
 
-export function ChatWindowHeader() {
+function ChatWindowHeader() {
   const { primaryDoc, extraDocsCount, setIsDocModalOpen } = useDocument();
   const { toggle, isOpen } = useSidebar();
 

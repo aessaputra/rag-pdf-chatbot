@@ -12,7 +12,7 @@ interface ChatWindowMessagesProps {
   readonly onSetInputQuery: (text: string) => void;
 }
 
-export function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps) {
+function ChatWindowMessages({ onSetInputQuery }: ChatWindowMessagesProps) {
   const { hasCredentials } = useApp();
   const { activeDocumentCount, setIsDocModalOpen } = useDocument();
   const { messages, isStreaming, setSelectedCitation } = useChat();

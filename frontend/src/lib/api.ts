@@ -1,4 +1,4 @@
-import type { ApiResponse, Citation, DocumentItem, DocumentPreviewResponse, ProviderConfig, EmbeddingConfig, EmbeddingConfigSavePayload, EmbeddingPreset } from '@/types';
+import type { ApiResponse, Citation, DocumentItem, DocumentPreviewResponse, ProviderConfig, EmbeddingConfig, EmbeddingConfigSavePayload } from '@/types';
 
 
 import { createClient } from '@/lib/supabaseClient';
@@ -14,7 +14,7 @@ async function getAuthHeaders(fallbackToken?: string): Promise<Record<string, st
     const { data } = await createClient().auth.getSession();
     const token = data.session?.access_token;
     if (token) return { Authorization: `Bearer ${token}` };
-  } catch (err) {}
+  } catch {}
   throw new Error('Sesi login telah berakhir. Silakan login kembali.');
 }
 
@@ -78,7 +78,7 @@ async function apiFetch<T>(
 
 
 
-export interface SSEStreamCallbacks {
+interface SSEStreamCallbacks {
   onSession?: (sessionId: string) => void;
   onCitations: (citations: Citation[]) => void;
   onToken: (token: string) => void;
@@ -177,15 +177,6 @@ export function getSessionMessages(sessionId: string, token: string): Promise<Ap
   return apiFetch(`/api/chat/sessions/${sessionId}/messages`, undefined, token, 'Gagal mengambil pesan percakapan.');
 }
 
-export function createChatSession(token: string, title?: string): Promise<ApiResponse<import('@/types').ChatSession>> {
-  return apiFetch(
-    '/api/chat/sessions',
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) },
-    token,
-    'Gagal membuat sesi percakapan baru.'
-  );
-}
-
 export function deleteChatSession(sessionId: string, token: string): Promise<ApiResponse<boolean>> {
   return apiFetch(`/api/chat/sessions/${sessionId}`, { method: 'DELETE' }, token, 'Gagal menghapus sesi percakapan.');
 }
@@ -255,11 +246,6 @@ export function deleteProviderConfig(id: string, token: string): Promise<ApiResp
 }
 
 
-
-export function listEmbeddingPresets(): Promise<ApiResponse<EmbeddingPreset[]>> {
-  return apiFetch('/api/settings/embedding/presets', undefined, undefined, 'Gagal mengambil preset embedding.', false);
-}
-
 export function getEmbeddingConfig(token: string): Promise<ApiResponse<EmbeddingConfig | null>> {
   return apiFetch('/api/settings/embedding', { method: 'GET' }, token, 'Gagal mengambil konfigurasi embedding.');
 }
@@ -276,7 +262,7 @@ export function saveEmbeddingConfig(
   );
 }
 
-export interface VerifyModelsResponseData {
+interface VerifyModelsResponseData {
   success: boolean;
   models: string[];
   default_model: string;

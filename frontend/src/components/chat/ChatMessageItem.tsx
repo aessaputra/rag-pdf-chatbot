@@ -59,4 +59,3 @@ export const ChatMessageItem = memo(
   }
 );
 
-export default ChatMessageItem;

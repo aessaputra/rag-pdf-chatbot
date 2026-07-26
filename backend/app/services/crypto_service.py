@@ -52,7 +52,3 @@ class CryptoService:
             return "••••"
         return f"••••{api_key[-4:]}"
 
-
-def get_crypto_service() -> CryptoService:
-    return CryptoService()
-

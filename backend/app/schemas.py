@@ -45,7 +45,6 @@ class DocumentUploadResponse(BaseModel):
     filename: str
     file_size: int
     total_pages: int
-    total_chunks: int
     created_at: datetime
 
 
@@ -54,7 +53,6 @@ class DocumentItemResponse(BaseModel):
     filename: str
     file_size: int
     total_pages: int
-    file_path: str | None = None
     is_active: bool = True
     status: str = "ready"
     created_at: datetime
@@ -67,12 +65,10 @@ class DocumentToggleRequest(BaseModel):
 class DocumentPreviewResponse(BaseModel):
     document_id: str
     signed_url: str
-    expires_in: int = 3600
 
 
 class ChatSessionResponse(BaseModel):
     id: str
-    user_id: str
     title: str
     created_at: datetime
 
@@ -93,48 +89,29 @@ class ProviderConfigCreate(BaseModel):
     api_key: str = Field(min_length=1, description="Raw API key string")
     display_name: str | None = Field(None, max_length=100, description="Custom label e.g. Groq Llama 3")
     base_url: str | None = Field(None, max_length=500, description="Custom base URL endpoint")
-    model_name: str | None = Field(None, max_length=200, description="Target model slug name")
+    model_name: str = Field(min_length=1, max_length=200, description="Target model slug name")
     is_default: bool = Field(False, description="Set as active default chat provider")
 
     def model_post_init(self, __context: Any, /) -> None:
-        if self.provider == "openai_compatible":
-            if not self.base_url or not self.base_url.strip():
-                raise ValueError("base_url is required for OpenAI-Compatible provider")
-            if not self.model_name or not self.model_name.strip():
-                raise ValueError("model_name is required for OpenAI-Compatible provider")
-        elif self.provider == "openrouter":
-            if not self.model_name or not self.model_name.strip():
-                raise ValueError("model_name is required for OpenRouter provider")
+        if self.provider == "openai_compatible" and not self.base_url:
+            raise ValueError("base_url is required for OpenAI-Compatible provider")
 
 
 class ProviderConfigUpdate(BaseModel):
     display_name: str | None = Field(None, max_length=100)
     api_key: str | None = Field(None, min_length=1, description="New raw API key if rotating")
     base_url: str | None = Field(None, max_length=500)
-    model_name: str | None = Field(None, max_length=200)
+    model_name: str | None = Field(None, min_length=1, max_length=200)
     is_default: bool | None = None
 
 
 class ProviderConfigResponse(BaseModel):
     id: str
-    user_id: str
     provider: str
     display_name: str | None = None
-    api_key_masked: str
     base_url: str | None = None
     model_name: str | None = None
     is_default: bool
-    created_at: datetime
-    updated_at: datetime
-
-
-class EmbeddingPresetDTO(BaseModel):
-    id: str
-    name: str
-    provider: str
-    model_name: str
-    embedding_dimensions: int
-    description: str
 
 
 class EmbeddingConfigSaveRequest(BaseModel):
@@ -146,19 +123,15 @@ class EmbeddingConfigSaveRequest(BaseModel):
 
 
 class EmbeddingConfigResponse(BaseModel):
-    user_id: str
     provider: str
-    api_key_masked: str
     base_url: str | None = None
     model_name: str
     embedding_dimensions: int
     locked: bool
-    created_at: datetime
-    updated_at: datetime
 
 
 class VerifyModelsRequest(BaseModel):
-    provider: str = Field(..., description="Provider type: gemini, openai, openrouter, ollama, or openai_compatible")
+    provider: str = Field(..., description="Provider type: gemini, openai, openrouter, or openai_compatible")
     model_type: Literal["chat", "embedding"] = Field("chat", description="Model type filter: chat or embedding")
     api_key: str | None = Field(None, description="Raw API key to test")
     base_url: str | None = Field(None, max_length=500, description="Optional custom base URL")

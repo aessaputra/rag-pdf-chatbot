@@ -6,6 +6,8 @@ import { DocumentProvider } from '@/context/DocumentContext';
 import { ChatProvider } from '@/context/ChatContext';
 import { SidebarProvider } from '@/context/SidebarContext';
 
+export const dynamic = 'force-dynamic';
+
 export default async function MainLayout({ children }: { readonly children: React.ReactNode }) {
   const cookieStore = await cookies();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,7 +22,7 @@ export default async function MainLayout({ children }: { readonly children: Reac
       getAll() {
         return cookieStore.getAll();
       },
-      setAll(cookiesToSet, _headers) {
+      setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options);

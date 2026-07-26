@@ -5,7 +5,6 @@ import React, { createContext, useContext, useState, useMemo, ReactNode } from '
 interface SidebarContextType {
   isOpen: boolean;
   toggle: () => void;
-  setIsOpen: (open: boolean) => void;
 }
 
 const SidebarContext = createContext<SidebarContextType | null>(null);
@@ -19,7 +18,7 @@ export function SidebarProvider({ children }: { readonly children: ReactNode }) 
     }
   }, []);
   const toggle = React.useCallback(() => setIsOpen((prev) => !prev), []);
-  const value = useMemo(() => ({ isOpen, toggle, setIsOpen }), [isOpen, toggle]);
+  const value = useMemo(() => ({ isOpen, toggle }), [isOpen, toggle]);
 
   return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
 }

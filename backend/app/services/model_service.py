@@ -3,8 +3,6 @@ from typing import Any
 
 import httpx
 
-from app.config import settings
-
 logger = logging.getLogger(__name__)
 
 
@@ -37,8 +35,6 @@ class ModelService:
                 models = await cls._fetch_gemini_models(api_key, is_embedding)
             elif provider_norm in ("openai", "openrouter", "openai_compatible"):
                 models = await cls._fetch_openai_style_models(provider_norm, api_key, base_url, is_embedding)
-            elif provider_norm == "ollama":
-                models = await cls._fetch_ollama_models(base_url or settings.OLLAMA_BASE_URL)
             else:
                 models = []
 
@@ -159,12 +155,3 @@ class ModelService:
                     models.append(m_id)
             return models
 
-    @staticmethod
-    async def _fetch_ollama_models(base_url: str) -> list[str]:
-        url = f"{base_url.rstrip('/')}/api/tags"
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(url)
-            if resp.status_code != 200:
-                return []
-            data = resp.json()
-            return [m.get("name", "") for m in data.get("models", []) if m.get("name")]

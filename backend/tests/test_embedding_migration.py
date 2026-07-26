@@ -29,9 +29,8 @@ def test_user_embedding_config_data_structure():
         "base_url": None,
         "model_name": "text-embedding-3-small",
         "embedding_dimensions": 1536,
-        "locked": False
     }
 
     assert config["embedding_dimensions"] == 1536
-    assert config["locked"] is False
+    assert "locked" not in config
     assert crypto.decrypt(config["api_key_enc"]) == "sk-openai-key"

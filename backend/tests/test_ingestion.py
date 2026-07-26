@@ -304,7 +304,7 @@ async def test_process_document_should_embed_chunks_and_mark_document_ready(mock
     embedded_texts = mock_embeddings.embed_documents.call_args[0][0]
     assert embedded_texts == [paragraph_content, *expected_questions]
 
-    tables["user_embedding_configs"].update.assert_called_once_with({"locked": True})
+    tables["user_embedding_configs"].update.assert_not_called()
     tables["documents"].update.assert_called_once_with({"status": "ready", "total_pages": 1})
 
 def test_is_retryable_error():
