@@ -165,7 +165,7 @@ cd backend
 venv\Scripts\activate   # Windows
 source venv/bin/activate  # Linux/macOS
 
-# Run all tests (34 tests across 7 test files)
+# Run all tests (55 tests across 10 test files)
 python -m pytest tests/ -v
 
 # Run a specific test file
@@ -179,12 +179,13 @@ python -m pytest tests/test_settings_router.py -v
 | `test_auth.py` | 6 | JWT verification (HMAC, expired, missing claims, JWKS) |
 | `test_config.py` | 3 | Pydantic Settings loading, env var aliases |
 | `test_crypto.py` | 5 | AES-256-GCM encryption/decryption, nonces, masking |
+| `test_document_management.py` | 9 | Document list/toggle/preview/delete endpoints & StorageService |
 | `test_embedding_migration.py` | 2 | Flexible unconstrained vector formatting & embedding schema |
-| `test_ingestion.py` | 2 | PDF parsing, text chunking with metadata |
+| `test_ingestion.py` | 5 | Paragraph chunking with line metadata, boilerplate removal, background document processing |
 | `test_llm_factory.py` | 4 | Dynamic BYOK instantiation (Gemini, OpenAI, OpenRouter, Custom) |
-| `test_rag.py` | 3 | RAG SSE streaming, citation extraction, context formatting |
-| `test_routers.py` | 3 | FastAPI endpoint health & auth integration |
-| `test_settings_router.py` | 6 | Provider Configs CRUD, Presets, and Embedding Lock enforcement |
+| `test_rag.py` | 10 | RAG SSE streaming, citation extraction, prompt engineering patterns |
+| `test_routers.py` | 4 | FastAPI endpoint health, auth integration & async upload dispatch |
+| `test_settings_router.py` | 7 | Provider Configs CRUD, Presets, Embedding Lock enforcement & model verification |
 
 ### Frontend Verification
 
@@ -228,7 +229,7 @@ npm run build   # TypeScript type-check + Next.js production build
 | `GET` | `/api/settings/embedding/presets` | ❌ | List recommended embedding model presets |
 | `GET` | `/api/settings/embedding` | ✅ Bearer | Get user's active embedding config & lock status |
 | `POST` | `/api/settings/embedding` | ✅ Bearer | Save user's embedding config (Rejects if locked) |
-| `POST` | `/api/documents/upload` | ✅ Bearer | Upload and ingest PDF (Auto-locks embedding model) |
+| `POST` | `/api/documents/upload` | ✅ Bearer | Upload PDF, register document (`processing`) and ingest asynchronously via `BackgroundTasks` |
 | `GET` | `/api/documents` | ✅ Bearer | List user's documents |
 | `DELETE` | `/api/documents/{document_id}` | ✅ Bearer | Delete a document |
 | `POST` | `/api/chat/stream` | ✅ Bearer | RAG query with SSE streaming response |

@@ -21,6 +21,8 @@ interface DocumentContextType {
 
 const DocumentContext = createContext<DocumentContextType | null>(null);
 
+const PROCESSING_POLL_INTERVAL_MS = 5000;
+
 export function DocumentProvider({ children }: { readonly children: React.ReactNode }) {
   const { token } = useApp();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -42,6 +44,11 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
   const primaryDoc = useMemo(() => activeDocuments[0], [activeDocuments]);
   const extraDocsCount = useMemo(() => Math.max(0, activeDocuments.length - 1), [activeDocuments]);
 
+  const hasProcessingDocuments = useMemo(
+    () => documents.some((d) => d.status === 'processing'),
+    [documents]
+  );
+
   const reloadDocuments = useCallback(async (accessToken: string) => {
     const res = await listDocuments(accessToken);
     if (res.success && res.data) setDocuments(res.data);
@@ -55,6 +62,14 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
       setFetchedTokenDocs(null);
     }
   }, [token, reloadDocuments]);
+
+  useEffect(() => {
+    if (!token || !hasProcessingDocuments) return;
+    const intervalId = setInterval(() => {
+      void reloadDocuments(token);
+    }, PROCESSING_POLL_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [token, hasProcessingDocuments, reloadDocuments]);
 
   const handleUploadDocument = useCallback(async (file: File) => {
     if (!token) throw new Error('Sesi login telah berakhir.');

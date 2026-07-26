@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 
 from app.auth import CurrentUserDep
@@ -27,12 +27,15 @@ logger = logging.getLogger(__name__)
 async def upload_pdf_document(
     user: CurrentUserDep,
     file: Annotated[UploadFile, File(...)],
+    background_tasks: BackgroundTasks,
 ) -> DocumentUploadResponse:
     """
-    Uploads and ingests a PDF document.
-    Validates file extension, parses text per page, generates vector embeddings,
-    uploads PDF to Supabase Storage, and stores vectors in Supabase PostgreSQL.
-    Runs CPU/IO heavy tasks in threadpool to prevent blocking the event loop.
+    Registers a PDF document and dispatches ingestion to a background task.
+
+    Creates the document row in 'processing' state and uploads the PDF to
+    Supabase Storage synchronously, then returns 201 immediately. Paragraph
+    parsing, embedding, and vector storage run in the background; clients poll
+    GET /api/documents to watch the status transition to 'ready' or 'failed'.
     """
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
@@ -49,32 +52,36 @@ async def upload_pdf_document(
 
     ingestion_service = PDFIngestionService()
 
-    # Run heavy PDF parsing in threadpool
-    chunks = await run_in_threadpool(ingestion_service.parse_pdf_bytes, pdf_bytes, file.filename)
-
-    if not chunks:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Could not extract readable text from PDF."
-        )
-
-    # Run Supabase vector storage + file upload in threadpool
     try:
-        response = await run_in_threadpool(
-            ingestion_service.store_document_and_chunks,
-            filename=file.filename,
-            file_size=len(pdf_bytes),
-            user_id=user.user_id,
-            chunks=chunks,
-            total_pages=max(chunk.page_number for chunk in chunks),
-            pdf_bytes=pdf_bytes,
+        document = await run_in_threadpool(
+            ingestion_service.register_document,
+            file.filename,
+            len(pdf_bytes),
+            user.user_id,
+            pdf_bytes,
         )
-        return response
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal menyimpan dokumen ke database: {e!s}"
+            detail=f"Gagal mendaftarkan dokumen: {e!s}"
         )
+
+    background_tasks.add_task(
+        ingestion_service.process_document,
+        document_id=document["id"],
+        user_id=user.user_id,
+        filename=file.filename,
+        pdf_bytes=pdf_bytes,
+    )
+
+    return DocumentUploadResponse(
+        document_id=document["id"],
+        filename=file.filename,
+        file_size=len(pdf_bytes),
+        total_pages=0,
+        total_chunks=0,
+        created_at=document["created_at"],
+    )
 
 
 @router.get("", response_model=list[DocumentItemResponse])

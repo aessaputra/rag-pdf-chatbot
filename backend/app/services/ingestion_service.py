@@ -1,109 +1,150 @@
 import io
+import logging
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from typing import Any
 
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.embeddings import Embeddings
 from pypdf import PdfReader
+from supabase import Client
 
 from app.database import get_supabase_client
-from app.schemas import DocumentChunkDTO, DocumentUploadResponse
+from app.schemas import DocumentChunkDTO
 from app.services.llm_factory import LLMFactory
+from app.services.storage_service import StorageService
+
+logger = logging.getLogger(__name__)
+
+PARAGRAPH_DELIMITER = '\n\n'
 
 
 class PDFIngestionService:
 
-    def __init__(self, chunk_size: int=1000, chunk_overlap: int=200):
-        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap, separators=['\n\n', '\n', ' ', ''])
+    def split_text_with_metadata(self, text: str, filename: str, page_number: int, boilerplate: frozenset[str] = frozenset()) -> list[DocumentChunkDTO]:
+        """Splits page text into natural paragraphs with exact 1-indexed line spans.
 
-    def split_text_with_metadata(self, text: str, filename: str, page_number: int) -> list[DocumentChunkDTO]:
+        Paragraphs are delimited by blank lines. Boilerplate lines are dropped
+        from paragraph content without renumbering, so line spans always refer
+        to the raw extracted page text that citations are verified against.
+        """
         cleaned_text = text.strip()
         if not cleaned_text:
             return []
-        doc = Document(page_content=cleaned_text, metadata={'filename': filename, 'page_number': page_number})
-        split_docs = self.text_splitter.split_documents([doc])
-        return [DocumentChunkDTO(content=chunk.page_content, page_number=chunk.metadata['page_number'], filename=chunk.metadata['filename'], metadata=chunk.metadata) for chunk in split_docs]
+        chunks: list[DocumentChunkDTO] = []
+        current_line = 1
+        for segment in cleaned_text.split(PARAGRAPH_DELIMITER):
+            segment_line_span = segment.count('\n') + 1
+            leading_blank_lines = len(segment) - len(segment.lstrip('\n'))
+            block_start = current_line + leading_blank_lines
+            kept_lines = [
+                (offset, line)
+                for offset, line in enumerate(segment.lstrip('\n').split('\n'))
+                if not self._is_removable_line(line, boilerplate)
+            ]
+            if kept_lines and ''.join(line for _, line in kept_lines).strip():
+                chunks.append(DocumentChunkDTO(
+                    content='\n'.join(line for _, line in kept_lines).strip(),
+                    page_number=page_number,
+                    filename=filename,
+                    metadata={
+                        'filename': filename,
+                        'page_number': page_number,
+                        'line_start': block_start + kept_lines[0][0],
+                        'line_end': block_start + kept_lines[-1][0],
+                        'type': 'paragraph',
+                    },
+                ))
+            current_line += segment_line_span + 1
+        return chunks
 
-    def _identify_boilerplate_lines(self, pages_text: list[str]) -> set:
+    @staticmethod
+    def _is_removable_line(line: str, boilerplate: frozenset[str]) -> bool:
+        stripped = line.strip()
+        if not stripped:
+            return False
+        if stripped in boilerplate:
+            return True
+        return bool(re.match('^(page|hal|halaman)[:\\s\\-0-9]+$', stripped, re.IGNORECASE))
+
+    def _identify_boilerplate_lines(self, pages_text: list[str]) -> frozenset[str]:
         if len(pages_text) <= 2:
-            return set()
+            return frozenset()
         line_counts = Counter()
         for text in pages_text:
             lines = {line.strip() for line in text.split('\n') if len(line.strip()) > 5}
             for line in lines:
                 line_counts[line] += 1
         threshold = len(pages_text) * 0.5
-        return {line for line, count in line_counts.items() if count >= threshold}
-
-    def _clean_boilerplate(self, pages_text: list[str]) -> list[str]:
-        boilerplate = self._identify_boilerplate_lines(pages_text)
-        cleaned_pages = []
-        for text in pages_text:
-            cleaned_lines = []
-            for line in text.split('\n'):
-                stripped = line.strip()
-                if stripped in boilerplate:
-                    continue
-                if re.match('^(page|hal|halaman)[:\\s\\-0-9]+$', stripped, re.IGNORECASE):
-                    continue
-                cleaned_lines.append(line)
-            cleaned_pages.append('\n'.join(cleaned_lines))
-        return cleaned_pages
+        return frozenset(line for line, count in line_counts.items() if count >= threshold)
 
     def parse_pdf_bytes(self, pdf_bytes: bytes, filename: str) -> list[DocumentChunkDTO]:
         pdf_reader = PdfReader(io.BytesIO(pdf_bytes))
         raw_pages_text = [page.extract_text() or '' for page in pdf_reader.pages]
-        cleaned_pages_text = self._clean_boilerplate(raw_pages_text)
+        boilerplate = self._identify_boilerplate_lines(raw_pages_text)
         all_chunks: list[DocumentChunkDTO] = []
-        for current_index, current_text in enumerate(cleaned_pages_text):
-            page_number = current_index + 1
-            has_next_page = current_index + 1 < len(cleaned_pages_text)
-            if has_next_page:
-                next_page_text = cleaned_pages_text[current_index + 1]
-                overlap_chars = getattr(self.text_splitter, '_chunk_overlap', 200)
-                remainder = next_page_text[overlap_chars:]
-                match = re.search('[.!?\\n]', remainder)
-                if match:
-                    safe_index = overlap_chars + match.end()
-                else:
-                    space_match = re.search('\\s', remainder)
-                    safe_index = overlap_chars + space_match.end() if space_match else overlap_chars
-                overlap_text = next_page_text[:safe_index].strip()
-                current_text = f'{current_text} {overlap_text}'
-            page_chunks = self.split_text_with_metadata(text=current_text, filename=filename, page_number=page_number)
+        for page_index, page_text in enumerate(raw_pages_text):
+            page_number = page_index + 1
+            page_chunks = self.split_text_with_metadata(text=page_text, filename=filename, page_number=page_number, boilerplate=boilerplate)
             all_chunks.extend(page_chunks)
         return all_chunks
 
-    def store_document_and_chunks(self, filename: str, file_size: int, user_id: str, chunks: list[DocumentChunkDTO], total_pages: int, pdf_bytes: bytes, provider: str='gemini', batch_size: int=100) -> DocumentUploadResponse:
-        from app.services.storage_service import StorageService
+    def register_document(self, filename: str, file_size: int, user_id: str, pdf_bytes: bytes) -> dict[str, Any]:
+        """Creates the document row in 'processing' state and uploads the PDF to storage.
+
+        Runs synchronously during the upload request so the client immediately
+        gets a trackable document record. Rolls the row back if the storage
+        upload fails.
+        """
         supabase = get_supabase_client()
-        doc_data = {'user_id': user_id, 'filename': filename, 'file_size': file_size, 'total_pages': total_pages, 'status': 'processing', 'is_active': True}
+        doc_data = {'user_id': user_id, 'filename': filename, 'file_size': file_size, 'total_pages': 0, 'status': 'processing', 'is_active': True}
         doc_response = supabase.table('documents').insert(doc_data).execute()
-        document_id = doc_response.data[0]['id']
+        document_record = doc_response.data[0]
+        document_id = document_record['id']
         try:
             file_path = StorageService.upload_file(user_id, document_id, pdf_bytes)
         except Exception:
             supabase.table('documents').delete().eq('id', document_id).eq('user_id', user_id).execute()
             raise
         supabase.table('documents').update({'file_path': file_path}).eq('id', document_id).execute()
+        document_record['file_path'] = file_path
+        return document_record
+
+    def process_document(self, document_id: str, user_id: str, filename: str, pdf_bytes: bytes, batch_size: int = 100) -> None:
+        """Runs the ingestion pipeline for a registered document in the background.
+
+        Parses paragraphs, embeds them, stores the chunks, locks the embedding
+        config, and marks the document 'ready'. Any failure marks the document
+        'failed' and is logged instead of raised, since this runs as a
+        fire-and-forget background task.
+        """
+        supabase = get_supabase_client()
         try:
-            embedding_res = supabase.table('user_embedding_configs').select('*').eq('user_id', user_id).execute()
-            if not embedding_res.data:
-                raise ValueError('Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings.')
-            embedding_config = embedding_res.data[0]
-            embeddings_model = LLMFactory.get_embeddings_for_config(embedding_config)
-            chunk_texts = [chunk.content for chunk in chunks]
-            vector_embeddings = embeddings_model.embed_documents(chunk_texts)
-            chunk_records = []
-            for chunk, embedding_vector in zip(chunks, vector_embeddings):
-                chunk_records.append({'document_id': document_id, 'user_id': user_id, 'content': chunk.content, 'page_number': chunk.page_number, 'metadata': chunk.metadata, 'embedding': embedding_vector})
-            for i in range(0, len(chunk_records), batch_size):
-                batch = chunk_records[i:i + batch_size]
-                supabase.table('document_chunks').insert(batch).execute()
+            chunks = self.parse_pdf_bytes(pdf_bytes, filename)
+            if not chunks:
+                raise ValueError('Could not extract readable text from PDF.')
+            embeddings_model = self._resolve_embeddings_model(supabase, user_id)
+            self._store_chunks(supabase, document_id, user_id, chunks, embeddings_model, batch_size)
             supabase.table('user_embedding_configs').update({'locked': True}).eq('user_id', user_id).execute()
-            supabase.table('documents').update({'status': 'ready'}).eq('id', document_id).execute()
+            total_pages = max(chunk.page_number for chunk in chunks)
+            supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id).execute()
+            logger.info('Document %s processed: %d paragraph chunks stored.', document_id, len(chunks))
         except Exception:
+            logger.exception('Document %s processing failed.', document_id)
             supabase.table('documents').update({'status': 'failed'}).eq('id', document_id).execute()
-            raise
-        return DocumentUploadResponse(document_id=document_id, filename=filename, file_size=file_size, total_pages=total_pages, total_chunks=len(chunks), created_at=datetime.now(timezone.utc))
+
+    def _resolve_embeddings_model(self, supabase: Client, user_id: str) -> Embeddings:
+        embedding_res = supabase.table('user_embedding_configs').select('*').eq('user_id', user_id).execute()
+        if not embedding_res.data:
+            raise ValueError('Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings.')
+        return LLMFactory.get_embeddings_for_config(embedding_res.data[0])
+
+    def _store_chunks(self, supabase: Client, document_id: str, user_id: str, chunks: list[DocumentChunkDTO], embeddings_model: Embeddings, batch_size: int) -> None:
+        chunk_texts = [chunk.content for chunk in chunks]
+        vector_embeddings = embeddings_model.embed_documents(chunk_texts)
+        chunk_records = []
+        for chunk, embedding_vector in zip(chunks, vector_embeddings):
+            chunk_records.append({'document_id': document_id, 'user_id': user_id, 'content': chunk.content, 'page_number': chunk.page_number, 'metadata': chunk.metadata, 'embedding': embedding_vector})
+        for i in range(0, len(chunk_records), batch_size):
+            batch = chunk_records[i:i + batch_size]
+            supabase.table('document_chunks').insert(batch).execute()
+
