@@ -35,3 +35,4 @@ supabase/.branches/
 # AI Agents & Scratch
 .scratch/
 .superpowers/
+opencode.jsonc

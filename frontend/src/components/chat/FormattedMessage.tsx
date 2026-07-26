@@ -21,7 +21,7 @@ export function formatInlineMarkdown(
             key={i}
             type="button"
             onClick={() => onSelectCitation(citation)}
-            aria-label={`Buka sitasi ${citation.filename} halaman ${citation.page_number}`}
+            aria-label={`Buka sitasi ${citation.filename} halaman ${citation.page_number}${citation.line_start && citation.line_end ? ` baris ${citation.line_start}-${citation.line_end}` : ''}`}
             className="inline-flex items-center justify-center px-1.5 py-0.5 mx-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20 text-xs font-mono transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-400 align-baseline leading-none"
           >
             <span className="font-semibold [font-variant-numeric:tabular-nums]">[{citationIndex + 1}]</span>

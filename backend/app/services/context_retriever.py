@@ -26,7 +26,12 @@ class ContextRetriever:
             return []
         if 'embedding' not in results[0]:
             logger.warning("RPC 'match_document_chunks' did not return 'embedding'. Falling back to Dense Retrieval without MMR.")
-            return results[:top_k]
+            final_results = results[:top_k]
+            for result in final_results:
+                metadata = result.get('metadata', {})
+                if metadata.get('type') == 'question' and 'paragraph_content' in metadata:
+                    result['content'] = metadata['paragraph_content']
+            return final_results
         import numpy as np
         from langchain_community.vectorstores.utils import maximal_marginal_relevance
 
@@ -37,12 +42,23 @@ class ContextRetriever:
             return emb
         candidate_embeddings = [parse_embedding(r['embedding']) for r in results]
         mmr_indices = maximal_marginal_relevance(np.array(query_embedding), candidate_embeddings, k=top_k, lambda_mult=lambda_mult)
-        return [results[i] for i in mmr_indices]
+        final_results = [results[i] for i in mmr_indices]
+        for result in final_results:
+            metadata = result.get('metadata', {})
+            if metadata.get('type') == 'question' and 'paragraph_content' in metadata:
+                result['content'] = metadata['paragraph_content']
+        return final_results
 
     @staticmethod
     def extract_citations(chunks: list[dict[str, Any]]) -> list[Citation]:
         citations: list[Citation] = []
         for chunk in chunks:
             metadata = chunk.get('metadata', {})
-            citations.append(Citation(filename=metadata.get('filename', 'Unknown Document'), page_number=metadata.get('page_number', 1), content=chunk.get('content', '')))
+            citations.append(Citation(
+                filename=metadata.get('filename', 'Unknown Document'), 
+                page_number=metadata.get('page_number', 1), 
+                line_start=metadata.get('line_start'),
+                line_end=metadata.get('line_end'),
+                content=chunk.get('content', '')
+            ))
         return citations

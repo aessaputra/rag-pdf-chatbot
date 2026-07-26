@@ -100,9 +100,14 @@ class PromptBuilder:
             metadata = chunk.get("metadata", {})
             page_num = metadata.get("page_number", 1)
             filename = metadata.get("filename", "Doc")
+            line_start = metadata.get("line_start")
+            line_end = metadata.get("line_end")
             content = chunk.get("content", "")
+            
+            line_info = f" | Baris: {line_start}-{line_end}" if line_start and line_end else ""
+            
             context_blocks.append(
-                f"--- Sumber [{idx}] | File: {filename} | Halaman: {page_num} ---\n"
+                f"--- Sumber [{idx}] | File: {filename} | Halaman: {page_num}{line_info} ---\n"
                 f"{content}"
             )
         return "\n\n".join(context_blocks)
