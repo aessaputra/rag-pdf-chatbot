@@ -35,27 +35,12 @@ QUESTION_GENERATION_SYSTEM_PROMPT = (
 
 
 def is_retryable_error(exception: BaseException) -> bool:
-    """Returns True if the exception is a rate limit (429) or server error (50x)."""
     error_str = str(exception).lower()
     retryable_keywords = ["429", "rate limit", "resource_exhausted", "500", "502", "503", "504", "timeout"]
     return any(keyword in error_str for keyword in retryable_keywords)
 
 class PDFIngestionService:
-    """Orchestrates PDF parsing, paragraph chunking, and asynchronous ingestion.
-
-    Splits page text into paragraphs delimited by blank lines, generates
-    synthetic HyDE questions per paragraph via the user's LLM, embeds all
-    chunks, and stores them in Supabase pgvector. Designed to run the heavy
-    pipeline in a background task so the upload endpoint returns promptly.
-    """
-
     def split_text_with_metadata(self, text: str, filename: str, page_number: int, boilerplate: frozenset[str] = frozenset()) -> list[DocumentChunkDTO]:
-        """Splits page text into natural paragraphs with exact 1-indexed line spans.
-
-        Paragraphs are delimited by blank lines. Boilerplate lines are dropped
-        from paragraph content without renumbering, so line spans always refer
-        to the raw extracted page text that citations are verified against.
-        """
         cleaned_text = text.strip()
         if not cleaned_text:
             return []
@@ -126,14 +111,6 @@ class PDFIngestionService:
         stop=stop_after_attempt(5)
     )
     def generate_questions(self, paragraph_content: str, llm: BaseChatModel) -> list[str]:
-        """Generates up to QUESTIONS_PER_PARAGRAPH synthetic HyDE questions via the user's LLM.
-
-        The prompt asks for exactly QUESTIONS_PER_PARAGRAPH questions; the
-        parser tolerates messy output (preambles, bullets, quotes, extras)
-        and returns at most QUESTIONS_PER_PARAGRAPH. Raises ValueError when
-        nothing parseable comes back, which callers treat as a generation
-        failure.
-        """
         prompt = QUESTION_GENERATION_SYSTEM_PROMPT.format(paragraph_content=paragraph_content)
         response = llm.invoke(prompt)
         raw_text = response.content if hasattr(response, 'content') else str(response)
@@ -155,12 +132,6 @@ class PDFIngestionService:
         return questions
 
     def register_document(self, filename: str, file_size: int, user_id: str, pdf_bytes: bytes) -> dict[str, Any]:
-        """Creates the document row in 'processing' state and uploads the PDF to storage.
-
-        Runs synchronously during the upload request so the client immediately
-        gets a trackable document record. Rolls the row back if the storage
-        upload fails.
-        """
         supabase = get_supabase_client()
         doc_data = {'user_id': user_id, 'filename': filename, 'file_size': file_size, 'total_pages': 0, 'status': 'processing', 'is_active': True}
         doc_response = supabase.table('documents').insert(doc_data).execute()
@@ -176,15 +147,6 @@ class PDFIngestionService:
         return document_record
 
     def process_document(self, document_id: str, user_id: str, filename: str, pdf_bytes: bytes, batch_size: int = 100) -> None:
-        """Runs the ingestion pipeline for a registered document in the background.
-
-        Parses paragraphs, generates QUESTIONS_PER_PARAGRAPH synthetic
-        questions per paragraph (HyDE), embeds all chunks, stores them,
-        locks the embedding config, and marks the document 'ready'. LLM
-        provider rate limits and other failures are logged and result in a
-        'failed' status instead of raising, since this runs as a
-        fire-and-forget background task.
-        """
         supabase = get_supabase_client()
         try:
             chunks = self.parse_pdf_bytes(pdf_bytes, filename)
@@ -202,12 +164,6 @@ class PDFIngestionService:
             supabase.table('documents').update({'status': 'failed'}).eq('id', document_id).execute()
 
     def _attach_synthetic_questions(self, chunks: list[DocumentChunkDTO], llm: BaseChatModel) -> list[DocumentChunkDTO]:
-        """Expands paragraph chunks with their synthetic question chunks.
-
-        Question chunks link to the original paragraph via 'parent_chunk_id'.
-        Uses ThreadPoolExecutor to generate questions for multiple chunks concurrently,
-        drastically reducing ingestion time.
-        """
         expanded: list[DocumentChunkDTO] = []
         
         def process_single_chunk(chunk: DocumentChunkDTO) -> list[DocumentChunkDTO]:
@@ -229,7 +185,6 @@ class PDFIngestionService:
             return chunk_results
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_LLM_REQUESTS) as executor:
-            # Map preserves order of chunks, which is good for logical continuity
             results = executor.map(process_single_chunk, chunks)
             for chunk_results in results:
                 expanded.extend(chunk_results)
