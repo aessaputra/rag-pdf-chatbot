@@ -90,6 +90,70 @@ def test_pdf_ingestion_removes_boilerplate_headers():
         assert chunk.metadata["line_end"] == 3
 
 
+# ── HyDE Question Generation ────────────────────────────────────────
+
+def test_generate_questions_should_parse_numbered_list_into_five_questions():
+    """Verify a clean numbered LLM response yields exactly 5 questions."""
+    mock_llm = MagicMock()
+    mock_llm.invoke.return_value = MagicMock(
+        content=(
+            "1. Apa itu RAG?\n"
+            "2. Bagaimana RAG meningkatkan akurasi?\n"
+            "3. Apa peran vektor dalam RAG?\n"
+            "4. Kapan RAG digunakan?\n"
+            "5. Mengapa RAG membutuhkan embedding?"
+        )
+    )
+
+    ingestion_service = PDFIngestionService()
+    questions = ingestion_service.generate_questions("Paragraf tentang RAG.", mock_llm)
+
+    assert questions == [
+        "Apa itu RAG?",
+        "Bagaimana RAG meningkatkan akurasi?",
+        "Apa peran vektor dalam RAG?",
+        "Kapan RAG digunakan?",
+        "Mengapa RAG membutuhkan embedding?",
+    ]
+
+
+def test_generate_questions_should_tolerate_messy_llm_output():
+    """Verify preamble lines, bullets, quotes, and extra questions are cleaned up."""
+    mock_llm = MagicMock()
+    mock_llm.invoke.return_value = MagicMock(
+        content=(
+            "Berikut lima pertanyaan:\n"
+            "- \"Apa itu RAG?\"\n"
+            "2) Bagaimana RAG bekerja?\n"
+            "3. Apa itu embedding?\n"
+            "* Apa itu vektor?\n"
+            "5. Mengapa perlu chunking?\n"
+            "6. Pertanyaan keenam yang harus dibuang?"
+        )
+    )
+
+    ingestion_service = PDFIngestionService()
+    questions = ingestion_service.generate_questions("Paragraf tentang RAG.", mock_llm)
+
+    assert questions == [
+        "Apa itu RAG?",
+        "Bagaimana RAG bekerja?",
+        "Apa itu embedding?",
+        "Apa itu vektor?",
+        "Mengapa perlu chunking?",
+    ]
+
+
+def test_generate_questions_should_raise_on_unparseable_llm_output():
+    """Verify an empty or question-less LLM response is treated as generation failure."""
+    mock_llm = MagicMock()
+    mock_llm.invoke.return_value = MagicMock(content="")
+
+    ingestion_service = PDFIngestionService()
+    with pytest.raises(ValueError):
+        ingestion_service.generate_questions("Paragraf tentang RAG.", mock_llm)
+
+
 # ── Background Document Processing ──────────────────────────────────
 
 MOCK_USER_ID = "11111111-2222-3333-4444-555555555555"
@@ -143,24 +207,50 @@ def _build_pdf_with_text(pages: list[list[str]]) -> bytes:
 
 
 def _make_supabase_mock() -> tuple[MagicMock, dict[str, MagicMock]]:
-    tables = {name: MagicMock() for name in ("documents", "document_chunks", "user_embedding_configs")}
+    tables = {name: MagicMock() for name in ("documents", "document_chunks", "user_embedding_configs", "user_provider_configs")}
     supabase = MagicMock()
     supabase.table.side_effect = lambda name: tables[name]
     return supabase, tables
 
 
-@patch("app.services.ingestion_service.LLMFactory.get_embeddings_for_config")
-@patch("app.services.ingestion_service.get_supabase_client")
-def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_supabase, mock_get_embeddings):
-    """Verify background processing embeds parsed paragraphs and marks the document ready."""
-    mock_supabase, tables = _make_supabase_mock()
-    mock_get_supabase.return_value = mock_supabase
+def _configure_default_provider_config(tables: dict[str, MagicMock]) -> None:
+    tables["user_provider_configs"].select.return_value.eq.return_value.order.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
+        data=[{"provider": "gemini", "model_name": "gemini-2.5-flash"}]
+    )
+
+
+def _configure_embedding_config(tables: dict[str, MagicMock]) -> None:
     tables["user_embedding_configs"].select.return_value.eq.return_value.execute.return_value = MagicMock(
         data=[{"provider": "gemini", "model_name": "models/gemini-embedding-001", "embedding_dimensions": 768}]
     )
 
+
+@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
+@patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
+@patch("app.services.rag_service.get_supabase_client")
+@patch("app.services.ingestion_service.get_supabase_client")
+def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm):
+    """Verify background processing stores paragraph + 5 question chunks with shared line metadata."""
+    mock_supabase, tables = _make_supabase_mock()
+    mock_get_supabase.return_value = mock_supabase
+    mock_rag_supabase.return_value = mock_supabase
+    _configure_default_provider_config(tables)
+    _configure_embedding_config(tables)
+
+    mock_llm = MagicMock()
+    mock_llm.invoke.return_value = MagicMock(
+        content=(
+            "1. Apa itu alpha?\n"
+            "2. Apa itu beta?\n"
+            "3. Bagaimana alpha bekerja?\n"
+            "4. Kapan beta digunakan?\n"
+            "5. Mengapa alpha penting?"
+        )
+    )
+    mock_get_llm.return_value = mock_llm
+
     mock_embeddings = MagicMock()
-    mock_embeddings.embed_documents.return_value = [[0.1, 0.2, 0.3]]
+    mock_embeddings.embed_documents.return_value = [[0.1, 0.2, 0.3]] * 6
     mock_get_embeddings.return_value = mock_embeddings
 
     pdf_bytes = _build_pdf_with_text([["Alpha paragraph text.", "Beta continues here."]])
@@ -173,19 +263,72 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
         pdf_bytes=pdf_bytes,
     )
 
+    paragraph_content = "Alpha paragraph text.\nBeta continues here."
     inserted_records = tables["document_chunks"].insert.call_args[0][0]
-    assert len(inserted_records) == 1
-    assert inserted_records[0]["document_id"] == MOCK_DOC_ID
-    assert inserted_records[0]["user_id"] == MOCK_USER_ID
-    assert inserted_records[0]["content"] == "Alpha paragraph text.\nBeta continues here."
-    assert inserted_records[0]["page_number"] == 1
-    assert inserted_records[0]["metadata"]["line_start"] == 1
-    assert inserted_records[0]["metadata"]["line_end"] == 2
-    assert inserted_records[0]["metadata"]["type"] == "paragraph"
-    assert inserted_records[0]["embedding"] == [0.1, 0.2, 0.3]
+    assert len(inserted_records) == 6
+
+    paragraph_record = inserted_records[0]
+    assert paragraph_record["document_id"] == MOCK_DOC_ID
+    assert paragraph_record["user_id"] == MOCK_USER_ID
+    assert paragraph_record["content"] == paragraph_content
+    assert paragraph_record["page_number"] == 1
+    assert paragraph_record["metadata"]["line_start"] == 1
+    assert paragraph_record["metadata"]["line_end"] == 2
+    assert paragraph_record["metadata"]["type"] == "paragraph"
+    assert "paragraph_content" not in paragraph_record["metadata"]
+
+    expected_questions = [
+        "Apa itu alpha?",
+        "Apa itu beta?",
+        "Bagaimana alpha bekerja?",
+        "Kapan beta digunakan?",
+        "Mengapa alpha penting?",
+    ]
+    for record, question in zip(inserted_records[1:], expected_questions):
+        assert record["content"] == question
+        assert record["metadata"]["type"] == "question"
+        assert record["metadata"]["filename"] == "paper.pdf"
+        assert record["metadata"]["page_number"] == 1
+        assert record["metadata"]["line_start"] == 1
+        assert record["metadata"]["line_end"] == 2
+        assert record["metadata"]["paragraph_content"] == paragraph_content
+
+    mock_embeddings.embed_documents.assert_called_once()
+    embedded_texts = mock_embeddings.embed_documents.call_args[0][0]
+    assert embedded_texts == [paragraph_content, *expected_questions]
 
     tables["user_embedding_configs"].update.assert_called_once_with({"locked": True})
     tables["documents"].update.assert_called_once_with({"status": "ready", "total_pages": 1})
+
+
+@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
+@patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
+@patch("app.services.rag_service.get_supabase_client")
+@patch("app.services.ingestion_service.get_supabase_client")
+def test_process_document_should_mark_failed_when_llm_rate_limit_exhausted(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm):
+    """Verify an LLM rate-limit failure during question generation marks the document failed."""
+    mock_supabase, tables = _make_supabase_mock()
+    mock_get_supabase.return_value = mock_supabase
+    mock_rag_supabase.return_value = mock_supabase
+    _configure_default_provider_config(tables)
+    _configure_embedding_config(tables)
+
+    mock_llm = MagicMock()
+    mock_llm.invoke.side_effect = Exception("429 Too Many Requests: rate limit exhausted")
+    mock_get_llm.return_value = mock_llm
+
+    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text.", "Beta continues here."]])
+
+    ingestion_service = PDFIngestionService()
+    ingestion_service.process_document(
+        document_id=MOCK_DOC_ID,
+        user_id=MOCK_USER_ID,
+        filename="paper.pdf",
+        pdf_bytes=pdf_bytes,
+    )
+
+    tables["documents"].update.assert_called_once_with({"status": "failed"})
+    tables["document_chunks"].insert.assert_not_called()
 
 
 @patch("app.services.ingestion_service.get_supabase_client")

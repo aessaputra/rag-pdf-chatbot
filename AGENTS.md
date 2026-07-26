@@ -165,7 +165,7 @@ cd backend
 venv\Scripts\activate   # Windows
 source venv/bin/activate  # Linux/macOS
 
-# Run all tests (55 tests across 10 test files)
+# Run all tests (59 tests across 10 test files)
 python -m pytest tests/ -v
 
 # Run a specific test file
@@ -181,7 +181,7 @@ python -m pytest tests/test_settings_router.py -v
 | `test_crypto.py` | 5 | AES-256-GCM encryption/decryption, nonces, masking |
 | `test_document_management.py` | 9 | Document list/toggle/preview/delete endpoints & StorageService |
 | `test_embedding_migration.py` | 2 | Flexible unconstrained vector formatting & embedding schema |
-| `test_ingestion.py` | 5 | Paragraph chunking with line metadata, boilerplate removal, background document processing |
+| `test_ingestion.py` | 9 | Paragraph chunking, HyDE question generation, background document processing (happy + LLM rate limit + unparsable PDF) |
 | `test_llm_factory.py` | 4 | Dynamic BYOK instantiation (Gemini, OpenAI, OpenRouter, Custom) |
 | `test_rag.py` | 10 | RAG SSE streaming, citation extraction, prompt engineering patterns |
 | `test_routers.py` | 4 | FastAPI endpoint health, auth integration & async upload dispatch |
