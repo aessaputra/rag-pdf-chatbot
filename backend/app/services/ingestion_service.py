@@ -109,7 +109,7 @@ class PDFIngestionService:
             all_chunks.extend(page_chunks)
         return all_chunks
 
-    def generate_questions(self, paragraph_content: str, llm: BaseChatModel) -> list[str]:
+    def generate_questions(self, paragraph_content: str, llm: BaseChatModel, attempt: int = 1) -> list[str]:
         """Generates up to QUESTIONS_PER_PARAGRAPH synthetic HyDE questions via the user's LLM.
 
         The prompt asks for exactly QUESTIONS_PER_PARAGRAPH questions; the
@@ -123,6 +123,9 @@ class PDFIngestionService:
         raw_text = response.content if hasattr(response, 'content') else str(response)
         questions = self._parse_questions(raw_text)
         if not questions:
+            if attempt < 3:
+                # Retry up to 3 attempts, matching Index-RAG implementation
+                return self.generate_questions(paragraph_content, llm, attempt + 1)
             raise ValueError('LLM tidak menghasilkan pertanyaan sintetis yang valid.')
         return questions[:QUESTIONS_PER_PARAGRAPH]
 
