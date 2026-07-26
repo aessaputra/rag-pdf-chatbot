@@ -1,13 +1,13 @@
-import io
 import logging
 import re
 import uuid
 from collections import Counter
 from typing import Any
 
+import fitz
+import pymupdf4llm
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
-from pypdf import PdfReader
 from supabase import Client
 
 from app.database import get_supabase_client
@@ -99,8 +99,10 @@ class PDFIngestionService:
         return frozenset(line for line, count in line_counts.items() if count >= threshold)
 
     def parse_pdf_bytes(self, pdf_bytes: bytes, filename: str) -> list[DocumentChunkDTO]:
-        pdf_reader = PdfReader(io.BytesIO(pdf_bytes))
-        raw_pages_text = [page.extract_text() or '' for page in pdf_reader.pages]
+        doc = fitz.Document(stream=pdf_bytes, filetype="pdf")
+        md_pages = pymupdf4llm.to_markdown(doc, page_chunks=True)
+        raw_pages_text = [page.get("text", "") for page in md_pages]
+        
         boilerplate = self._identify_boilerplate_lines(raw_pages_text)
         all_chunks: list[DocumentChunkDTO] = []
         for page_index, page_text in enumerate(raw_pages_text):
@@ -124,7 +126,6 @@ class PDFIngestionService:
         questions = self._parse_questions(raw_text)
         if not questions:
             if attempt < 3:
-                # Retry up to 3 attempts, matching Index-RAG implementation
                 return self.generate_questions(paragraph_content, llm, attempt + 1)
             raise ValueError('LLM tidak menghasilkan pertanyaan sintetis yang valid.')
         return questions[:QUESTIONS_PER_PARAGRAPH]

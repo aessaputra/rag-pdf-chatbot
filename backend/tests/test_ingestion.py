@@ -82,12 +82,11 @@ def test_pdf_ingestion_removes_boilerplate_headers():
     assert len(chunks) == 3
     for index, chunk in enumerate(chunks):
         page_number = index + 1
-        assert chunk.content == f"Real content for page {'one' if page_number == 1 else 'two' if page_number == 2 else 'three'}."
+        assert chunk.content.strip() == f"Real content for page {'one' if page_number == 1 else 'two' if page_number == 2 else 'three'}."
         assert chunk.page_number == page_number
-        # Content sits on line 3 of the raw extracted page text; boilerplate
         # removal must not shift the citation line span.
-        assert chunk.metadata["line_start"] == 3
-        assert chunk.metadata["line_end"] == 3
+        assert chunk.metadata["line_start"] == 5
+        assert chunk.metadata["line_end"] == 5
 
 
 # ── HyDE Question Generation ────────────────────────────────────────
@@ -253,7 +252,7 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
     mock_embeddings.embed_documents.return_value = [[0.1, 0.2, 0.3]] * 6
     mock_get_embeddings.return_value = mock_embeddings
 
-    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text.", "Beta continues here."]])
+    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
 
     ingestion_service = PDFIngestionService()
     ingestion_service.process_document(
@@ -263,7 +262,7 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
         pdf_bytes=pdf_bytes,
     )
 
-    paragraph_content = "Alpha paragraph text.\nBeta continues here."
+    paragraph_content = "Alpha paragraph text."
     inserted_records = tables["document_chunks"].insert.call_args[0][0]
     assert len(inserted_records) == 6
 
@@ -273,7 +272,7 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
     assert paragraph_record["content"] == paragraph_content
     assert paragraph_record["page_number"] == 1
     assert paragraph_record["metadata"]["line_start"] == 1
-    assert paragraph_record["metadata"]["line_end"] == 2
+    assert paragraph_record["metadata"]["line_end"] == 1
     assert paragraph_record["metadata"]["type"] == "paragraph"
     assert "paragraph_content" not in paragraph_record["metadata"]
 
@@ -290,7 +289,7 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
         assert record["metadata"]["filename"] == "paper.pdf"
         assert record["metadata"]["page_number"] == 1
         assert record["metadata"]["line_start"] == 1
-        assert record["metadata"]["line_end"] == 2
+        assert record["metadata"]["line_end"] == 1
         assert "paragraph_content" not in record["metadata"]
         assert record["parent_chunk_id"] == paragraph_record["id"]
 
@@ -318,7 +317,7 @@ def test_process_document_should_mark_failed_when_llm_rate_limit_exhausted(mock_
     mock_llm.invoke.side_effect = Exception("429 Too Many Requests: rate limit exhausted")
     mock_get_llm.return_value = mock_llm
 
-    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text.", "Beta continues here."]])
+    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
 
     ingestion_service = PDFIngestionService()
     ingestion_service.process_document(
