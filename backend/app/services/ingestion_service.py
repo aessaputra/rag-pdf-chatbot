@@ -1,19 +1,20 @@
+import asyncio
+import inspect
 import logging
 import re
 import uuid
-import asyncio
 from collections import Counter
 from typing import Any
 
 import fitz
 import pymupdf4llm
+from asyncer import asyncify
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from langchain_core.rate_limiters import InMemoryRateLimiter
-from supabase import Client
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from app.database import get_supabase_client
+from app.database import execute_query, get_supabase_client
 from app.schemas import DocumentChunkDTO
 from app.services.rag_service import initialize_user_models
 from app.services.storage_service import StorageService
@@ -133,45 +134,47 @@ class PDFIngestionService:
             questions.append(stripped)
         return questions
 
-    def register_document(self, filename: str, file_size: int, user_id: str, pdf_bytes: bytes) -> dict[str, Any]:
-        supabase = get_supabase_client()
+    async def register_document(self, filename: str, file_size: int, user_id: str, pdf_bytes: bytes) -> dict[str, Any]:
+        supabase = await get_supabase_client()
         doc_data = {'user_id': user_id, 'filename': filename, 'file_size': file_size, 'total_pages': 0, 'status': 'processing', 'is_active': True}
-        doc_response = supabase.table('documents').insert(doc_data).execute()
+        doc_response = await execute_query(supabase.table('documents').insert(doc_data))
         document_record = doc_response.data[0]
         document_id = document_record['id']
         try:
-            file_path = StorageService.upload_file(user_id, document_id, pdf_bytes)
+            file_path = await StorageService.upload_file(user_id, document_id, pdf_bytes)
         except Exception:
-            supabase.table('documents').delete().eq('id', document_id).eq('user_id', user_id).execute()
+            await execute_query(supabase.table('documents').delete().eq('id', document_id).eq('user_id', user_id))
             raise
-        supabase.table('documents').update({'file_path': file_path}).eq('id', document_id).execute()
+        await execute_query(supabase.table('documents').update({'file_path': file_path}).eq('id', document_id))
         document_record['file_path'] = file_path
         return document_record
 
     async def process_document(self, document_id: str, user_id: str, filename: str, pdf_bytes: bytes, batch_size: int = 100) -> None:
-        supabase = get_supabase_client()
+        supabase = await get_supabase_client()
         try:
-            chunks = await asyncio.to_thread(self.parse_pdf_bytes, pdf_bytes, filename)
+            chunks = await asyncify(self.parse_pdf_bytes)(pdf_bytes, filename)
             if not chunks:
                 raise ValueError('Could not extract readable text from PDF.')
-            llm, embeddings_model = await asyncio.to_thread(initialize_user_models, user_id)
+            llm, embeddings_model = await initialize_user_models(user_id)
             llm.rate_limiter = _RATE_LIMITER
             expanded_chunks = await self._attach_synthetic_questions(chunks, llm)
-            await asyncio.to_thread(self._store_chunks, supabase, document_id, user_id, expanded_chunks, embeddings_model, batch_size)
-            await asyncio.to_thread(lambda: supabase.table('user_embedding_configs').update({'locked': True}).eq('user_id', user_id).execute())
+            await self._store_chunks(supabase, document_id, user_id, expanded_chunks, embeddings_model, batch_size)
+            await execute_query(supabase.table('user_embedding_configs').update({'locked': True}).eq('user_id', user_id))
             total_pages = max(chunk.page_number for chunk in chunks)
-            await asyncio.to_thread(lambda: supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id).execute())
+            await execute_query(supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id))
             logger.info('Document %s processed: %d chunks stored (%d paragraphs).', document_id, len(expanded_chunks), len(chunks))
         except Exception:
             logger.exception('Document %s processing failed.', document_id)
-            await asyncio.to_thread(lambda: supabase.table('documents').update({'status': 'failed'}).eq('id', document_id).execute())
+            await execute_query(supabase.table('documents').update({'status': 'failed'}).eq('id', document_id))
 
     async def _attach_synthetic_questions(self, chunks: list[DocumentChunkDTO], llm: BaseChatModel) -> list[DocumentChunkDTO]:
         expanded: list[DocumentChunkDTO] = []
+        semaphore = asyncio.Semaphore(3)
         
         async def process_single_chunk(chunk: DocumentChunkDTO) -> list[DocumentChunkDTO]:
             chunk_results = [chunk]
-            questions = await self.generate_questions(chunk.content, llm)
+            async with semaphore:
+                questions = await self.generate_questions(chunk.content, llm)
             for question in questions:
                 chunk_results.append(DocumentChunkDTO(
                     id=str(uuid.uuid4()),
@@ -194,9 +197,19 @@ class PDFIngestionService:
                 
         return expanded
 
-    def _store_chunks(self, supabase: Client, document_id: str, user_id: str, chunks: list[DocumentChunkDTO], embeddings_model: Embeddings, batch_size: int) -> None:
+    async def _store_chunks(self, supabase: Any, document_id: str, user_id: str, chunks: list[DocumentChunkDTO], embeddings_model: Embeddings, batch_size: int) -> None:
         chunk_texts = [chunk.metadata.get('question', chunk.content) if chunk.metadata.get('type') == 'question' else chunk.content for chunk in chunks]
-        vector_embeddings = embeddings_model.embed_documents(chunk_texts)
+        async_embed_documents = getattr(embeddings_model, 'aembed_documents', None)
+        if async_embed_documents:
+            async_result = async_embed_documents(chunk_texts)
+            if inspect.isawaitable(async_result):
+                vector_embeddings = await async_result
+            elif isinstance(async_result, list):
+                vector_embeddings = async_result
+            else:
+                vector_embeddings = await asyncify(embeddings_model.embed_documents)(chunk_texts)
+        else:
+            vector_embeddings = await asyncify(embeddings_model.embed_documents)(chunk_texts)
         chunk_records = []
         for chunk, embedding_vector in zip(chunks, vector_embeddings):
             chunk_records.append({
@@ -211,5 +224,5 @@ class PDFIngestionService:
             })
         for i in range(0, len(chunk_records), batch_size):
             batch = chunk_records[i:i + batch_size]
-            supabase.table('document_chunks').insert(batch).execute()
+            await execute_query(supabase.table('document_chunks').insert(batch))
 

@@ -6,7 +6,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # Supabase Configuration
     SUPABASE_URL: str = Field(alias="SUPABASE_URL")
     SUPABASE_SECRET_KEY: str = Field(
         validation_alias=AliasChoices("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"),
@@ -15,14 +14,11 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str = Field("placeholder_jwt_secret", alias="SUPABASE_JWT_SECRET")
     SUPABASE_JWT_AUDIENCE: str = Field("authenticated", alias="SUPABASE_JWT_AUDIENCE")
 
-    # Encryption Configuration
     SETTINGS_ENCRYPTION_KEY: str = Field(
         "default_secret_key_32_bytes_long_123456",
         alias="SETTINGS_ENCRYPTION_KEY",
         description="32-byte secret key for AES-256-GCM BYOK API key encryption"
     )
-
-    # LLM Provider Configuration
 
     DEFAULT_LLM_PROVIDER: Literal["gemini", "openai", "ollama"] = Field("gemini", alias="DEFAULT_LLM_PROVIDER")
     GEMINI_API_KEY: str = Field("placeholder_gemini_key", alias="GEMINI_API_KEY")
@@ -41,5 +37,4 @@ def get_settings() -> Settings:
     return Settings()
 
 
-# Singleton settings instance export
 settings = get_settings()

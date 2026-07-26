@@ -3,11 +3,10 @@ from collections.abc import AsyncIterable
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.concurrency import run_in_threadpool
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 
 from app.auth import CurrentUserDep
-from app.database import get_supabase_client
+from app.database import execute_query, get_supabase_client
 from app.schemas import (
     ChatMessageResponse,
     ChatQueryRequest,
@@ -53,11 +52,11 @@ def parse_citations(citations_raw: Any) -> list[Citation]:
     return []
 
 
-def get_rag_service(
+async def get_rag_service(
     user: CurrentUserDep,
     request: ChatQueryRequest,
 ) -> RAGService:
-    llm, embeddings_model = initialize_user_models(
+    llm, embeddings_model = await initialize_user_models(
         user_id=user.user_id,
         provider=request.provider,
     )
@@ -80,16 +79,15 @@ async def _stream_with_session(
     request: ChatQueryRequest,
     user_id: str,
 ) -> AsyncIterable[ServerSentEvent]:
-    # Auto-create or resolve session
     active_session_id = request.session_id
     try:
-        supabase = get_supabase_client()
+        supabase = await get_supabase_client()
         if not active_session_id:
             title = request.query[:30] + ("…" if len(request.query) > 30 else "")
-            sess_res = supabase.table("chat_sessions").insert({
+            sess_res = await execute_query(supabase.table("chat_sessions").insert({
                 "user_id": user_id,
                 "title": title,
-            }).execute()
+            }))
             if sess_res.data:
                 active_session_id = str(sess_res.data[0]["id"])
     except Exception as e:
@@ -98,18 +96,16 @@ async def _stream_with_session(
     if active_session_id:
         yield ServerSentEvent(data={"session_id": active_session_id}, event="session")
 
-    # Delegate to RAGService stream
     async for event in service.generate_rag_stream(
         query=request.query,
         document_ids=request.document_ids,
     ):
         yield event
 
-    # Persist messages to database
     if active_session_id and service.last_response:
         try:
-            supabase = get_supabase_client()
-            supabase.table("chat_messages").insert([
+            supabase = await get_supabase_client()
+            await execute_query(supabase.table("chat_messages").insert([
                 {
                     "session_id": active_session_id,
                     "user_id": user_id,
@@ -124,7 +120,7 @@ async def _stream_with_session(
                     "content": service.last_response,
                     "citations": service.last_citations,
                 },
-            ]).execute()
+            ]))
         except Exception as e:
             logger.warning(
                 "Failed to persist chat messages for session %s: %s",
@@ -145,27 +141,23 @@ async def stream_chat_response(
 
 @router.get("/sessions", response_model=list[ChatSessionResponse])
 async def list_chat_sessions(user: CurrentUserDep) -> list[ChatSessionResponse]:
-    def fetch_sessions() -> list[ChatSessionResponse]:
-        supabase = get_supabase_client()
-        response = (
-            supabase.table("chat_sessions")
-            .select("*")
-            .eq("user_id", user.user_id)
-            .order("created_at", desc=True)
-            .execute()
+    supabase = await get_supabase_client()
+    response = await execute_query(
+        supabase.table("chat_sessions")
+        .select("*")
+        .eq("user_id", user.user_id)
+        .order("created_at", desc=True)
+    )
+    records = response.data if response.data else []
+    return [
+        ChatSessionResponse(
+            id=str(r["id"]),
+            user_id=str(r["user_id"]),
+            title=r.get("title", "Percakapan"),
+            created_at=str(r["created_at"]),
         )
-        records = response.data if response.data else []
-        return [
-            ChatSessionResponse(
-                id=str(r["id"]),
-                user_id=str(r["user_id"]),
-                title=r.get("title", "Percakapan"),
-                created_at=str(r["created_at"]),
-            )
-            for r in records
-        ]
-
-    return await run_in_threadpool(fetch_sessions)
+        for r in records
+    ]
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
@@ -173,31 +165,27 @@ async def list_session_messages(
     session_id: str,
     user: CurrentUserDep,
 ) -> list[ChatMessageResponse]:
-    def fetch_messages() -> list[ChatMessageResponse]:
-        supabase = get_supabase_client()
-        response = (
-            supabase.table("chat_messages")
-            .select("*")
-            .eq("session_id", session_id)
-            .eq("user_id", user.user_id)
-            .order("created_at", desc=False)
-            .execute()
+    supabase = await get_supabase_client()
+    response = await execute_query(
+        supabase.table("chat_messages")
+        .select("*")
+        .eq("session_id", session_id)
+        .eq("user_id", user.user_id)
+        .order("created_at", desc=False)
+    )
+    records = response.data if response.data else []
+    return [
+        ChatMessageResponse(
+            id=str(r["id"]),
+            session_id=str(r["session_id"]),
+            user_id=str(r["user_id"]),
+            sender=r["sender"],
+            content=r["content"],
+            citations=parse_citations(r.get("citations")),
+            created_at=str(r["created_at"]),
         )
-        records = response.data if response.data else []
-        return [
-            ChatMessageResponse(
-                id=str(r["id"]),
-                session_id=str(r["session_id"]),
-                user_id=str(r["user_id"]),
-                sender=r["sender"],
-                content=r["content"],
-                citations=parse_citations(r.get("citations")),
-                created_at=str(r["created_at"]),
-            )
-            for r in records
-        ]
-
-    return await run_in_threadpool(fetch_messages)
+        for r in records
+    ]
 
 
 @router.post("/sessions", response_model=ChatSessionResponse, status_code=status.HTTP_201_CREATED)
@@ -205,30 +193,24 @@ async def create_chat_session(
     user: CurrentUserDep,
     title: str | None = None,
 ) -> ChatSessionResponse:
-    def insert_session() -> ChatSessionResponse:
-        supabase = get_supabase_client()
-        data = {
-            "user_id": user.user_id,
-            "title": title or "Percakapan Baru",
-        }
-        response = supabase.table("chat_sessions").insert(data).execute()
-        if not response.data:
-            raise HTTPException(status_code=500, detail="Gagal membuat sesi percakapan.")
-        record = response.data[0]
-        return ChatSessionResponse(
-            id=str(record["id"]),
-            user_id=str(record["user_id"]),
-            title=record["title"],
-            created_at=str(record["created_at"]),
-        )
-
-    return await run_in_threadpool(insert_session)
+    supabase = await get_supabase_client()
+    data = {
+        "user_id": user.user_id,
+        "title": title or "Percakapan Baru",
+    }
+    response = await execute_query(supabase.table("chat_sessions").insert(data))
+    if not response.data:
+        raise HTTPException(status_code=500, detail="Gagal membuat sesi percakapan.")
+    record = response.data[0]
+    return ChatSessionResponse(
+        id=str(record["id"]),
+        user_id=str(record["user_id"]),
+        title=record["title"],
+        created_at=str(record["created_at"]),
+    )
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_chat_session(session_id: str, user: CurrentUserDep) -> None:
-    def remove_session() -> None:
-        supabase = get_supabase_client()
-        supabase.table("chat_sessions").delete().eq("id", session_id).eq("user_id", user.user_id).execute()
-
-    await run_in_threadpool(remove_session)
+    supabase = await get_supabase_client()
+    await execute_query(supabase.table("chat_sessions").delete().eq("id", session_id).eq("user_id", user.user_id))

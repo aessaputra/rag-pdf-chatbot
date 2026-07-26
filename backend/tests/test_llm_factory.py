@@ -3,6 +3,7 @@ Unit tests for BYOK LLMFactory dynamic provider and embedding model creation
 """
 
 import pytest
+
 from app.services.crypto_service import CryptoService
 from app.services.llm_factory import LLMFactory
 
@@ -75,3 +76,13 @@ def test_llm_factory_embeddings_creation():
     assert embeddings is not None
     assert embeddings.model == "text-embedding-3-small"
     assert embeddings.dimensions == 1536
+
+
+def test_llm_factory_rejects_missing_api_key():
+    with pytest.raises(ValueError, match="API key is required"):
+        LLMFactory.get_llm_for_config({"provider": "openai", "model_name": "gpt-4o-mini"})
+
+
+def test_embedding_factory_rejects_missing_api_key():
+    with pytest.raises(ValueError, match="API key is required"):
+        LLMFactory.get_embeddings_for_config({"provider": "gemini", "model_name": "models/gemini-embedding-001"})

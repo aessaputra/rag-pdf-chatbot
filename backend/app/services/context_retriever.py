@@ -1,9 +1,11 @@
+import inspect
 import logging
 from typing import Any
 
+from asyncer import asyncify
 from langchain_core.embeddings import Embeddings
 
-from app.database import get_supabase_client
+from app.database import execute_query, get_supabase_client
 from app.schemas import Citation
 
 logger = logging.getLogger(__name__)
@@ -44,11 +46,21 @@ class ContextRetriever:
                 merged.append(r)
         return merged
 
-    def retrieve_relevant_chunks(self, query: str, top_k: int=4, fetch_k: int=20, lambda_mult: float=0.5, document_ids: list[str] | None=None) -> list[dict[str, Any]]:
-        supabase = get_supabase_client()
-        query_embedding = self.embeddings_model.embed_query(query)
+    async def retrieve_relevant_chunks(self, query: str, top_k: int=4, fetch_k: int=20, lambda_mult: float=0.5, document_ids: list[str] | None=None) -> list[dict[str, Any]]:
+        supabase = await get_supabase_client()
+        async_embed_query = getattr(self.embeddings_model, "aembed_query", None)
+        if async_embed_query:
+            async_result = async_embed_query(query)
+            if inspect.isawaitable(async_result):
+                query_embedding = await async_result
+            elif isinstance(async_result, list):
+                query_embedding = async_result
+            else:
+                query_embedding = await asyncify(self.embeddings_model.embed_query)(query)
+        else:
+            query_embedding = await asyncify(self.embeddings_model.embed_query)(query)
         rpc_params = {'query_embedding': query_embedding, 'match_count': fetch_k, 'filter_user_id': self.user_id}
-        response = supabase.rpc('match_document_chunks', rpc_params).execute()
+        response = await execute_query(supabase.rpc('match_document_chunks', rpc_params))
         results = response.data if response.data else []
         if document_ids:
             results = [r for r in results if r.get('document_id') in document_ids]

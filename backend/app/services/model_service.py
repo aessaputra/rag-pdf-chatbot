@@ -1,10 +1,3 @@
-"""
-Model Service Module
-
-Provides 100% dynamic live model discovery and real-time vector probing directly from LLM provider REST APIs
-(Google Gemini, OpenAI, OpenRouter, Ollama, OpenAI-Compatible). Zero hardcoded model lists.
-"""
-
 import logging
 from typing import Any
 
@@ -16,8 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class ModelService:
-    """Service for 100% dynamic live model discovery directly from provider REST APIs."""
-
     @classmethod
     async def fetch_available_models(
         cls,
@@ -26,22 +17,9 @@ class ModelService:
         base_url: str | None = None,
         model_type: str = "chat",
     ) -> dict[str, Any]:
-        """
-        Fetches live available models directly from provider REST API endpoints.
-        Zero hardcoded catalogs.
-
-        Returns:
-            Dict with keys:
-                - success (bool)
-                - models (List[str])
-                - default_model (str)
-                - probed_dimension (Optional[int])
-                - error (Optional[str])
-        """
         provider_norm = provider.lower().strip()
         is_embedding = model_type.lower().strip() == "embedding"
 
-        # OpenRouter public endpoint can be queried without an API key
         if not api_key and provider_norm == "openrouter":
             api_key = "public"
 
@@ -107,7 +85,6 @@ class ModelService:
         model_name: str,
         base_url: str | None = None,
     ) -> int:
-        """Sends a 1-token probe embedding request to detect vector dimension."""
         provider_norm = provider.lower().strip()
 
         if provider_norm == "gemini":
@@ -129,7 +106,6 @@ class ModelService:
 
     @staticmethod
     async def _fetch_gemini_models(api_key: str, is_embedding: bool) -> list[str]:
-        """Queries Google Gemini v1beta models endpoint live."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(url)
@@ -156,7 +132,6 @@ class ModelService:
         base_url: str | None,
         is_embedding: bool,
     ) -> list[str]:
-        """Queries OpenAI/OpenRouter models endpoint live."""
         if provider == "openrouter":
             url = "https://openrouter.ai/api/v1/models"
             headers = {}
@@ -186,7 +161,6 @@ class ModelService:
 
     @staticmethod
     async def _fetch_ollama_models(base_url: str) -> list[str]:
-        """Queries Ollama local tags endpoint live."""
         url = f"{base_url.rstrip('/')}/api/tags"
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(url)

@@ -5,13 +5,17 @@ Verifies prompt context assembly, citation metadata extraction, and SSE streamin
 Tests adapted for the decomposed module structure: ContextRetriever, PromptBuilder, RAGService.
 """
 
-from unittest.mock import MagicMock
+import asyncio
+import threading
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+
+from app.database import execute_query
 from app.schemas import Citation
 from app.services.context_retriever import ContextRetriever
 from app.services.prompt_builder import PromptBuilder
 from app.services.rag_service import RAGService
-
 
 # ── Shared Fixtures ─────────────────────────────────────────────────
 
@@ -61,11 +65,10 @@ async def test_generate_rag_stream_emits_valid_sse_events():
 
     mock_llm.astream = mock_astream
 
-    # Mock retriever
     mock_retriever = MagicMock()
-    mock_retriever.retrieve_relevant_chunks.return_value = [
+    mock_retriever.retrieve_relevant_chunks = AsyncMock(return_value=[
         {"content": "Mock text for SSE stream test.", "metadata": {"filename": "test.pdf", "page_number": 1}}
-    ]
+    ])
 
     service = RAGService(
         user_id="12345678-1234-1234-1234-123456789012",
@@ -90,6 +93,68 @@ async def test_generate_rag_stream_emits_valid_sse_events():
 
     # Verify last event is done
     assert events[-1].event == "done"
+
+
+@pytest.mark.asyncio
+async def test_context_retriever_awaits_async_embedding_and_rpc():
+    embeddings = MagicMock()
+    embeddings.aembed_query = AsyncMock(return_value=[0.1, 0.2])
+
+    rpc_result = MagicMock(data=[])
+    rpc_builder = MagicMock()
+    rpc_builder.execute = AsyncMock(return_value=rpc_result)
+    supabase = MagicMock()
+    supabase.rpc.return_value = rpc_builder
+
+    with patch("app.services.context_retriever.get_supabase_client", AsyncMock(return_value=supabase)):
+        retriever = ContextRetriever(embeddings_model=embeddings, user_id="user-1")
+        chunks = await retriever.retrieve_relevant_chunks("apa itu rag?")
+
+    assert chunks == []
+    embeddings.aembed_query.assert_awaited_once_with("apa itu rag?")
+    rpc_builder.execute.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_execute_query_offloads_sync_execute():
+    event_loop_thread = threading.get_ident()
+    execute_thread = None
+
+    class SyncBuilder:
+        def execute(self):
+            nonlocal execute_thread
+            execute_thread = threading.get_ident()
+            return MagicMock(data=[])
+
+    result = await execute_query(SyncBuilder())
+
+    assert result.data == []
+    assert execute_thread is not None
+    assert execute_thread != event_loop_thread
+
+
+@pytest.mark.asyncio
+async def test_context_retriever_awaits_awaitable_embedding_wrapper():
+    embeddings = MagicMock()
+
+    async def async_embed_query(query):
+        await asyncio.sleep(0)
+        return [0.1, 0.2]
+
+    embeddings.aembed_query = lambda query: async_embed_query(query)
+
+    rpc_result = MagicMock(data=[])
+    rpc_builder = MagicMock()
+    rpc_builder.execute = AsyncMock(return_value=rpc_result)
+    supabase = MagicMock()
+    supabase.rpc.return_value = rpc_builder
+
+    with patch("app.services.context_retriever.get_supabase_client", AsyncMock(return_value=supabase)):
+        retriever = ContextRetriever(embeddings_model=embeddings, user_id="user-1")
+        chunks = await retriever.retrieve_relevant_chunks("apa itu rag?")
+
+    assert chunks == []
+    embeddings.embed_query.assert_not_called()
 
 
 # ── New Tests: Prompt Engineering Patterns ───────────────────────────

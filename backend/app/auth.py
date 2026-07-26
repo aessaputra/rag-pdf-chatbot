@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Annotated
 
 import jwt
+from asyncer import asyncify
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
@@ -34,7 +35,7 @@ def _is_asymmetric_algorithm(algorithm: str) -> bool:
     return algorithm.startswith(ASYMMETRIC_PREFIXES) or algorithm == "EdDSA"
 
 
-def _decode_jwt_token(token: str, secret: str, audience: str) -> dict:
+async def _decode_jwt_token(token: str, secret: str, audience: str) -> dict:
     header = jwt.get_unverified_header(token)
     algorithm = header.get("alg", "HS256")
     kid = header.get("kid")
@@ -42,7 +43,7 @@ def _decode_jwt_token(token: str, secret: str, audience: str) -> dict:
     jwks_client = get_jwks_client() if kid and _is_asymmetric_algorithm(algorithm) else None
 
     if jwks_client:
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        signing_key = await asyncify(jwks_client.get_signing_key_from_jwt)(token)
         return jwt.decode(
             token,
             signing_key.key,
@@ -79,12 +80,12 @@ def _extract_user_payload(payload: dict) -> UserPayload:
     return UserPayload(user_id=user_id, email=email, role=role)
 
 
-def verify_supabase_token(token: str, secret: str | None = None) -> UserPayload:
+async def verify_supabase_token(token: str, secret: str | None = None) -> UserPayload:
     effective_secret = secret or settings.SUPABASE_JWT_SECRET
     audience = settings.SUPABASE_JWT_AUDIENCE
 
     try:
-        payload = _decode_jwt_token(token, effective_secret, audience)
+        payload = await _decode_jwt_token(token, effective_secret, audience)
         return _extract_user_payload(payload)
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -101,11 +102,11 @@ def verify_supabase_token(token: str, secret: str | None = None) -> UserPayload:
 
 CredentialsDep = Annotated[HTTPAuthorizationCredentials, Depends(security)]
 
-def get_current_user(
+async def get_current_user(
     credentials: CredentialsDep,
 ) -> UserPayload:
     """FastAPI dependency that extracts and verifies the current user from the Bearer token."""
-    return verify_supabase_token(credentials.credentials)
+    return await verify_supabase_token(credentials.credentials)
 
 
 CurrentUserDep = Annotated[UserPayload, Depends(get_current_user)]

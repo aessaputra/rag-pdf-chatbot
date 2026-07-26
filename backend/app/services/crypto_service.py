@@ -8,16 +8,14 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from app.config import settings
 
-# AES-GCM Cryptographic Constants
-NONCE_SIZE_BYTES = 12  # Recommended 96-bit nonce length for AES-GCM
-TAG_SIZE_BYTES = 16    # Default 128-bit authentication tag length
-MIN_PAYLOAD_BYTES = NONCE_SIZE_BYTES + TAG_SIZE_BYTES  # 28 bytes minimum
+NONCE_SIZE_BYTES = 12
+TAG_SIZE_BYTES = 16
+MIN_PAYLOAD_BYTES = NONCE_SIZE_BYTES + TAG_SIZE_BYTES
 
 
 class CryptoService:
     def __init__(self, secret_key: str | None = None):
         key_material = secret_key if secret_key is not None else settings.SETTINGS_ENCRYPTION_KEY
-        # Derive fixed 32-byte key via SHA-256 hash of secret string
         self.key = hashlib.sha256(key_material.encode("utf-8")).digest()
         self.aesgcm = AESGCM(self.key)
 

@@ -4,9 +4,8 @@ Covers toggle, preview, delete, and schema serialization.
 """
 
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.auth import get_current_user
@@ -172,6 +171,7 @@ def test_delete_document_with_storage_cleanup(mock_get_supabase, mock_storage_cl
     mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
         data=[{"id": MOCK_DOC_ID, "file_path": MOCK_FILE_PATH}]
     )
+    mock_storage_cls.delete_file = AsyncMock()
 
     app.dependency_overrides[get_current_user] = mock_user
     try:
@@ -210,7 +210,7 @@ def test_preview_document_returns_signed_url(mock_get_supabase, mock_storage_cls
     mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
         data=[{"id": MOCK_DOC_ID, "file_path": MOCK_FILE_PATH}]
     )
-    mock_storage_cls.create_signed_url.return_value = "https://storage.example.com/signed-url"
+    mock_storage_cls.create_signed_url = AsyncMock(return_value="https://storage.example.com/signed-url")
 
     app.dependency_overrides[get_current_user] = mock_user
     try:

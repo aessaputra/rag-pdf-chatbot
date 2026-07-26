@@ -10,7 +10,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS Middleware for Next.js Frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -24,7 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register API Routers
 app.include_router(document_router.router)
 app.include_router(chat_router.router)
 app.include_router(settings_router.router)

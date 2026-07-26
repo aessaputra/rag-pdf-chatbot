@@ -4,9 +4,10 @@ API Routers Integration Tests
 Verifies health check endpoint, CORS middleware, route protection, and upload file validations.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
+
 from app.auth import get_current_user
 from app.main import app
 from app.schemas import UserPayload
@@ -64,7 +65,7 @@ def test_upload_returns_201_immediately_and_defers_parsing(mock_get_supabase, mo
     mock_supabase.table.return_value.insert.return_value.execute.return_value = MagicMock(
         data=[{"id": MOCK_DOC_ID, "created_at": "2026-07-26T00:00:00+00:00"}]
     )
-    mock_storage_cls.upload_file.return_value = f"{MOCK_USER_ID}/{MOCK_DOC_ID}.pdf"
+    mock_storage_cls.upload_file = AsyncMock(return_value=f"{MOCK_USER_ID}/{MOCK_DOC_ID}.pdf")
 
     app.dependency_overrides[get_current_user] = _mock_user
     try:

@@ -2,10 +2,9 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile, status
-from fastapi.concurrency import run_in_threadpool
 
 from app.auth import CurrentUserDep
-from app.database import get_supabase_client
+from app.database import execute_query, get_supabase_client
 from app.schemas import (
     DocumentItemResponse,
     DocumentPreviewResponse,
@@ -33,7 +32,7 @@ async def upload_pdf_document(
     Registers a PDF document and dispatches ingestion to a background task.
 
     Creates the document row in 'processing' state and uploads the PDF to
-    Supabase Storage synchronously, then returns 201 immediately. Paragraph
+    Supabase Storage, then returns 201 immediately. Paragraph
     parsing, embedding, and vector storage run in the background; clients poll
     GET /api/documents to watch the status transition to 'ready' or 'failed'.
     """
@@ -53,8 +52,7 @@ async def upload_pdf_document(
     ingestion_service = PDFIngestionService()
 
     try:
-        document = await run_in_threadpool(
-            ingestion_service.register_document,
+        document = await ingestion_service.register_document(
             file.filename,
             len(pdf_bytes),
             user.user_id,
@@ -86,18 +84,14 @@ async def upload_pdf_document(
 
 @router.get("", response_model=list[DocumentItemResponse])
 async def list_user_documents(user: CurrentUserDep) -> list[DocumentItemResponse]:
-    def fetch_docs():
-        supabase = get_supabase_client()
-        res = (
-            supabase.table("documents")
-            .select("id, filename, file_size, total_pages, file_path, is_active, status, created_at")
-            .eq("user_id", user.user_id)
-            .order("created_at", desc=True)
-            .execute()
-        )
-        return res.data if res.data else []
-
-    data = await run_in_threadpool(fetch_docs)
+    supabase = await get_supabase_client()
+    res = await execute_query(
+        supabase.table("documents")
+        .select("id, filename, file_size, total_pages, file_path, is_active, status, created_at")
+        .eq("user_id", user.user_id)
+        .order("created_at", desc=True)
+    )
+    data = res.data if res.data else []
     return [DocumentItemResponse(**doc) for doc in data]
 
 
@@ -107,20 +101,14 @@ async def toggle_document_active(
     body: DocumentToggleRequest,
     user: CurrentUserDep,
 ) -> DocumentItemResponse:
-    def do_toggle():
-        supabase = get_supabase_client()
-        res = (
-            supabase.table("documents")
-            .update({"is_active": body.is_active})
-            .eq("id", document_id)
-            .eq("user_id", user.user_id)
-            .execute()
-        )
-        if not res.data:
-            return None
-        return res.data[0]
-
-    result = await run_in_threadpool(do_toggle)
+    supabase = await get_supabase_client()
+    res = await execute_query(
+        supabase.table("documents")
+        .update({"is_active": body.is_active})
+        .eq("id", document_id)
+        .eq("user_id", user.user_id)
+    )
+    result = res.data[0] if res.data else None
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -134,25 +122,19 @@ async def get_document_preview(
     document_id: str,
     user: CurrentUserDep,
 ) -> DocumentPreviewResponse:
-    def fetch_and_sign():
-        supabase = get_supabase_client()
-        res = (
-            supabase.table("documents")
-            .select("id, file_path")
-            .eq("id", document_id)
-            .eq("user_id", user.user_id)
-            .execute()
-        )
-        if not res.data:
-            return None, None
+    supabase = await get_supabase_client()
+    res = await execute_query(
+        supabase.table("documents")
+        .select("id, file_path")
+        .eq("id", document_id)
+        .eq("user_id", user.user_id)
+    )
+    if not res.data:
+        doc, signed_url = None, None
+    else:
         doc = res.data[0]
         file_path = doc.get("file_path")
-        if not file_path:
-            return doc, None
-        signed_url = StorageService.create_signed_url(file_path)
-        return doc, signed_url
-
-    doc, signed_url = await run_in_threadpool(fetch_and_sign)
+        signed_url = await StorageService.create_signed_url(file_path) if file_path else None
     if doc is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -171,37 +153,28 @@ async def delete_document(
     document_id: str,
     user: CurrentUserDep,
 ) -> None:
-    def remove_doc():
-        supabase = get_supabase_client()
-        # Fetch file_path before deletion
-        res = (
-            supabase.table("documents")
-            .select("id, file_path")
-            .eq("id", document_id)
-            .eq("user_id", user.user_id)
-            .execute()
-        )
-        if not res.data:
-            return False
-
+    supabase = await get_supabase_client()
+    res = await execute_query(
+        supabase.table("documents")
+        .select("id, file_path")
+        .eq("id", document_id)
+        .eq("user_id", user.user_id)
+    )
+    if not res.data:
+        found = False
+    else:
         file_path = res.data[0].get("file_path")
-
-        # Delete from storage first
         if file_path:
             try:
-                StorageService.delete_file(file_path)
+                await StorageService.delete_file(file_path)
             except Exception:
                 logger.warning(
                     "Failed to delete storage file %s during document cleanup",
                     file_path,
                     exc_info=True,
                 )
-
-        # Delete from database (cascades to document_chunks)
-        supabase.table("documents").delete().eq("id", document_id).eq("user_id", user.user_id).execute()
-        return True
-
-    found = await run_in_threadpool(remove_doc)
+        await execute_query(supabase.table("documents").delete().eq("id", document_id).eq("user_id", user.user_id))
+        found = True
     if not found:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
