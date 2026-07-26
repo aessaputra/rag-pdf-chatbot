@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import type { Citation } from '@/types';
 
-const INLINE_MARKDOWN_REGEX = /(\[\d+\]|\*\*.*?\*\*|`.*?`)/g;
+const INLINE_MARKDOWN_REGEX = /(\[\d+\]|\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
 
 export function formatInlineMarkdown(
   text: string, 
@@ -41,6 +41,13 @@ export function formatInlineMarkdown(
         <strong key={i} className="font-semibold text-primary">
           {part.slice(2, -2)}
         </strong>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return (
+        <em key={i} className="italic text-primary">
+          {part.slice(1, -1)}
+        </em>
       );
     }
     if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
