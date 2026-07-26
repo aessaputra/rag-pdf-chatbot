@@ -286,7 +286,8 @@ def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_s
         "Mengapa alpha penting?",
     ]
     for record, question in zip(inserted_records[1:], expected_questions):
-        assert record["content"] == question
+        assert record["content"] == paragraph_content
+        assert record["metadata"]["question"] == question
         assert record["metadata"]["type"] == "question"
         assert record["metadata"]["filename"] == "paper.pdf"
         assert record["metadata"]["page_number"] == 1

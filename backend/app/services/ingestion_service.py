@@ -211,18 +211,19 @@ class PDFIngestionService:
                 expanded.append(DocumentChunkDTO(
                     id=str(uuid.uuid4()),
                     parent_chunk_id=chunk.id,
-                    content=question,
+                    content=chunk.content,
                     page_number=chunk.page_number,
                     filename=chunk.filename,
                     metadata={
                         **chunk.metadata,
                         'type': 'question',
+                        'question': question,
                     },
                 ))
         return expanded
 
     def _store_chunks(self, supabase: Client, document_id: str, user_id: str, chunks: list[DocumentChunkDTO], embeddings_model: Embeddings, batch_size: int) -> None:
-        chunk_texts = [chunk.content for chunk in chunks]
+        chunk_texts = [chunk.metadata.get('question', chunk.content) if chunk.metadata.get('type') == 'question' else chunk.content for chunk in chunks]
         vector_embeddings = embeddings_model.embed_documents(chunk_texts)
         chunk_records = []
         for chunk, embedding_vector in zip(chunks, vector_embeddings):
