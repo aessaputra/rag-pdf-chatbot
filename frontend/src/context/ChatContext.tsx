@@ -40,7 +40,9 @@ export function ChatProvider({ children }: { readonly children: React.ReactNode 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
-  const [isInitializingSessions, setIsInitializingSessions] = useState(true);
+  const [fetchedTokenSessions, setFetchedTokenSessions] = useState<string | null>(null);
+
+  const isInitializingSessions = token !== fetchedTokenSessions;
 
   const reloadSessions = useCallback(async (accessToken: string) => {
     const res = await listChatSessions(accessToken);
@@ -64,12 +66,12 @@ export function ChatProvider({ children }: { readonly children: React.ReactNode 
 
   useEffect(() => {
     if (token) {
-      reloadSessions(token).finally(() => setIsInitializingSessions(false));
+      reloadSessions(token).finally(() => setFetchedTokenSessions(token));
     } else {
       setSessions([]);
-      setMessages([]);
       setActiveSessionId(null);
-      setIsInitializingSessions(false);
+      setMessages([]);
+      setFetchedTokenSessions(null);
     }
   }, [token, reloadSessions]);
 

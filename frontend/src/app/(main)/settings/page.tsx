@@ -68,14 +68,14 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {isInitializing ? (
+        {!token || isInitializing ? (
           <div className="md:col-span-2 flex items-center justify-center p-12">
             <div className="flex items-center gap-3 text-muted text-sm font-mono animate-pulse">
               <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               Memuat konfigurasi...
             </div>
           </div>
-        ) : token ? (
+        ) : (
           <>
             <div className="md:col-span-1 h-full flex flex-col min-w-0">
               <ProviderSettingsSection
@@ -97,7 +97,7 @@ export default function SettingsPage() {
               />
             </div>
           </>
-        ) : null}
+        )}
       </main>
     </div>
   );

@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowUpIcon, CheckIcon, MagicWandIcon } from '@radix-ui/react-icons';
 import { useApp } from '@/context/AppContext';
 
+import { formatProviderLabel } from '@/lib/utils';
 import { useChat } from '@/context/ChatContext';
-import type { ProviderConfig } from '@/types';
 
 interface ChatWindowInputProps {
   readonly inputQuery: string;
@@ -41,13 +41,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
   }, [inputQuery]);
 
   const activeConfig = providerConfigs.find((c) => c.provider === provider) || providerConfigs[0];
-  const formatProviderLabel = (cfg?: ProviderConfig) => {
-    if (!cfg) return provider?.toUpperCase() || 'Pilih Provider';
-    if (cfg.display_name) return cfg.display_name;
-    const name = cfg.provider;
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  };
-  const activeLabel = formatProviderLabel(activeConfig);
+  const activeLabel = formatProviderLabel(activeConfig, provider || undefined);
 
   const handleSubmit = async (e?: React.SyntheticEvent<HTMLFormElement>) => {
     if (e) e.preventDefault();
@@ -101,7 +95,7 @@ export function ChatWindowInput({ inputQuery, onChangeInputQuery }: ChatWindowIn
                 </div>
                 {providerConfigs.map((config) => {
                   const isSelected = config.provider === provider;
-                  const label = formatProviderLabel(config);
+                  const label = formatProviderLabel(config, provider || undefined);
                   return (
                     <button
                       key={config.id}

@@ -25,7 +25,9 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
   const { token } = useApp();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
-  const [isInitializingDocs, setIsInitializingDocs] = useState(true);
+  const [fetchedTokenDocs, setFetchedTokenDocs] = useState<string | null>(null);
+
+  const isInitializingDocs = token !== fetchedTokenDocs;
 
   const activeDocuments = useMemo(
     () => documents.filter((d) => (d.is_active ?? true) && d.status === 'ready'),
@@ -47,10 +49,10 @@ export function DocumentProvider({ children }: { readonly children: React.ReactN
 
   useEffect(() => {
     if (token) {
-      reloadDocuments(token).finally(() => setIsInitializingDocs(false));
+      reloadDocuments(token).finally(() => setFetchedTokenDocs(token));
     } else {
       setDocuments([]);
-      setIsInitializingDocs(false);
+      setFetchedTokenDocs(null);
     }
   }, [token, reloadDocuments]);
 

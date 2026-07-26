@@ -58,6 +58,13 @@ export interface ChatMessage {
 
 export type ProviderType = 'gemini' | 'openai' | 'openrouter' | 'openai_compatible';
 
+export const PROVIDER_OPTIONS: { type: ProviderType; label: string }[] = [
+  { type: 'gemini', label: 'Google Gemini' },
+  { type: 'openai', label: 'OpenAI' },
+  { type: 'openrouter', label: 'OpenRouter' },
+  { type: 'openai_compatible', label: 'OpenAI-Compatible' },
+];
+
 export interface ProviderConfig {
   readonly id: string;
   readonly user_id: string;

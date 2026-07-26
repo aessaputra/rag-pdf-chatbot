@@ -48,6 +48,7 @@ def _decode_jwt_token(token: str, secret: str, audience: str) -> dict:
             signing_key.key,
             algorithms=[algorithm],
             audience=audience,
+            leeway=60,
         )
 
     return jwt.decode(
@@ -55,6 +56,7 @@ def _decode_jwt_token(token: str, secret: str, audience: str) -> dict:
         secret,
         algorithms=HMAC_ALGORITHMS,
         audience=audience,
+        leeway=60,
     )
 
 
@@ -106,5 +108,4 @@ def get_current_user(
     return verify_supabase_token(credentials.credentials)
 
 
-# FastAPI Annotated Dependency Type Alias
 CurrentUserDep = Annotated[UserPayload, Depends(get_current_user)]

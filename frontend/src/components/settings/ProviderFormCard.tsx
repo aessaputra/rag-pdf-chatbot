@@ -1,27 +1,15 @@
 'use client';
 
-import React, { useEffect, useState, useDeferredValue } from 'react';
+import React, { useState, useDeferredValue } from 'react';
 import useSWR from 'swr';
 import * as Select from '@radix-ui/react-select';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import type { ProviderType } from '@/types';
+import { PROVIDER_OPTIONS } from '@/types';
 import { verifyAndFetchModels } from '@/lib/api';
+import { formatModelName } from '@/lib/utils';
 
-const PROVIDER_OPTIONS: { type: ProviderType; label: string }[] = [
-  { type: 'gemini', label: 'Google Gemini' },
-  { type: 'openai', label: 'OpenAI' },
-  { type: 'openrouter', label: 'OpenRouter' },
-  { type: 'openai_compatible', label: 'OpenAI-Compatible' },
-];
 
-const formatModelName = (name: string) => {
-  let clean = name.replace(/^models\//, '');
-  clean = clean.replace(/\//g, ' - ');
-  clean = clean.replace(/:/g, ' ');
-  clean = clean.replace(/[-_]/g, ' ');
-  clean = clean.replace(/\s+-\s+/g, ' - ');
-  return clean.replace(/\b\w/g, (c) => c.toUpperCase());
-};
 
 interface ProviderFormCardProps {
   readonly editingConfigId: string | null;
@@ -37,7 +25,7 @@ interface ProviderFormCardProps {
 
 export function ProviderFormCard({
   editingConfigId,
-  initialProvider = 'gemini',
+  initialProvider = PROVIDER_OPTIONS[0].type,
   initialDisplayName = '',
   initialModelName = '',
   initialBaseUrl = '',
@@ -55,6 +43,7 @@ export function ProviderFormCard({
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCustomModel, setIsCustomModel] = useState(false);
+  const [prevRes, setPrevRes] = useState<any>(null);
 
   const deferredApiKey = useDeferredValue(formApiKey.trim());
   const deferredBaseUrl = useDeferredValue(formBaseUrl.trim());
@@ -73,11 +62,12 @@ export function ProviderFormCard({
   const fetchedModels = res?.success && res.data?.models ? res.data.models : [];
   const fetchError = res?.error || res?.data?.error || null;
 
-  useEffect(() => {
-    if (res?.success && res.data?.models && res.data.models.length > 0) {
-      setFormModelName((current) => current ? current : (res.data.default_model || ''));
+  if (res !== prevRes) {
+    setPrevRes(res);
+    if (res?.success && res.data?.models && res.data.models.length > 0 && !formModelName) {
+      setFormModelName(res.data.default_model || '');
     }
-  }, [res]);
+  }
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();

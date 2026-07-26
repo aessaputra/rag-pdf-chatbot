@@ -44,7 +44,9 @@ export function AppProvider({
   const [provider, setProvider] = useState('');
   const [providerConfigs, setProviderConfigs] = useState<ProviderConfig[]>([]);
   const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [fetchedToken, setFetchedToken] = useState<string | null>(null);
+
+  const isInitializing = token !== fetchedToken;
 
   const hasCredentials = useMemo(
     () => providerConfigs.length > 0 && embeddingConfig !== null,
@@ -78,11 +80,12 @@ export function AppProvider({
 
     async function initializeApp() {
       if (!token) {
-        setIsInitializing(false);
+        setProviderConfigs([]);
+        setEmbeddingConfig(null);
+        setFetchedToken(null);
         return;
       }
       
-      setIsInitializing(true);
       const [provRes, embRes] = await Promise.all([
         listProviderConfigs(token),
         getEmbeddingConfig(token),
@@ -108,7 +111,7 @@ export function AppProvider({
         setEmbeddingConfig(null);
       }
       
-      setIsInitializing(false);
+      setFetchedToken(token);
     }
 
     initializeApp();

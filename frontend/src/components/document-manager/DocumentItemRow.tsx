@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { FileTextIcon, UpdateIcon, ExternalLinkIcon, TrashIcon } from '@radix-ui/react-icons';
+import { formatFileSize } from '@/lib/utils';
 import type { DocumentItem } from '@/types';
 
 interface DocumentItemRowProps {
@@ -19,11 +20,6 @@ export function DocumentItemRow({ doc, isBusy, onToggleActive, onPreview, onDele
   const isProcessing = doc.status === 'processing';
   const isFailed = doc.status === 'failed';
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   const handleDelete = async () => {
     await onDelete(doc.id);

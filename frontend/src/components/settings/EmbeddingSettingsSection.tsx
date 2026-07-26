@@ -1,22 +1,16 @@
 'use client';
 
-import React, { useEffect, useState, useDeferredValue } from 'react';
+import React, { useState, useDeferredValue } from 'react';
 import Link from 'next/link';
 import { LayersIcon, LockClosedIcon, ChevronDownIcon, ChevronUpIcon, CheckIcon } from '@radix-ui/react-icons';
 import * as Select from '@radix-ui/react-select';
 import useSWR from 'swr';
 import { saveEmbeddingConfig, verifyAndFetchModels } from '@/lib/api';
 import type { EmbeddingConfig, ProviderConfig } from '@/types';
+import { PROVIDER_OPTIONS } from '@/types';
+import { formatModelName } from '@/lib/utils';
 
-const formatModelName = (name: string) => {
-  let clean = name.replace(/^models\//, '');
-  clean = clean.replace(/\//g, ' - ');
-  clean = clean.replace(/:/g, ' ');
-  clean = clean.replace(/[-_]/g, ' ');
-  // clean up extra spaces around the hyphen if any
-  clean = clean.replace(/\s+-\s+/g, ' - ');
-  return clean.replace(/\b\w/g, (c) => c.toUpperCase());
-};
+
 
 interface EmbeddingSettingsSectionProps {
   readonly configs: ProviderConfig[];
@@ -35,22 +29,15 @@ export function EmbeddingSettingsSection({
   onSetSuccessMsg,
   onSetErrorMsg,
 }: EmbeddingSettingsSectionProps) {
-  const [embProvider, setEmbProvider] = useState<string>('gemini');
-  const [embModelName, setEmbModelName] = useState<string>('');
-  const [embDimensions, setEmbDimensions] = useState<number | ''>('');
-  const [embBaseUrl, setEmbBaseUrl] = useState<string>('');
+  const defaultProvider = configs.find(c => c.is_default)?.provider || configs[0]?.provider || PROVIDER_OPTIONS[0].type;
+  const [embProvider, setEmbProvider] = useState<string>(embeddingConfig?.provider || defaultProvider);
+  const [embModelName, setEmbModelName] = useState<string>(embeddingConfig?.model_name || '');
+  const [embDimensions, setEmbDimensions] = useState<number | ''>(embeddingConfig?.embedding_dimensions || '');
+  const [embBaseUrl, setEmbBaseUrl] = useState<string>(embeddingConfig?.base_url || '');
   const [embError, setEmbError] = useState<string | null>(null);
   const [isSavingEmbedding, setIsSavingEmbedding] = useState(false);
   const [isCustomModelInput, setIsCustomModelInput] = useState(false);
-
-  useEffect(() => {
-    if (embeddingConfig) {
-      setEmbProvider(embeddingConfig.provider);
-      setEmbModelName(embeddingConfig.model_name);
-      setEmbDimensions(embeddingConfig.embedding_dimensions);
-      setEmbBaseUrl(embeddingConfig.base_url || '');
-    }
-  }, [embeddingConfig]);
+  const [prevRes, setPrevRes] = useState<any>(null);
 
   const deferredBaseUrl = useDeferredValue(embBaseUrl.trim());
   const targetConfigId = configs.find((c) => c.provider === embProvider)?.id;
@@ -71,11 +58,12 @@ export function EmbeddingSettingsSection({
   const fetchedEmbModels = res?.data?.models || [];
   const fetchError = res?.error || res?.data?.error || null;
 
-  useEffect(() => {
-    if (res?.success && res.data?.models && res.data.models.length > 0) {
-      setEmbModelName((current) => current ? current : (res.data.default_model || ''));
+  if (res !== prevRes) {
+    setPrevRes(res);
+    if (res?.success && res.data?.models && res.data.models.length > 0 && !embModelName) {
+      setEmbModelName(res.data.default_model || '');
     }
-  }, [res]);
+  }
 
   const handleSaveEmbedding = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -195,10 +183,11 @@ export function EmbeddingSettingsSection({
             }}
             className="minimal-input w-full px-3 py-2 rounded-md text-xs cursor-pointer disabled:opacity-50"
           >
-            <option value="gemini" className="bg-surface-card text-primary">Google Gemini</option>
-            <option value="openai" className="bg-surface-card text-primary">OpenAI</option>
-            <option value="openrouter" className="bg-surface-card text-primary">OpenRouter</option>
-            <option value="openai_compatible" className="bg-surface-card text-primary">OpenAI-Compatible</option>
+            {PROVIDER_OPTIONS.map((opt) => (
+              <option key={opt.type} value={opt.type} className="bg-surface-card text-primary">
+                {opt.label}
+              </option>
+            ))}
           </select>
         </div>
 

@@ -19,7 +19,7 @@ function ChatInner() {
   const { isDocModalOpen, setIsDocModalOpen, documents, handleDocumentsUpdated, isInitializingDocs } = useDocument();
   const { isInitializingSessions } = useChat();
 
-  const isPageLoading = isInitializing || isInitializingDocs || isInitializingSessions;
+  const isPageLoading = !token || isInitializing || isInitializingDocs || isInitializingSessions;
 
   if (isPageLoading) {
     return (

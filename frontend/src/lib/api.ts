@@ -38,6 +38,44 @@ function isNetworkError(message: string): boolean {
   return message.includes('Failed to fetch') || message.includes('NetworkError');
 }
 
+async function apiFetch<T>(
+  endpoint: string,
+  options: RequestInit = {},
+  token?: string,
+  fallbackError: string = 'Terjadi kesalahan jaringan.',
+  requireAuth: boolean = true
+): Promise<ApiResponse<T>> {
+  try {
+    const headers = requireAuth ? await getAuthHeaders(token) : undefined;
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...headers,
+      },
+    });
+
+    if (response.status === 404 && options.method === 'GET') {
+      return { success: true, data: null as any, error: null }; // specifically for getEmbeddingConfig
+    }
+
+    if (!response.ok) {
+      return { success: false, data: null as any, error: await extractErrorDetail(response, fallbackError) };
+    }
+
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : true;
+    
+    return { success: true, data, error: null };
+  } catch (err: any) {
+    const message = err.message || '';
+    if (isNetworkError(message)) {
+      return { success: false, data: null as any, error: `Gagal terhubung ke server backend di ${API_BASE}` };
+    }
+    return { success: false, data: null as any, error: message || 'Terjadi kesalahan jaringan.' };
+  }
+}
+
 
 
 export interface SSEStreamCallbacks {
@@ -131,303 +169,111 @@ function parseSSEEvent(block: string, callbacks: SSEStreamCallbacks) {
 
 
 
-export async function listChatSessions(token: string): Promise<ApiResponse<import('@/types').ChatSession[]>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/chat/sessions`, { headers });
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil riwayat sesi.') };
-    }
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function listChatSessions(token: string): Promise<ApiResponse<import('@/types').ChatSession[]>> {
+  return apiFetch('/api/chat/sessions', undefined, token, 'Gagal mengambil riwayat sesi.');
 }
 
-export async function getSessionMessages(sessionId: string, token: string): Promise<ApiResponse<import('@/types').ChatMessage[]>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}/messages`, { headers });
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil pesan percakapan.') };
-    }
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function getSessionMessages(sessionId: string, token: string): Promise<ApiResponse<import('@/types').ChatMessage[]>> {
+  return apiFetch(`/api/chat/sessions/${sessionId}/messages`, undefined, token, 'Gagal mengambil pesan percakapan.');
 }
 
-export async function createChatSession(token: string, title?: string): Promise<ApiResponse<import('@/types').ChatSession>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/chat/sessions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify({ title }),
-    });
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal membuat sesi percakapan baru.') };
-    }
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function createChatSession(token: string, title?: string): Promise<ApiResponse<import('@/types').ChatSession>> {
+  return apiFetch(
+    '/api/chat/sessions',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) },
+    token,
+    'Gagal membuat sesi percakapan baru.'
+  );
 }
 
-export async function deleteChatSession(sessionId: string, token: string): Promise<ApiResponse<boolean>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menghapus sesi percakapan.') };
-    }
-    return { success: true, data: true, error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function deleteChatSession(sessionId: string, token: string): Promise<ApiResponse<boolean>> {
+  return apiFetch(`/api/chat/sessions/${sessionId}`, { method: 'DELETE' }, token, 'Gagal menghapus sesi percakapan.');
 }
 
 
 
-export async function uploadDocument(file: File, token: string): Promise<ApiResponse<any>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${API_BASE}/api/documents/upload`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengunggah PDF.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    const message = err.message || '';
-    if (isNetworkError(message)) {
-      return { success: false, data: null, error: `Gagal terhubung ke server backend di ${API_BASE}` };
-    }
-    return { success: false, data: null, error: message || 'Terjadi kesalahan jaringan.' };
-  }
+export function uploadDocument(file: File, token: string): Promise<ApiResponse<any>> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiFetch('/api/documents/upload', { method: 'POST', body: formData }, token, 'Gagal mengunggah PDF.');
 }
 
-export async function listDocuments(token: string): Promise<ApiResponse<DocumentItem[]>> {
-  try {
-    const headers = await getAuthHeaders(token);
-
-    const response = await fetch(`${API_BASE}/api/documents`, { headers });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil daftar dokumen.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function listDocuments(token: string): Promise<ApiResponse<DocumentItem[]>> {
+  return apiFetch('/api/documents', undefined, token, 'Gagal mengambil daftar dokumen.');
 }
 
-export async function deleteDocument(documentId: string, token: string): Promise<ApiResponse<boolean>> {
-  try {
-    const headers = await getAuthHeaders(token);
-
-    const response = await fetch(`${API_BASE}/api/documents/${documentId}`, {
-      method: 'DELETE',
-      headers,
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menghapus dokumen.') };
-    }
-
-    return { success: true, data: true, error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function deleteDocument(documentId: string, token: string): Promise<ApiResponse<boolean>> {
+  return apiFetch(`/api/documents/${documentId}`, { method: 'DELETE' }, token, 'Gagal menghapus dokumen.');
 }
 
-export async function toggleDocumentActive(documentId: string, isActive: boolean, token: string): Promise<ApiResponse<DocumentItem>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    headers['Content-Type'] = 'application/json';
-
-    const response = await fetch(`${API_BASE}/api/documents/${documentId}/toggle`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ is_active: isActive }),
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengubah status dokumen.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function toggleDocumentActive(documentId: string, isActive: boolean, token: string): Promise<ApiResponse<DocumentItem>> {
+  return apiFetch(
+    `/api/documents/${documentId}/toggle`,
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: isActive }) },
+    token,
+    'Gagal mengubah status dokumen.'
+  );
 }
 
-export async function getDocumentPreviewUrl(documentId: string, token: string): Promise<ApiResponse<DocumentPreviewResponse>> {
-  try {
-    const headers = await getAuthHeaders(token);
-
-    const response = await fetch(`${API_BASE}/api/documents/${documentId}/preview`, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil URL preview dokumen.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function getDocumentPreviewUrl(documentId: string, token: string): Promise<ApiResponse<DocumentPreviewResponse>> {
+  return apiFetch(`/api/documents/${documentId}/preview`, { method: 'GET' }, token, 'Gagal mengambil URL preview dokumen.');
 }
 
 
 
-export async function listProviderConfigs(token: string): Promise<ApiResponse<ProviderConfig[]>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/settings/providers`, { headers });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil daftar provider.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function listProviderConfigs(token: string): Promise<ApiResponse<ProviderConfig[]>> {
+  return apiFetch('/api/settings/providers', undefined, token, 'Gagal mengambil daftar provider.');
 }
 
-export async function createProviderConfig(
+export function createProviderConfig(
   payload: import('@/types').ProviderConfigCreatePayload,
   token: string
 ): Promise<ApiResponse<ProviderConfig>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/settings/providers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menambahkan provider.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+  return apiFetch(
+    '/api/settings/providers',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+    token,
+    'Gagal menambahkan provider.'
+  );
 }
 
-export async function updateProviderConfig(
+export function updateProviderConfig(
   id: string,
   payload: import('@/types').ProviderConfigUpdatePayload,
   token: string
 ): Promise<ApiResponse<ProviderConfig>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/settings/providers/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal memperbarui provider.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+  return apiFetch(
+    `/api/settings/providers/${id}`,
+    { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+    token,
+    'Gagal memperbarui provider.'
+  );
 }
 
-export async function deleteProviderConfig(id: string, token: string): Promise<ApiResponse<boolean>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/settings/providers/${id}`, {
-      method: 'DELETE',
-      headers,
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menghapus provider.') };
-    }
-
-    return { success: true, data: true, error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function deleteProviderConfig(id: string, token: string): Promise<ApiResponse<boolean>> {
+  return apiFetch(`/api/settings/providers/${id}`, { method: 'DELETE' }, token, 'Gagal menghapus provider.');
 }
 
 
 
-export async function listEmbeddingPresets(): Promise<ApiResponse<EmbeddingPreset[]>> {
-  try {
-    const response = await fetch(`${API_BASE}/api/settings/embedding/presets`);
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil preset embedding.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function listEmbeddingPresets(): Promise<ApiResponse<EmbeddingPreset[]>> {
+  return apiFetch('/api/settings/embedding/presets', undefined, undefined, 'Gagal mengambil preset embedding.', false);
 }
 
-export async function getEmbeddingConfig(token: string): Promise<ApiResponse<EmbeddingConfig | null>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/settings/embedding`, { headers });
-
-    if (response.status === 404) {
-      return { success: true, data: null, error: null };
-    }
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal mengambil konfigurasi embedding.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+export function getEmbeddingConfig(token: string): Promise<ApiResponse<EmbeddingConfig | null>> {
+  return apiFetch('/api/settings/embedding', { method: 'GET' }, token, 'Gagal mengambil konfigurasi embedding.');
 }
 
-export async function saveEmbeddingConfig(
+export function saveEmbeddingConfig(
   payload: EmbeddingConfigSavePayload,
   token: string
 ): Promise<ApiResponse<EmbeddingConfig>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/settings/embedding`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal menyimpan konfigurasi embedding.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+  return apiFetch(
+    '/api/settings/embedding',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+    token,
+    'Gagal menyimpan konfigurasi embedding.'
+  );
 }
 
 export interface VerifyModelsResponseData {
@@ -438,7 +284,7 @@ export interface VerifyModelsResponseData {
   error?: string | null;
 }
 
-export async function verifyAndFetchModels(
+export function verifyAndFetchModels(
   provider: string,
   apiKey?: string,
   baseUrl?: string,
@@ -446,11 +292,11 @@ export async function verifyAndFetchModels(
   token?: string,
   modelType: 'chat' | 'embedding' = 'chat'
 ): Promise<ApiResponse<VerifyModelsResponseData>> {
-  try {
-    const headers = await getAuthHeaders(token);
-    const response = await fetch(`${API_BASE}/api/settings/providers/verify-models`, {
+  return apiFetch(
+    '/api/settings/providers/verify-models',
+    {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         provider,
         model_type: modelType,
@@ -458,16 +304,10 @@ export async function verifyAndFetchModels(
         base_url: baseUrl || undefined,
         config_id: configId || undefined,
       }),
-    });
-
-    if (!response.ok) {
-      return { success: false, data: null, error: await extractErrorDetail(response, 'Gagal memverifikasi model provider.') };
-    }
-
-    return { success: true, data: await response.json(), error: null };
-  } catch (err: any) {
-    return { success: false, data: null, error: err.message || 'Terjadi kesalahan jaringan.' };
-  }
+    },
+    token,
+    'Gagal memverifikasi model provider.'
+  );
 }
 
 
