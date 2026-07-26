@@ -1,6 +1,7 @@
 import logging
 import re
 import uuid
+import concurrent.futures
 from collections import Counter
 from typing import Any
 
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 PARAGRAPH_DELIMITER = '\n\n'
 QUESTIONS_PER_PARAGRAPH = 5
+MAX_CONCURRENT_LLM_REQUESTS = 10
 
 QUESTION_GENERATION_SYSTEM_PROMPT = (
     f"Generate {QUESTIONS_PER_PARAGRAPH} diverse questions that can be "
@@ -203,12 +205,16 @@ class PDFIngestionService:
         """Expands paragraph chunks with their synthetic question chunks.
 
         Question chunks link to the original paragraph via 'parent_chunk_id'.
+        Uses ThreadPoolExecutor to generate questions for multiple chunks concurrently,
+        drastically reducing ingestion time.
         """
         expanded: list[DocumentChunkDTO] = []
-        for chunk in chunks:
-            expanded.append(chunk)
-            for question in self.generate_questions(chunk.content, llm):
-                expanded.append(DocumentChunkDTO(
+        
+        def process_single_chunk(chunk: DocumentChunkDTO) -> list[DocumentChunkDTO]:
+            chunk_results = [chunk]
+            questions = self.generate_questions(chunk.content, llm)
+            for question in questions:
+                chunk_results.append(DocumentChunkDTO(
                     id=str(uuid.uuid4()),
                     parent_chunk_id=chunk.id,
                     content=chunk.content,
@@ -220,6 +226,14 @@ class PDFIngestionService:
                         'question': question,
                     },
                 ))
+            return chunk_results
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_LLM_REQUESTS) as executor:
+            # Map preserves order of chunks, which is good for logical continuity
+            results = executor.map(process_single_chunk, chunks)
+            for chunk_results in results:
+                expanded.extend(chunk_results)
+                
         return expanded
 
     def _store_chunks(self, supabase: Client, document_id: str, user_id: str, chunks: list[DocumentChunkDTO], embeddings_model: Embeddings, batch_size: int) -> None:
