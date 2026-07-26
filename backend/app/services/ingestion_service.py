@@ -1,7 +1,7 @@
 import logging
 import re
 import uuid
-import concurrent.futures
+import asyncio
 from collections import Counter
 from typing import Any
 
@@ -9,6 +9,7 @@ import fitz
 import pymupdf4llm
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
+from langchain_core.rate_limiters import InMemoryRateLimiter
 from supabase import Client
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
@@ -21,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 PARAGRAPH_DELIMITER = '\n\n'
 QUESTIONS_PER_PARAGRAPH = 5
-MAX_CONCURRENT_LLM_REQUESTS = 10
+
+_RATE_LIMITER = InMemoryRateLimiter(requests_per_second=2, max_bucket_size=5)
 
 QUESTION_GENERATION_SYSTEM_PROMPT = (
     f"Generate {QUESTIONS_PER_PARAGRAPH} diverse questions that can be "
@@ -110,9 +112,9 @@ class PDFIngestionService:
         wait=wait_exponential(multiplier=1, min=4, max=60),
         stop=stop_after_attempt(5)
     )
-    def generate_questions(self, paragraph_content: str, llm: BaseChatModel) -> list[str]:
+    async def generate_questions(self, paragraph_content: str, llm: BaseChatModel) -> list[str]:
         prompt = QUESTION_GENERATION_SYSTEM_PROMPT.format(paragraph_content=paragraph_content)
-        response = llm.invoke(prompt)
+        response = await llm.ainvoke(prompt)
         raw_text = response.content if hasattr(response, 'content') else str(response)
         questions = self._parse_questions(raw_text)
         if not questions:
@@ -146,29 +148,30 @@ class PDFIngestionService:
         document_record['file_path'] = file_path
         return document_record
 
-    def process_document(self, document_id: str, user_id: str, filename: str, pdf_bytes: bytes, batch_size: int = 100) -> None:
+    async def process_document(self, document_id: str, user_id: str, filename: str, pdf_bytes: bytes, batch_size: int = 100) -> None:
         supabase = get_supabase_client()
         try:
-            chunks = self.parse_pdf_bytes(pdf_bytes, filename)
+            chunks = await asyncio.to_thread(self.parse_pdf_bytes, pdf_bytes, filename)
             if not chunks:
                 raise ValueError('Could not extract readable text from PDF.')
-            llm, embeddings_model = initialize_user_models(user_id)
-            expanded_chunks = self._attach_synthetic_questions(chunks, llm)
-            self._store_chunks(supabase, document_id, user_id, expanded_chunks, embeddings_model, batch_size)
-            supabase.table('user_embedding_configs').update({'locked': True}).eq('user_id', user_id).execute()
+            llm, embeddings_model = await asyncio.to_thread(initialize_user_models, user_id)
+            llm.rate_limiter = _RATE_LIMITER
+            expanded_chunks = await self._attach_synthetic_questions(chunks, llm)
+            await asyncio.to_thread(self._store_chunks, supabase, document_id, user_id, expanded_chunks, embeddings_model, batch_size)
+            await asyncio.to_thread(lambda: supabase.table('user_embedding_configs').update({'locked': True}).eq('user_id', user_id).execute())
             total_pages = max(chunk.page_number for chunk in chunks)
-            supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id).execute()
+            await asyncio.to_thread(lambda: supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id).execute())
             logger.info('Document %s processed: %d chunks stored (%d paragraphs).', document_id, len(expanded_chunks), len(chunks))
         except Exception:
             logger.exception('Document %s processing failed.', document_id)
-            supabase.table('documents').update({'status': 'failed'}).eq('id', document_id).execute()
+            await asyncio.to_thread(lambda: supabase.table('documents').update({'status': 'failed'}).eq('id', document_id).execute())
 
-    def _attach_synthetic_questions(self, chunks: list[DocumentChunkDTO], llm: BaseChatModel) -> list[DocumentChunkDTO]:
+    async def _attach_synthetic_questions(self, chunks: list[DocumentChunkDTO], llm: BaseChatModel) -> list[DocumentChunkDTO]:
         expanded: list[DocumentChunkDTO] = []
         
-        def process_single_chunk(chunk: DocumentChunkDTO) -> list[DocumentChunkDTO]:
+        async def process_single_chunk(chunk: DocumentChunkDTO) -> list[DocumentChunkDTO]:
             chunk_results = [chunk]
-            questions = self.generate_questions(chunk.content, llm)
+            questions = await self.generate_questions(chunk.content, llm)
             for question in questions:
                 chunk_results.append(DocumentChunkDTO(
                     id=str(uuid.uuid4()),
@@ -184,10 +187,10 @@ class PDFIngestionService:
                 ))
             return chunk_results
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_LLM_REQUESTS) as executor:
-            results = executor.map(process_single_chunk, chunks)
-            for chunk_results in results:
-                expanded.extend(chunk_results)
+        tasks = [process_single_chunk(chunk) for chunk in chunks]
+        results = await asyncio.gather(*tasks)
+        for chunk_results in results:
+            expanded.extend(chunk_results)
                 
         return expanded
 
