@@ -366,6 +366,9 @@ class EnrichmentJobService:
 
     @staticmethod
     def _is_quality_paragraph(content: str) -> bool:
+        if not content or not content.strip():
+            return False
+            
         content_lower = content.lower()
 
         if any(
@@ -376,15 +379,19 @@ class EnrichmentJobService:
                 "bibliography",
                 "index",
                 "appendix",
+                "daftar isi",
+                "daftar pustaka",
+                "referensi",
+                "lampiran",
             ]
         ):
             return False
 
-        word_count = len(content.split())
-        if word_count < 10:
+        char_count = len(content)
+        if char_count < 50:
             return False
 
-        digit_ratio = sum(c.isdigit() for c in content) / len(content)
+        digit_ratio = sum(c.isdigit() for c in content) / char_count
         if digit_ratio > 0.5:
             return False
 
@@ -392,18 +399,21 @@ class EnrichmentJobService:
 
     @staticmethod
     def _calculate_quality_score(content: str) -> float:
+        if not content or not content.strip():
+            return 0.0
+            
         score = 0.0
+        char_count = len(content)
 
-        word_count = len(content.split())
-        if 50 <= word_count <= 300:
+        if 250 <= char_count <= 1500:
             score += 2.0
-        elif 30 <= word_count < 50 or 300 < word_count <= 500:
+        elif 150 <= char_count < 250 or 1500 < char_count <= 2500:
             score += 1.0
 
-        sentence_count = content.count(".") + content.count("!") + content.count("?")
-        if sentence_count > 0:
-            avg_sentence_length = word_count / sentence_count
-            if 10 <= avg_sentence_length <= 25:
+        sentences = len(re.findall(r'[.!?。！？]+', content))
+        if sentences > 0:
+            avg_chars_per_sentence = char_count / sentences
+            if 50 <= avg_chars_per_sentence <= 150:
                 score += 1.0
 
         if any(
@@ -416,11 +426,17 @@ class EnrichmentJobService:
                 "consequently",
                 "specifically",
                 "particularly",
+                "namun",
+                "oleh karena itu",
+                "selanjutnya",
+                "kesimpulannya",
+                "khususnya",
+                "sebagai kesimpulan",
             ]
         ):
             score += 0.5
 
-        if content[0].isupper() and content.strip()[-1] in ".!?":
+        if content.strip()[-1] in ".!?。！？":
             score += 0.5
 
         return score
