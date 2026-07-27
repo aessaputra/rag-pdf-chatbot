@@ -229,32 +229,18 @@ def _configure_embedding_config(tables: dict[str, MagicMock]) -> None:
 
 
 @pytest.mark.asyncio
-@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
 @patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
 @patch("app.services.rag_service.get_supabase_client")
 @patch("app.services.ingestion_service.get_supabase_client")
-async def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm):
-    """Verify background processing stores paragraph + 5 question chunks with shared line metadata."""
+async def test_process_document_should_embed_chunks_and_mark_document_ready(mock_get_supabase, mock_rag_supabase, mock_get_embeddings):
+    """Verify background processing stores paragraph chunks without chat-model fan-out."""
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
     mock_rag_supabase.return_value = mock_supabase
-    _configure_default_provider_config(tables)
     _configure_embedding_config(tables)
 
-    mock_llm = MagicMock()
-    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(
-        content=(
-            "1. Apa itu alpha?\n"
-            "2. Apa itu beta?\n"
-            "3. Bagaimana alpha bekerja?\n"
-            "4. Kapan beta digunakan?\n"
-            "5. Mengapa alpha penting?"
-        ))
-    )
-    mock_get_llm.return_value = mock_llm
-
     mock_embeddings = MagicMock()
-    mock_embeddings.embed_documents.return_value = [[0.1, 0.2, 0.3]] * 6
+    mock_embeddings.embed_documents.return_value = [[0.1, 0.2, 0.3]]
     mock_get_embeddings.return_value = mock_embeddings
 
     pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
@@ -269,7 +255,7 @@ async def test_process_document_should_embed_chunks_and_mark_document_ready(mock
 
     paragraph_content = "Alpha paragraph text."
     inserted_records = tables["document_chunks"].insert.call_args[0][0]
-    assert len(inserted_records) == 6
+    assert len(inserted_records) == 1
 
     paragraph_record = inserted_records[0]
     assert paragraph_record["document_id"] == MOCK_DOC_ID
@@ -281,27 +267,9 @@ async def test_process_document_should_embed_chunks_and_mark_document_ready(mock
     assert paragraph_record["metadata"]["type"] == "paragraph"
     assert "paragraph_content" not in paragraph_record["metadata"]
 
-    expected_questions = [
-        "Apa itu alpha?",
-        "Apa itu beta?",
-        "Bagaimana alpha bekerja?",
-        "Kapan beta digunakan?",
-        "Mengapa alpha penting?",
-    ]
-    for record, question in zip(inserted_records[1:], expected_questions):
-        assert record["content"] == paragraph_content
-        assert record["metadata"]["question"] == question
-        assert record["metadata"]["type"] == "question"
-        assert record["metadata"]["filename"] == "paper.pdf"
-        assert record["metadata"]["page_number"] == 1
-        assert record["metadata"]["line_start"] == 1
-        assert record["metadata"]["line_end"] == 1
-        assert "paragraph_content" not in record["metadata"]
-        assert record["parent_chunk_id"] == paragraph_record["id"]
-
     mock_embeddings.embed_documents.assert_called_once()
     embedded_texts = mock_embeddings.embed_documents.call_args[0][0]
-    assert embedded_texts == [paragraph_content, *expected_questions]
+    assert embedded_texts == [paragraph_content]
 
     tables["user_embedding_configs"].update.assert_not_called()
     tables["documents"].update.assert_called_once_with({"status": "ready", "total_pages": 1})
@@ -314,23 +282,20 @@ def test_is_retryable_error():
     assert is_retryable_error(Exception("400 Bad Request")) is False
 
 
-@patch("asyncio.sleep") # Prevent tenacity from actually sleeping during tests
 @pytest.mark.asyncio
-@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
 @patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
 @patch("app.services.rag_service.get_supabase_client")
 @patch("app.services.ingestion_service.get_supabase_client")
-async def test_process_document_should_retry_on_429_then_fail_when_exhausted(mock_get_supabase, mock_rag_supabase, _mock_get_embeddings, mock_get_llm, _mock_sleep):
-    """Verify an LLM rate-limit failure retries 5 times then marks the document failed."""
+async def test_process_document_should_mark_failed_when_embedding_fails(mock_get_supabase, mock_rag_supabase, mock_get_embeddings):
+    """Verify embedding failures mark the document failed."""
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
     mock_rag_supabase.return_value = mock_supabase
-    _configure_default_provider_config(tables)
     _configure_embedding_config(tables)
 
-    mock_llm = MagicMock()
-    mock_llm.ainvoke = AsyncMock(side_effect=Exception("429 Too Many Requests: rate limit exhausted"))
-    mock_get_llm.return_value = mock_llm
+    mock_embeddings = MagicMock()
+    mock_embeddings.embed_documents.side_effect = Exception("429 Too Many Requests")
+    mock_get_embeddings.return_value = mock_embeddings
 
     pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
 
@@ -342,80 +307,128 @@ async def test_process_document_should_retry_on_429_then_fail_when_exhausted(moc
         pdf_bytes=pdf_bytes,
     )
 
-    assert mock_llm.ainvoke.call_count == 5 # 5 attempts
     tables["documents"].update.assert_called_once_with({"status": "failed"})
     tables["document_chunks"].insert.assert_not_called()
 
-@patch("asyncio.sleep")
+
 @pytest.mark.asyncio
-@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
-@patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
-@patch("app.services.rag_service.get_supabase_client")
-@patch("app.services.ingestion_service.get_supabase_client")
-async def test_process_document_should_retry_on_429_and_succeed(mock_get_supabase, mock_rag_supabase, mock_get_embeddings, mock_get_llm, _mock_sleep):
-    """Verify that a transient 429 error is retried and succeeds eventually."""
+async def test_enrich_document_questions_should_store_linked_question_chunks():
     mock_supabase, tables = _make_supabase_mock()
-    mock_get_supabase.return_value = mock_supabase
-    mock_rag_supabase.return_value = mock_supabase
-    _configure_default_provider_config(tables)
-    
+
+    source_chunk = DocumentChunkDTO(
+        id="paragraph-1",
+        content="Alpha paragraph text.",
+        page_number=2,
+        filename="paper.pdf",
+        metadata={
+            "filename": "paper.pdf",
+            "page_number": 2,
+            "line_start": 4,
+            "line_end": 6,
+            "type": "paragraph",
+        },
+    )
+    mock_llm = MagicMock()
+    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content="1. What is alpha?\n2. Why alpha matters?"))
     mock_embeddings = MagicMock()
-    mock_embeddings.embed_documents.return_value = [[0.1, 0.2]] * 2
-    mock_get_embeddings.return_value = mock_embeddings
-
-    mock_llm = MagicMock()
-    success_response = MagicMock()
-    success_response.content = "Q1?\nQ2?\nQ3?\nQ4?\nQ5?"
-    # Fail twice with 429, then succeed
-    mock_llm.ainvoke = AsyncMock(side_effect=[
-        Exception("429 Too Many Requests"),
-        Exception("503 Service Unavailable"),
-        success_response
-    ])
-    mock_get_llm.return_value = mock_llm
-
-    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
+    mock_embeddings.embed_documents.return_value = [[0.1, 0.2], [0.3, 0.4]]
 
     ingestion_service = PDFIngestionService()
-    await ingestion_service.process_document(
+    await ingestion_service.enrich_document_questions(
+        supabase=mock_supabase,
         document_id=MOCK_DOC_ID,
         user_id=MOCK_USER_ID,
-        filename="paper.pdf",
-        pdf_bytes=pdf_bytes,
+        chunks=[source_chunk],
+        llm=mock_llm,
+        embeddings_model=mock_embeddings,
     )
 
-    assert mock_llm.ainvoke.call_count == 3
-    tables["documents"].update.assert_called_once_with({"status": "ready", "total_pages": 1})
+    inserted_records = tables["document_chunks"].insert.call_args[0][0]
+    assert len(inserted_records) == 2
+    assert [record["metadata"]["question"] for record in inserted_records] == ["What is alpha?", "Why alpha matters?"]
+    for record in inserted_records:
+        assert record["parent_chunk_id"] == "paragraph-1"
+        assert record["content"] == "Alpha paragraph text."
+        assert record["metadata"]["type"] == "question"
+        assert record["metadata"]["line_start"] == 4
+        assert record["metadata"]["line_end"] == 6
+    assert mock_embeddings.embed_documents.call_args[0][0] == ["What is alpha?", "Why alpha matters?"]
 
-@patch("asyncio.sleep")
+
 @pytest.mark.asyncio
-@patch("app.services.llm_factory.LLMFactory.get_llm_for_config")
-@patch("app.services.llm_factory.LLMFactory.get_embeddings_for_config")
-@patch("app.services.rag_service.get_supabase_client")
-@patch("app.services.ingestion_service.get_supabase_client")
-async def test_process_document_should_fail_fast_on_401(mock_get_supabase, mock_rag_supabase, _mock_get_embeddings, mock_get_llm, _mock_sleep):
-    """Verify that a fatal 401 error is NOT retried and fails fast."""
+async def test_enrich_document_questions_should_skip_failed_paragraphs_and_continue():
     mock_supabase, tables = _make_supabase_mock()
-    mock_get_supabase.return_value = mock_supabase
-    mock_rag_supabase.return_value = mock_supabase
-    _configure_default_provider_config(tables)
-
+    chunks = [
+        DocumentChunkDTO(
+            id="paragraph-1",
+            content="Broken paragraph.",
+            page_number=1,
+            filename="paper.pdf",
+            metadata={"filename": "paper.pdf", "page_number": 1, "line_start": 1, "line_end": 1, "type": "paragraph"},
+        ),
+        DocumentChunkDTO(
+            id="paragraph-2",
+            content="Working paragraph.",
+            page_number=1,
+            filename="paper.pdf",
+            metadata={"filename": "paper.pdf", "page_number": 1, "line_start": 2, "line_end": 2, "type": "paragraph"},
+        ),
+    ]
     mock_llm = MagicMock()
-    mock_llm.ainvoke = AsyncMock(side_effect=Exception("401 Unauthorized API Key"))
-    mock_get_llm.return_value = mock_llm
-
-    pdf_bytes = _build_pdf_with_text([["Alpha paragraph text."]])
+    mock_llm.ainvoke = AsyncMock(side_effect=[Exception("401 Unauthorized"), MagicMock(content="1. What works?")])
+    mock_embeddings = MagicMock()
+    mock_embeddings.embed_documents.return_value = [[0.1, 0.2]]
 
     ingestion_service = PDFIngestionService()
-    await ingestion_service.process_document(
+    await ingestion_service.enrich_document_questions(
+        supabase=mock_supabase,
         document_id=MOCK_DOC_ID,
         user_id=MOCK_USER_ID,
-        filename="paper.pdf",
-        pdf_bytes=pdf_bytes,
+        chunks=chunks,
+        llm=mock_llm,
+        embeddings_model=mock_embeddings,
     )
 
-    assert mock_llm.ainvoke.call_count == 1 # 1 attempt only!
-    tables["documents"].update.assert_called_once_with({"status": "failed"})
+    inserted_records = tables["document_chunks"].insert.call_args[0][0]
+    assert len(inserted_records) == 1
+    assert inserted_records[0]["parent_chunk_id"] == "paragraph-2"
+    assert inserted_records[0]["metadata"]["question"] == "What works?"
+    assert tables["documents"].update.call_count == 0
+
+
+@pytest.mark.asyncio
+async def test_enrich_document_questions_should_cap_enriched_paragraphs_at_75():
+    mock_supabase, tables = _make_supabase_mock()
+    chunks = [
+        DocumentChunkDTO(
+            id=f"paragraph-{index}",
+            content=f"Paragraph {index}.",
+            page_number=1,
+            filename="paper.pdf",
+            metadata={"filename": "paper.pdf", "page_number": 1, "line_start": index, "line_end": index, "type": "paragraph"},
+        )
+        for index in range(80)
+    ]
+    mock_llm = MagicMock()
+    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content="1. What is this?"))
+    mock_embeddings = MagicMock()
+    mock_embeddings.embed_documents.return_value = [[0.1, 0.2]] * 75
+
+    ingestion_service = PDFIngestionService()
+    await ingestion_service.enrich_document_questions(
+        supabase=mock_supabase,
+        document_id=MOCK_DOC_ID,
+        user_id=MOCK_USER_ID,
+        chunks=chunks,
+        llm=mock_llm,
+        embeddings_model=mock_embeddings,
+        batch_size=1000,
+    )
+
+    inserted_records = tables["document_chunks"].insert.call_args[0][0]
+    assert len(inserted_records) == 75
+    assert mock_llm.ainvoke.call_count == 75
+    assert inserted_records[-1]["parent_chunk_id"] == "paragraph-74"
 
 
 @pytest.mark.asyncio

@@ -69,7 +69,24 @@ class RAGService:
         return getattr(self, "_last_citations", [])
 
 
-async def initialize_user_models(user_id: str, provider: str | None = None) -> tuple[BaseChatModel, Embeddings]:
+async def initialize_user_embeddings(user_id: str) -> Embeddings:
+    supabase = await get_supabase_client()
+    embedding_res = await execute_query(
+        supabase.table("user_embedding_configs")
+        .select("*")
+        .eq("user_id", user_id)
+    )
+
+    if not embedding_res.data:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings.",
+        )
+
+    return LLMFactory.get_embeddings_for_config(embedding_res.data[0])
+
+
+async def initialize_user_llm(user_id: str, provider: str | None = None) -> BaseChatModel:
     supabase = await get_supabase_client()
 
     provider_records: list = []
@@ -99,20 +116,11 @@ async def initialize_user_models(user_id: str, provider: str | None = None) -> t
             detail="Konfigurasi AI Provider belum diatur. Silakan tambahkan API key Anda di menu Settings.",
         )
 
-    llm = LLMFactory.get_llm_for_config(provider_records[0])
+    return LLMFactory.get_llm_for_config(provider_records[0])
 
-    embedding_res = await execute_query(
-        supabase.table("user_embedding_configs")
-        .select("*")
-        .eq("user_id", user_id)
-    )
 
-    if not embedding_res.data:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Konfigurasi Model Embedding belum diatur. Silakan atur model embedding di menu Settings.",
-        )
-
-    embeddings_model = LLMFactory.get_embeddings_for_config(embedding_res.data[0])
+async def initialize_user_models(user_id: str, provider: str | None = None) -> tuple[BaseChatModel, Embeddings]:
+    llm = await initialize_user_llm(user_id, provider)
+    embeddings_model = await initialize_user_embeddings(user_id)
 
     return llm, embeddings_model

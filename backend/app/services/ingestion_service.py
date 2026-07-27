@@ -1,4 +1,3 @@
-import asyncio
 import inspect
 import logging
 import re
@@ -11,20 +10,18 @@ import pymupdf4llm
 from asyncer import asyncify
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
-from langchain_core.rate_limiters import InMemoryRateLimiter
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from app.database import execute_query, get_supabase_client
 from app.schemas import DocumentChunkDTO
-from app.services.rag_service import initialize_user_models
+from app.services.rag_service import initialize_user_embeddings, initialize_user_llm
 from app.services.storage_service import StorageService
 
 logger = logging.getLogger(__name__)
 
 PARAGRAPH_DELIMITER = '\n\n'
 QUESTIONS_PER_PARAGRAPH = 5
-
-_RATE_LIMITER = InMemoryRateLimiter(requests_per_second=2, max_bucket_size=5)
+MAX_ENRICHED_PARAGRAPHS = 75
 
 QUESTION_GENERATION_SYSTEM_PROMPT = (
     f"Generate {QUESTIONS_PER_PARAGRAPH} diverse questions that can be "
@@ -155,27 +152,40 @@ class PDFIngestionService:
             chunks = await asyncify(self.parse_pdf_bytes)(pdf_bytes, filename)
             if not chunks:
                 raise ValueError('Could not extract readable text from PDF.')
-            llm, embeddings_model = await initialize_user_models(user_id)
-            llm.rate_limiter = _RATE_LIMITER
-            expanded_chunks = await self._attach_synthetic_questions(chunks, llm)
-            await self._store_chunks(supabase, document_id, user_id, expanded_chunks, embeddings_model, batch_size)
+            embeddings_model = await initialize_user_embeddings(user_id)
+            await self._store_chunks(supabase, document_id, user_id, chunks, embeddings_model, batch_size)
             total_pages = max(chunk.page_number for chunk in chunks)
             await execute_query(supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id))
-            logger.info('Document %s processed: %d chunks stored (%d paragraphs).', document_id, len(expanded_chunks), len(chunks))
+            logger.info('Document %s processed: %d chunks stored.', document_id, len(chunks))
+            try:
+                llm = await initialize_user_llm(user_id)
+                await self.enrich_document_questions(supabase, document_id, user_id, chunks, llm, embeddings_model, batch_size)
+            except Exception:
+                logger.exception('Document %s question enrichment failed.', document_id)
         except Exception:
             logger.exception('Document %s processing failed.', document_id)
             await execute_query(supabase.table('documents').update({'status': 'failed'}).eq('id', document_id))
 
-    async def _attach_synthetic_questions(self, chunks: list[DocumentChunkDTO], llm: BaseChatModel) -> list[DocumentChunkDTO]:
-        expanded: list[DocumentChunkDTO] = []
-        semaphore = asyncio.Semaphore(3)
-        
-        async def process_single_chunk(chunk: DocumentChunkDTO) -> list[DocumentChunkDTO]:
-            chunk_results = [chunk]
-            async with semaphore:
+    async def enrich_document_questions(
+        self,
+        supabase: Any,
+        document_id: str,
+        user_id: str,
+        chunks: list[DocumentChunkDTO],
+        llm: BaseChatModel,
+        embeddings_model: Embeddings,
+        batch_size: int = 100,
+    ) -> None:
+        question_chunks: list[DocumentChunkDTO] = []
+        paragraph_chunks = [chunk for chunk in chunks if chunk.metadata.get('type') == 'paragraph'][:MAX_ENRICHED_PARAGRAPHS]
+        for chunk in paragraph_chunks:
+            try:
                 questions = await self.generate_questions(chunk.content, llm)
+            except Exception as exc:
+                logger.warning('Skipping question enrichment for chunk %s: %s', chunk.id, exc)
+                continue
             for question in questions:
-                chunk_results.append(DocumentChunkDTO(
+                question_chunks.append(DocumentChunkDTO(
                     id=str(uuid.uuid4()),
                     parent_chunk_id=chunk.id,
                     content=chunk.content,
@@ -187,14 +197,8 @@ class PDFIngestionService:
                         'question': question,
                     },
                 ))
-            return chunk_results
-
-        tasks = [process_single_chunk(chunk) for chunk in chunks]
-        results = await asyncio.gather(*tasks)
-        for chunk_results in results:
-            expanded.extend(chunk_results)
-                
-        return expanded
+        if question_chunks:
+            await self._store_chunks(supabase, document_id, user_id, question_chunks, embeddings_model, batch_size)
 
     async def _store_chunks(self, supabase: Any, document_id: str, user_id: str, chunks: list[DocumentChunkDTO], embeddings_model: Embeddings, batch_size: int) -> None:
         chunk_texts = [chunk.metadata.get('question', chunk.content) if chunk.metadata.get('type') == 'question' else chunk.content for chunk in chunks]
