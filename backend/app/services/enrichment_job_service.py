@@ -379,10 +379,6 @@ class EnrichmentJobService:
                 "bibliography",
                 "index",
                 "appendix",
-                "daftar isi",
-                "daftar pustaka",
-                "referensi",
-                "lampiran",
             ]
         ):
             return False
@@ -426,12 +422,6 @@ class EnrichmentJobService:
                 "consequently",
                 "specifically",
                 "particularly",
-                "namun",
-                "oleh karena itu",
-                "selanjutnya",
-                "kesimpulannya",
-                "khususnya",
-                "sebagai kesimpulan",
             ]
         ):
             score += 0.5
