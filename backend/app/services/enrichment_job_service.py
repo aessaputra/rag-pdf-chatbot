@@ -158,7 +158,10 @@ class EnrichmentJobService:
             await execute_query(
                 supabase.rpc(
                     "start_enrichment_job",
-                    {"p_document_id": document_id},
+                    {
+                        "p_document_id": document_id,
+                        "p_user_id": user_id,
+                    },
                 )
             )
 
@@ -242,6 +245,7 @@ class EnrichmentJobService:
                     "complete_enrichment_job",
                     {
                         "p_document_id": document_id,
+                        "p_user_id": user_id,
                         "p_processed_paragraphs": processed_paragraphs,
                         "p_question_chunks_created": question_chunks_created,
                     },

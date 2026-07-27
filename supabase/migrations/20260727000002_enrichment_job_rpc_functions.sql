@@ -1,5 +1,6 @@
 CREATE OR REPLACE FUNCTION start_enrichment_job(
-    p_document_id UUID
+    p_document_id UUID,
+    p_user_id UUID
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -12,12 +13,13 @@ BEGIN
         started_at = NOW()
     WHERE 
         document_id = p_document_id
-        AND user_id = auth.uid();
+        AND user_id = p_user_id;
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION complete_enrichment_job(
     p_document_id UUID,
+    p_user_id UUID,
     p_processed_paragraphs INTEGER,
     p_question_chunks_created INTEGER
 )
@@ -34,11 +36,11 @@ BEGIN
         question_chunks_created = p_question_chunks_created
     WHERE 
         document_id = p_document_id
-        AND user_id = auth.uid();
+        AND user_id = p_user_id;
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION start_enrichment_job(UUID) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION complete_enrichment_job(UUID, INTEGER, INTEGER) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION start_enrichment_job(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION complete_enrichment_job(UUID, INTEGER, INTEGER) TO authenticated;
+REVOKE EXECUTE ON FUNCTION start_enrichment_job(UUID, UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION complete_enrichment_job(UUID, UUID, INTEGER, INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION start_enrichment_job(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION complete_enrichment_job(UUID, UUID, INTEGER, INTEGER) TO authenticated;
