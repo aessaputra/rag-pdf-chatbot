@@ -62,6 +62,7 @@ class LLMFactory:
             return ChatGoogleGenerativeAI(
                 model=model_name,
                 google_api_key=api_key,
+                timeout=60,
                 streaming=True,
             )
 

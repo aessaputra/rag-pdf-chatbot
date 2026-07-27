@@ -1,0 +1,11 @@
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "anthropic",
+    "google.api_core.*",
+    "fitz",
+    "pymupdf4llm"
+]
+ignore_missing_imports = true

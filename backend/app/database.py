@@ -8,11 +8,10 @@ server-side operations that intentionally require elevated privileges.
 
 import asyncio
 import inspect
-from collections.abc import Callable
 from typing import Any
 
-from asyncer import asyncify
-from supabase import AsyncClient, create_async_client
+import httpx
+from supabase import AsyncClient, AsyncClientOptions, create_async_client
 
 from app.config import settings
 
@@ -36,23 +35,19 @@ async def get_supabase_client() -> AsyncClient:
     if _async_supabase_client is None:
         async with _async_client_lock:
             if _async_supabase_client is None:
+                # Create httpx client without deprecated parameters
+                http_client = httpx.AsyncClient()
                 _async_supabase_client = await create_async_client(
                     settings.SUPABASE_URL,
                     settings.SUPABASE_SECRET_KEY,
+                    options=AsyncClientOptions(httpx_client=http_client),
                 )
 
     return _async_supabase_client
 
 
-async def maybe_await(result: Any) -> Any:
+async def execute_query(builder: Any) -> Any:
+    result = builder.execute()
     if inspect.isawaitable(result):
         return await result
     return result
-
-
-async def maybe_await_call(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-    return await maybe_await(await asyncify(func)(*args, **kwargs))
-
-
-async def execute_query(builder: Any) -> Any:
-    return await maybe_await_call(builder.execute)

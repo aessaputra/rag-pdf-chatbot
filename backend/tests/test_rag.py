@@ -6,12 +6,10 @@ Tests adapted for the decomposed module structure: ContextRetriever, PromptBuild
 """
 
 import asyncio
-import threading
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.database import execute_query
 from app.schemas import Citation
 from app.services.context_retriever import ContextRetriever
 from app.services.prompt_builder import PromptBuilder
@@ -115,22 +113,6 @@ async def test_context_retriever_awaits_async_embedding_and_rpc():
     rpc_builder.execute.assert_awaited_once()
 
 
-@pytest.mark.asyncio
-async def test_execute_query_offloads_sync_execute():
-    event_loop_thread = threading.get_ident()
-    execute_thread = None
-
-    class SyncBuilder:
-        def execute(self):
-            nonlocal execute_thread
-            execute_thread = threading.get_ident()
-            return MagicMock(data=[])
-
-    result = await execute_query(SyncBuilder())
-
-    assert result.data == []
-    assert execute_thread is not None
-    assert execute_thread != event_loop_thread
 
 
 @pytest.mark.asyncio

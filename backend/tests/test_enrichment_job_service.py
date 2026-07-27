@@ -1,5 +1,4 @@
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -23,25 +22,8 @@ def _make_supabase_mock() -> tuple[MagicMock, dict[str, MagicMock]]:
     }
     supabase = MagicMock()
     supabase.table.side_effect = lambda name: tables[name]
+    supabase.rpc = MagicMock()
     return supabase, tables
-
-
-def _configure_default_provider_config(tables: dict[str, MagicMock]) -> None:
-    tables["user_provider_configs"].select.return_value.eq.return_value.order.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-        data=[{"provider": "gemini", "model_name": "gemini-2.5-flash"}]
-    )
-
-
-def _configure_embedding_config(tables: dict[str, MagicMock]) -> None:
-    tables["user_embedding_configs"].select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"provider": "gemini", "model_name": "models/gemini-embedding-001", "embedding_dimensions": 768}]
-    )
-
-
-def _configure_enrichment_config(tables: dict[str, MagicMock], preset: str = "standard") -> None:
-    tables["user_enrichment_configs"].select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"preset": preset}]
-    )
 
 
 @pytest.mark.asyncio
@@ -61,7 +43,6 @@ async def test_create_job_should_insert_pending_record(mock_get_supabase):
             "question_chunks_created": 0,
             "failed_paragraphs": 0,
             "attempt_count": 0,
-            "max_attempts": 3,
         }]
     )
 
@@ -78,6 +59,27 @@ async def test_create_job_should_insert_pending_record(mock_get_supabase):
     assert inserted_data["user_id"] == MOCK_USER_ID
     assert inserted_data["status"] == "pending"
     assert inserted_data["total_paragraphs"] == 10
+
+
+@pytest.mark.asyncio
+@patch("app.services.enrichment_job_service.get_supabase_client")
+async def test_create_job_should_validate_uuid_format(mock_get_supabase):
+    service = EnrichmentJobService()
+
+    with pytest.raises(ValueError, match="document_id must be a valid UUID"):
+        await service.create_job(document_id="invalid-uuid", user_id=MOCK_USER_ID, total_paragraphs=10)
+
+    with pytest.raises(ValueError, match="user_id must be a valid UUID"):
+        await service.create_job(document_id=MOCK_DOC_ID, user_id="invalid-uuid", total_paragraphs=10)
+
+
+@pytest.mark.asyncio
+@patch("app.services.enrichment_job_service.get_supabase_client")
+async def test_create_job_should_validate_total_paragraphs(mock_get_supabase):
+    service = EnrichmentJobService()
+
+    with pytest.raises(ValueError, match="total_paragraphs must be non-negative"):
+        await service.create_job(document_id=MOCK_DOC_ID, user_id=MOCK_USER_ID, total_paragraphs=-1)
 
 
 @pytest.mark.asyncio
@@ -149,32 +151,28 @@ async def test_update_progress_should_increment_counts(mock_get_supabase):
 
 @pytest.mark.asyncio
 @patch("app.services.enrichment_job_service.get_supabase_client")
-async def test_start_job_should_set_status_running_and_started_at(mock_get_supabase):
+async def test_start_job_should_call_rpc_function(mock_get_supabase):
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
 
-    tables["document_enrichment_jobs"].update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"status": "running"}]
-    )
+    mock_supabase.rpc.return_value.execute.return_value = MagicMock(data=[])
 
     service = EnrichmentJobService()
     await service.start_job(document_id=MOCK_DOC_ID, user_id=MOCK_USER_ID)
 
-    update_call = tables["document_enrichment_jobs"].update.call_args
-    update_data = update_call[0][0]
-    assert update_data["status"] == "running"
-    assert "started_at" in update_data
+    mock_supabase.rpc.assert_called_once_with(
+        "start_enrichment_job",
+        {"p_document_id": MOCK_DOC_ID}
+    )
 
 
 @pytest.mark.asyncio
 @patch("app.services.enrichment_job_service.get_supabase_client")
-async def test_complete_job_should_set_status_completed_and_completed_at(mock_get_supabase):
+async def test_complete_job_should_call_rpc_function(mock_get_supabase):
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
 
-    tables["document_enrichment_jobs"].update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"status": "completed"}]
-    )
+    mock_supabase.rpc.return_value.execute.return_value = MagicMock(data=[])
 
     service = EnrichmentJobService()
     await service.complete_job(
@@ -184,22 +182,24 @@ async def test_complete_job_should_set_status_completed_and_completed_at(mock_ge
         question_chunks_created=50,
     )
 
-    update_call = tables["document_enrichment_jobs"].update.call_args
-    update_data = update_call[0][0]
-    assert update_data["status"] == "completed"
-    assert "completed_at" in update_data
-    assert update_data["processed_paragraphs"] == 10
-    assert update_data["question_chunks_created"] == 50
+    mock_supabase.rpc.assert_called_once_with(
+        "complete_enrichment_job",
+        {
+            "p_document_id": MOCK_DOC_ID,
+            "p_processed_paragraphs": 10,
+            "p_question_chunks_created": 50,
+        }
+    )
 
 
 @pytest.mark.asyncio
 @patch("app.services.enrichment_job_service.get_supabase_client")
-async def test_fail_job_should_set_status_failed_and_increment_attempt_count(mock_get_supabase):
+async def test_fail_job_should_set_status_failed(mock_get_supabase):
     mock_supabase, tables = _make_supabase_mock()
     mock_get_supabase.return_value = mock_supabase
 
     tables["document_enrichment_jobs"].update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"status": "failed", "attempt_count": 1}]
+        data=[{"status": "failed"}]
     )
 
     service = EnrichmentJobService()
@@ -215,6 +215,29 @@ async def test_fail_job_should_set_status_failed_and_increment_attempt_count(moc
     assert update_data["status"] == "failed"
     assert update_data["last_error"] == "Rate limit exceeded"
     assert update_data["failed_paragraphs"] == 3
+
+
+@pytest.mark.asyncio
+@patch("app.services.enrichment_job_service.get_supabase_client")
+async def test_fail_job_should_truncate_long_error_messages(mock_get_supabase):
+    mock_supabase, tables = _make_supabase_mock()
+    mock_get_supabase.return_value = mock_supabase
+
+    tables["document_enrichment_jobs"].update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[{"status": "failed"}]
+    )
+
+    long_error = "x" * 1000
+    service = EnrichmentJobService()
+    await service.fail_job(
+        document_id=MOCK_DOC_ID,
+        user_id=MOCK_USER_ID,
+        error_message=long_error,
+    )
+
+    update_call = tables["document_enrichment_jobs"].update.call_args
+    update_data = update_call[0][0]
+    assert len(update_data["last_error"]) == 500
 
 
 @pytest.mark.asyncio
@@ -240,15 +263,13 @@ async def test_get_retryable_jobs_should_return_failed_jobs_below_max_attempts(m
 @pytest.mark.asyncio
 @patch("app.services.enrichment_job_service.get_supabase_client")
 async def test_get_enrichment_cap_should_return_preset_values(mock_get_supabase):
-    mock_supabase, tables = _make_supabase_mock()
-    mock_get_supabase.return_value = mock_supabase
-
     service = EnrichmentJobService()
 
     assert service.get_preset_cap("off") == 0
     assert service.get_preset_cap("standard") == 75
     assert service.get_preset_cap("high") == 150
     assert service.get_preset_cap("full") == 999999
+    assert service.get_preset_cap("unknown") == 75
 
 
 @pytest.mark.asyncio
@@ -283,27 +304,29 @@ async def test_get_user_preset_should_default_to_standard_when_not_configured(mo
     assert preset == "standard"
 
 
-def test_select_paragraphs_by_quality_should_prioritize_longer_content():
+def test_select_paragraphs_by_quality_should_use_quality_scoring():
     from app.schemas import DocumentChunkDTO
 
     chunks = [
         DocumentChunkDTO(
-            id="short-1",
-            content="Short.",
+            id="low-quality",
+            content="123456789 " * 10,
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
         ),
         DocumentChunkDTO(
-            id="long-1",
-            content="This is a much longer paragraph with more substantive content that should be prioritized.",
+            id="high-quality",
+            content="This is a well-structured paragraph with proper sentences. "
+                    "It contains transitional words like however and therefore. "
+                    "The content is substantive and informative, making it ideal for question generation.",
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
         ),
         DocumentChunkDTO(
-            id="medium-1",
-            content="Medium length content here.",
+            id="medium-quality",
+            content="This is a medium quality paragraph with some content but not as rich as the high quality one.",
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
@@ -314,8 +337,9 @@ def test_select_paragraphs_by_quality_should_prioritize_longer_content():
     selected = service.select_paragraphs_by_quality(chunks, cap=2)
 
     assert len(selected) == 2
-    assert selected[0].id == "long-1"
-    assert selected[1].id == "medium-1"
+    selected_ids = {chunk.id for chunk in selected}
+    assert "high-quality" in selected_ids or "medium-quality" in selected_ids
+    assert "low-quality" not in selected_ids
 
 
 def test_select_paragraphs_by_quality_should_skip_very_short_paragraphs():
@@ -370,3 +394,49 @@ def test_select_paragraphs_by_quality_should_filter_by_type():
 
     assert len(selected) == 1
     assert selected[0].id == "para-1"
+
+
+def test_select_paragraphs_by_quality_should_filter_table_of_contents():
+    from app.schemas import DocumentChunkDTO
+
+    chunks = [
+        DocumentChunkDTO(
+            id="toc",
+            content="Table of Contents: Chapter 1, Chapter 2, Chapter 3",
+            page_number=1,
+            filename="test.pdf",
+            metadata={"type": "paragraph"},
+        ),
+        DocumentChunkDTO(
+            id="good",
+            content="This is actual content from the document that should be selected for enrichment.",
+            page_number=2,
+            filename="test.pdf",
+            metadata={"type": "paragraph"},
+        ),
+    ]
+
+    service = EnrichmentJobService()
+    selected = service.select_paragraphs_by_quality(chunks, cap=10)
+
+    assert len(selected) == 1
+    assert selected[0].id == "good"
+
+
+def test_select_paragraphs_by_quality_should_return_empty_when_cap_is_zero():
+    from app.schemas import DocumentChunkDTO
+
+    chunks = [
+        DocumentChunkDTO(
+            id="para-1",
+            content="Some content here",
+            page_number=1,
+            filename="test.pdf",
+            metadata={"type": "paragraph"},
+        ),
+    ]
+
+    service = EnrichmentJobService()
+    selected = service.select_paragraphs_by_quality(chunks, cap=0)
+
+    assert len(selected) == 0

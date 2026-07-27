@@ -1,6 +1,6 @@
 import logging
 
-from app.database import get_supabase_client, maybe_await_call
+from app.database import get_supabase_client
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,7 @@ class StorageService:
         supabase = await get_supabase_client()
         file_path = StorageService.build_storage_path(user_id, document_id)
 
-        response = await maybe_await_call(
-            supabase.storage.from_(STORAGE_BUCKET).upload,
+        response = await supabase.storage.from_(STORAGE_BUCKET).upload(
             file_path,
             file_bytes,
             file_options={"content-type": "application/pdf"},
@@ -36,7 +35,7 @@ class StorageService:
     async def delete_file(file_path: str) -> None:
         supabase = await get_supabase_client()
         try:
-            await maybe_await_call(supabase.storage.from_(STORAGE_BUCKET).remove, [file_path])
+            await supabase.storage.from_(STORAGE_BUCKET).remove([file_path])
             logger.info("Deleted file from storage: %s", file_path)
         except Exception as e:
             logger.error("Failed to delete file from storage %s: %s", file_path, e)
@@ -46,15 +45,15 @@ class StorageService:
     async def create_signed_url(file_path: str, expires_in: int = SIGNED_URL_EXPIRY_SECONDS) -> str | None:
         supabase = await get_supabase_client()
         try:
-            response = await maybe_await_call(
-                supabase.storage.from_(STORAGE_BUCKET).create_signed_url,
+            response = await supabase.storage.from_(STORAGE_BUCKET).create_signed_url(
                 path=file_path,
                 expires_in=expires_in,
             )
             if isinstance(response, dict) and response.get("signedURL"):
                 return response["signedURL"]
-            if hasattr(response, "signed_url"):
-                return response.signed_url
+            signed_url = getattr(response, "signed_url", None)
+            if signed_url:
+                return signed_url
             return response.get("signedURL") if isinstance(response, dict) else None
         except Exception as e:
             logger.error("Failed to create signed URL for %s: %s", file_path, e)

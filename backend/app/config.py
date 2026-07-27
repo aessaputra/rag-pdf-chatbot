@@ -19,6 +19,11 @@ class Settings(BaseSettings):
         description="32-byte secret key for AES-256-GCM BYOK API key encryption"
     )
 
+    LANGSMITH_TRACING: str = Field("false", alias="LANGSMITH_TRACING")
+    LANGSMITH_API_KEY: str | None = Field(None, alias="LANGSMITH_API_KEY")
+    LANGSMITH_ENDPOINT: str | None = Field(None, alias="LANGSMITH_ENDPOINT")
+    LANGSMITH_PROJECT: str = Field("Paper Mind", alias="LANGSMITH_PROJECT")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

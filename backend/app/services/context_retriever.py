@@ -29,7 +29,7 @@ class ContextRetriever:
             x.get('metadata', {}).get('page_number', 0),
             x.get('metadata', {}).get('line_start', 0)
         ))
-        merged = []
+        merged: list[dict[str, Any]] = []
         for r in deduped:
             if not merged:
                 merged.append(r)
