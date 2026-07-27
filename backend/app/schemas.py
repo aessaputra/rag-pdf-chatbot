@@ -15,8 +15,6 @@ class UserPayload(BaseModel):
 class Citation(BaseModel):
     filename: str
     page_number: int
-    line_start: int | None = None
-    line_end: int | None = None
     content: str
 
 
@@ -35,8 +33,6 @@ class DocumentChunkDTO(BaseModel):
     content: str
     page_number: int
     filename: str
-    line_start: int | None = None
-    line_end: int | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     embedding: list[float] | None = None
 

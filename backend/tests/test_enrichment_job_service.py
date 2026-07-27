@@ -162,7 +162,10 @@ async def test_start_job_should_call_rpc_function(mock_get_supabase):
 
     mock_supabase.rpc.assert_called_once_with(
         "start_enrichment_job",
-        {"p_document_id": MOCK_DOC_ID}
+        {
+            "p_document_id": MOCK_DOC_ID,
+            "p_user_id": MOCK_USER_ID,
+        }
     )
 
 
@@ -186,6 +189,7 @@ async def test_complete_job_should_call_rpc_function(mock_get_supabase):
         "complete_enrichment_job",
         {
             "p_document_id": MOCK_DOC_ID,
+            "p_user_id": MOCK_USER_ID,
             "p_processed_paragraphs": 10,
             "p_question_chunks_created": 50,
         }

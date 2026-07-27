@@ -31,8 +31,9 @@ def test_format_context_prompt_should_include_page_numbers_and_content():
     prompt = "".join(msg.content for msg in prompt_messages)
 
     assert "First chunk content about RAG." in prompt
-    assert "Page: 2" in prompt
-    assert "Page: 5" in prompt
+    assert "Halaman: 2" in prompt
+    assert "Second chunk content about Supabase." in prompt
+    assert "Halaman: 5" in prompt
     assert "What is RAG?" in prompt
 
 
@@ -174,8 +175,8 @@ def test_context_formatting_includes_source_labels():
     prompt_messages = PromptBuilder.format_context_prompt(query="Test?", chunks=MOCK_CHUNKS)
     prompt = "".join(msg.content for msg in prompt_messages)
 
-    assert "Source [1]" in prompt
-    assert "Source [2]" in prompt
+    assert "Sumber [1]" in prompt
+    assert "Sumber [2]" in prompt
     assert "---" in prompt
 
 
@@ -195,8 +196,8 @@ def test_build_context_string_handles_missing_metadata():
 
     assert "Content without metadata." in result
     assert "Content with partial metadata." in result
-    assert "Source [1]" in result
-    assert "Source [2]" in result
+    assert "Sumber [1]" in result
+    assert "Sumber [2]" in result
 
 
 def test_merge_contexts_combines_adjacent_paragraphs():

@@ -74,13 +74,14 @@ class PDFIngestionService:
             text_chunks = self.text_splitter.split_text(page_text)
 
             for chunk_text in text_chunks:
-                if not chunk_text.strip():
+                cleaned_chunk = chunk_text.strip()
+                if not cleaned_chunk:
                     continue
 
                 all_chunks.append(
                     DocumentChunkDTO(
                         id=str(uuid.uuid4()),
-                        content=chunk_text.strip(),
+                        content=cleaned_chunk,
                         page_number=page_number,
                         filename=filename,
                         metadata={

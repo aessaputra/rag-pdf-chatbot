@@ -90,8 +90,6 @@ class ContextRetriever:
             citations.append(Citation(
                 filename=metadata.get('filename', 'Unknown Document'), 
                 page_number=metadata.get('page_number', 1), 
-                line_start=metadata.get('line_start'),
-                line_end=metadata.get('line_end'),
                 content=chunk.get('content', '')
             ))
         return citations

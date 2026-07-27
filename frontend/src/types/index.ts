@@ -20,8 +20,6 @@ export type ApiResponse<T> =
 export interface Citation {
   readonly filename: string;
   readonly page_number: number;
-  readonly line_start?: number;
-  readonly line_end?: number;
   readonly content: string;
 }
 

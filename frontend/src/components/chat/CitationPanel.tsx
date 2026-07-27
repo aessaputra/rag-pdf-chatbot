@@ -50,7 +50,6 @@ export default function CitationPanel() {
           </div>
           <span className="text-xs font-mono text-secondary bg-surface-card border border-subtle px-2.5 py-1 rounded shrink-0 [font-variant-numeric:tabular-nums]">
             HAL {selectedCitation.page_number}
-            {selectedCitation.line_start && selectedCitation.line_end ? ` BARIS ${selectedCitation.line_start}-${selectedCitation.line_end}` : ''}
           </span>
         </div>
       </div>
