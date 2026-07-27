@@ -104,8 +104,8 @@ class PDFIngestionService:
 
     @retry(
         retry=retry_if_exception_type(get_retryable_exceptions()),
-        wait=wait_exponential(multiplier=1, min=4, max=60),
-        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=5, max=120),
+        stop=stop_after_attempt(10),
     )
     async def generate_questions_batch(
         self, 
