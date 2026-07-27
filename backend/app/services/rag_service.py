@@ -51,6 +51,8 @@ class RAGService:
 
             async for chunk in self.llm.astream(prompt):
                 token_content = chunk.content if hasattr(chunk, "content") else str(chunk)
+                if isinstance(token_content, list):
+                    token_content = str(token_content)
                 if token_content:
                     full_response += token_content
                     yield ServerSentEvent(data={"token": token_content}, event="token")

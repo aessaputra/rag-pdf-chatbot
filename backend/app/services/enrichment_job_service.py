@@ -1,4 +1,5 @@
 import logging
+import math
 import re
 from typing import Any
 
@@ -26,24 +27,6 @@ DEFAULT_PRESET = "standard"
 MIN_PARAGRAPH_LENGTH = 20
 UUID_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
-)
-
-JUNK_SECTION_TITLES = (
-    "table of contents",
-    "references",
-    "bibliography",
-    "index",
-    "appendix",
-)
-
-ARGUMENTATIVE_CONJUNCTIONS = (
-    "however",
-    "therefore",
-    "moreover",
-    "furthermore",
-    "consequently",
-    "specifically",
-    "particularly",
 )
 
 
@@ -361,11 +344,28 @@ class EnrichmentJobService:
             for chunk in chunks
             if chunk.metadata.get("type") == "paragraph"
             and len(chunk.content) >= min_length
-            and self._is_quality_paragraph(chunk.content)
+            and chunk.embedding is not None
+        ]
+        
+        if not paragraph_chunks:
+            return []
+
+        dimension = len(paragraph_chunks[0].embedding)  # type: ignore
+        centroid = [
+            sum(chunk.embedding[i] for chunk in paragraph_chunks) / len(paragraph_chunks)  # type: ignore
+            for i in range(dimension)
         ]
 
+        def cosine_similarity(v1: list[float], v2: list[float]) -> float:
+            dot_product = sum(a * b for a, b in zip(v1, v2))
+            norm_v1 = math.sqrt(sum(a * a for a in v1))
+            norm_v2 = math.sqrt(sum(b * b for b in v2))
+            if norm_v1 == 0 or norm_v2 == 0:
+                return 0.0
+            return dot_product / (norm_v1 * norm_v2)
+
         scored_chunks = [
-            (chunk, self._calculate_quality_score(chunk.content))
+            (chunk, cosine_similarity(chunk.embedding, centroid))  # type: ignore
             for chunk in paragraph_chunks
         ]
 
@@ -374,57 +374,10 @@ class EnrichmentJobService:
         selected = [chunk for chunk, _ in scored_chunks[:cap]]
 
         logger.debug(
-            "Selected %d/%d paragraphs for enrichment (cap: %d)",
+            "Selected %d/%d paragraphs for enrichment (cap: %d) using Vector Centroid",
             len(selected),
             len(paragraph_chunks),
             cap,
         )
 
         return selected
-
-    @staticmethod
-    def _is_quality_paragraph(content: str) -> bool:
-        if not content or not content.strip():
-            return False
-            
-        content_lower = content.lower()
-
-        if any(phrase in content_lower for phrase in JUNK_SECTION_TITLES):
-            return False
-
-        char_count = len(content)
-        if char_count < 50:
-            return False
-
-        digit_ratio = sum(c.isdigit() for c in content) / char_count
-        if digit_ratio > 0.5:
-            return False
-
-        return True
-
-    @staticmethod
-    def _calculate_quality_score(content: str) -> float:
-        if not content or not content.strip():
-            return 0.0
-            
-        score = 0.0
-        char_count = len(content)
-
-        if 250 <= char_count <= 1500:
-            score += 2.0
-        elif 150 <= char_count < 250 or 1500 < char_count <= 2500:
-            score += 1.0
-
-        sentences = len(re.findall(r'[.!?。！？]+', content))
-        if sentences > 0:
-            avg_chars_per_sentence = char_count / sentences
-            if 50 <= avg_chars_per_sentence <= 150:
-                score += 1.0
-
-        if any(keyword in content.lower() for keyword in ARGUMENTATIVE_CONJUNCTIONS):
-            score += 0.5
-
-        if content.strip()[-1] in ".!?。！？":
-            score += 0.5
-
-        return score

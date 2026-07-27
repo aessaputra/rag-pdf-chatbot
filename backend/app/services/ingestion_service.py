@@ -380,6 +380,9 @@ class PDFIngestionService:
             embeddings_model, chunk_texts
         )
 
+        for chunk, embedding_vector in zip(chunks, vector_embeddings):
+            chunk.embedding = embedding_vector
+
         chunk_records = [
             {
                 "id": chunk.id,
@@ -389,9 +392,9 @@ class PDFIngestionService:
                 "content": chunk.content,
                 "page_number": chunk.page_number,
                 "metadata": chunk.metadata,
-                "embedding": embedding_vector,
+                "embedding": chunk.embedding,
             }
-            for chunk, embedding_vector in zip(chunks, vector_embeddings)
+            for chunk in chunks
         ]
 
         for i in range(0, len(chunk_records), batch_size):

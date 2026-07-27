@@ -304,42 +304,47 @@ async def test_get_user_preset_should_default_to_standard_when_not_configured(mo
     assert preset == "standard"
 
 
-def test_select_paragraphs_by_quality_should_use_quality_scoring():
+def test_select_paragraphs_by_quality_should_use_centroid_scoring():
     from app.schemas import DocumentChunkDTO
 
     chunks = [
         DocumentChunkDTO(
-            id="low-quality",
-            content="123456789 " * 10,
+            id="outlier-chunk",
+            content="This paragraph talks about something completely unrelated to the main topic.",
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
+            embedding=[-1.0, -1.0],
         ),
         DocumentChunkDTO(
-            id="high-quality",
-            content="This is a well-structured paragraph with proper sentences. "
-                    "It contains transitional words like however and therefore. "
-                    "The content is substantive and informative, making it ideal for question generation.",
+            id="core-chunk-1",
+            content="This is the main theme of the document. Very important.",
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
+            embedding=[0.9, 0.9],
         ),
         DocumentChunkDTO(
-            id="medium-quality",
-            content="This is a medium quality paragraph with some content but not as rich as the high quality one.",
+            id="core-chunk-2",
+            content="Another paragraph discussing the core concepts.",
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
+            embedding=[1.0, 1.0],
         ),
     ]
 
     service = EnrichmentJobService()
+    # Centroid of [-1,-1], [0.9,0.9], [1,1] is roughly [0.63, 0.63]
+    # The two core chunks will have high cosine similarity to [0.63, 0.63]
+    # The outlier will have negative similarity.
     selected = service.select_paragraphs_by_quality(chunks, cap=2)
 
     assert len(selected) == 2
     selected_ids = {chunk.id for chunk in selected}
-    assert "high-quality" in selected_ids or "medium-quality" in selected_ids
-    assert "low-quality" not in selected_ids
+    assert "core-chunk-1" in selected_ids
+    assert "core-chunk-2" in selected_ids
+    assert "outlier-chunk" not in selected_ids
 
 
 def test_select_paragraphs_by_quality_should_skip_very_short_paragraphs():
@@ -352,6 +357,7 @@ def test_select_paragraphs_by_quality_should_skip_very_short_paragraphs():
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
+            embedding=[1.0, 1.0],
         ),
         DocumentChunkDTO(
             id="good-1",
@@ -359,6 +365,7 @@ def test_select_paragraphs_by_quality_should_skip_very_short_paragraphs():
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
+            embedding=[1.0, 1.0],
         ),
     ]
 
@@ -369,7 +376,7 @@ def test_select_paragraphs_by_quality_should_skip_very_short_paragraphs():
     assert selected[0].id == "good-1"
 
 
-def test_select_paragraphs_by_quality_should_filter_by_type():
+def test_select_paragraphs_by_quality_should_filter_by_type_and_missing_embedding():
     from app.schemas import DocumentChunkDTO
 
     chunks = [
@@ -379,6 +386,7 @@ def test_select_paragraphs_by_quality_should_filter_by_type():
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
+            embedding=[1.0, 0.0],
         ),
         DocumentChunkDTO(
             id="question-1",
@@ -386,6 +394,15 @@ def test_select_paragraphs_by_quality_should_filter_by_type():
             page_number=1,
             filename="test.pdf",
             metadata={"type": "question"},
+            embedding=[1.0, 0.0],
+        ),
+        DocumentChunkDTO(
+            id="missing-embedding",
+            content="This paragraph has no embedding so it must be skipped.",
+            page_number=1,
+            filename="test.pdf",
+            metadata={"type": "paragraph"},
+            embedding=None,
         ),
     ]
 
@@ -394,33 +411,6 @@ def test_select_paragraphs_by_quality_should_filter_by_type():
 
     assert len(selected) == 1
     assert selected[0].id == "para-1"
-
-
-def test_select_paragraphs_by_quality_should_filter_table_of_contents():
-    from app.schemas import DocumentChunkDTO
-
-    chunks = [
-        DocumentChunkDTO(
-            id="toc",
-            content="Table of Contents: Chapter 1, Chapter 2, Chapter 3",
-            page_number=1,
-            filename="test.pdf",
-            metadata={"type": "paragraph"},
-        ),
-        DocumentChunkDTO(
-            id="good",
-            content="This is actual content from the document that should be selected for enrichment.",
-            page_number=2,
-            filename="test.pdf",
-            metadata={"type": "paragraph"},
-        ),
-    ]
-
-    service = EnrichmentJobService()
-    selected = service.select_paragraphs_by_quality(chunks, cap=10)
-
-    assert len(selected) == 1
-    assert selected[0].id == "good"
 
 
 def test_select_paragraphs_by_quality_should_return_empty_when_cap_is_zero():
@@ -433,6 +423,7 @@ def test_select_paragraphs_by_quality_should_return_empty_when_cap_is_zero():
             page_number=1,
             filename="test.pdf",
             metadata={"type": "paragraph"},
+            embedding=[1.0, 1.0],
         ),
     ]
 

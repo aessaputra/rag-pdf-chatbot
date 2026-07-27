@@ -38,6 +38,7 @@ class DocumentChunkDTO(BaseModel):
     line_start: int | None = None
     line_end: int | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    embedding: list[float] | None = None
 
 
 class DocumentUploadResponse(BaseModel):
