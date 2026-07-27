@@ -65,25 +65,24 @@ def test_pdf_parsing_should_extract_text_from_pages():
 
 
 @pytest.mark.asyncio
-async def test_generate_questions_should_parse_numbered_list_into_questions():
-    """Verify a clean numbered LLM response yields questions."""
+async def test_generate_questions_should_parse_structured_output():
+    """Verify LLM response yields questions using structured output."""
     mock_llm = MagicMock()
+    mock_structured = AsyncMock()
     
-    async def mock_stream(*args, **kwargs):
-        responses = [
-            "1. Apa itu RAG?\n",
-            "2. Bagaimana RAG meningkatkan akurasi?\n",
-            "3. Apa peran vektor dalam RAG?\n",
-            "4. Kapan RAG digunakan?\n",
-            "5. Mengapa RAG membutuhkan embedding?"
+    mock_structured.ainvoke.return_value = MagicMock(
+        questions=[
+            "Apa itu RAG?",
+            "Bagaimana RAG meningkatkan akurasi?",
+            "Apa peran vektor dalam RAG?",
+            "Kapan RAG digunakan?",
+            "Mengapa RAG membutuhkan embedding?"
         ]
-        for text in responses:
-            yield MagicMock(content=text)
-    
-    mock_llm.astream = mock_stream
+    )
+    mock_llm.with_structured_output.return_value = mock_structured
     
     ingestion_service = PDFIngestionService()
-    questions = await ingestion_service.generate_questions_streaming(
+    questions = await ingestion_service.generate_questions_batch(
         "Paragraf tentang RAG.", mock_llm
     )
     
@@ -96,47 +95,16 @@ async def test_generate_questions_should_parse_numbered_list_into_questions():
 
 
 @pytest.mark.asyncio
-async def test_generate_questions_should_tolerate_messy_llm_output():
-    """Verify preamble lines, bullets, quotes, and extra questions are cleaned up."""
-    mock_llm = MagicMock()
-    
-    async def mock_stream(*args, **kwargs):
-        yield MagicMock(content="Berikut lima pertanyaan:\n")
-        yield MagicMock(content='- "Apa itu RAG?"\n')
-        yield MagicMock(content="2) Bagaimana RAG bekerja?\n")
-        yield MagicMock(content="3. Apa itu embedding?\n")
-        yield MagicMock(content="* Apa itu vektor?\n")
-        yield MagicMock(content="5. Mengapa perlu chunking?\n")
-        yield MagicMock(content="6. Pertanyaan keenam yang harus dibuang?")
-    
-    mock_llm.astream = mock_stream
-    
-    ingestion_service = PDFIngestionService()
-    questions = await ingestion_service.generate_questions_streaming(
-        "Paragraf tentang RAG.", mock_llm
-    )
-    
-    assert len(questions) == 5
-    assert "Apa itu RAG?" in questions
-    assert any("Bagaimana RAG bekerja" in q for q in questions)
-    assert "Apa itu embedding?" in questions
-    assert "Apa itu vektor?" in questions
-    assert "Mengapa perlu chunking?" in questions
-
-
-@pytest.mark.asyncio
 async def test_generate_questions_should_raise_on_unparseable_llm_output():
     """Verify an empty or question-less LLM response is treated as generation failure."""
     mock_llm = MagicMock()
-    
-    async def mock_stream(*args, **kwargs):
-        yield MagicMock(content="")
-    
-    mock_llm.astream = mock_stream
+    mock_structured = AsyncMock()
+    mock_structured.ainvoke.return_value = MagicMock(questions=[])
+    mock_llm.with_structured_output.return_value = mock_structured
     
     ingestion_service = PDFIngestionService()
     with pytest.raises(ValueError):
-        await ingestion_service.generate_questions_streaming(
+        await ingestion_service.generate_questions_batch(
             "Paragraf tentang RAG.", mock_llm
         )
 
@@ -304,12 +272,11 @@ async def test_enrich_document_with_questions_should_store_linked_question_chunk
     ]
 
     mock_llm = MagicMock()
-    
-    async def mock_stream(*args, **kwargs):
-        yield MagicMock(content="1. What is this?\n")
-        yield MagicMock(content="2. Why does it matter?")
-    
-    mock_llm.astream = mock_stream
+    mock_structured = AsyncMock()
+    mock_structured.ainvoke.return_value = MagicMock(
+        questions=["What is this?", "Why does it matter?"]
+    )
+    mock_llm.with_structured_output.return_value = mock_structured
 
     mock_embeddings = MagicMock()
     mock_embeddings.embed_documents.return_value = [[0.1, 0.2], [0.3, 0.4]]
@@ -372,15 +339,17 @@ async def test_enrich_document_with_questions_should_skip_failed_paragraphs_and_
     mock_job_service.select_paragraphs_by_quality = lambda c, cap: chunks
 
     mock_llm = MagicMock()
+    mock_structured = AsyncMock()
     
     call_count = [0]
-    async def mock_stream(*args, **kwargs):
+    async def mock_ainvoke(*args, **kwargs):
         call_count[0] += 1
         if call_count[0] == 1:
             raise Exception("401 Unauthorized")
-        yield MagicMock(content="1. What works?")
+        return MagicMock(questions=["What works?"])
     
-    mock_llm.astream = mock_stream
+    mock_structured.ainvoke = mock_ainvoke
+    mock_llm.with_structured_output.return_value = mock_structured
 
     mock_embeddings = MagicMock()
     mock_embeddings.embed_documents.return_value = [[0.1, 0.2]]
@@ -428,11 +397,11 @@ async def test_enrich_document_with_questions_should_respect_cap_parameter(
     mock_job_service.select_paragraphs_by_quality = lambda c, cap: chunks[:cap]
 
     mock_llm = MagicMock()
-    
-    async def mock_stream(*args, **kwargs):
-        yield MagicMock(content="1. What is this?")
-    
-    mock_llm.astream = mock_stream
+    mock_structured = AsyncMock()
+    mock_structured.ainvoke.return_value = MagicMock(
+        questions=["What is this?"]
+    )
+    mock_llm.with_structured_output.return_value = mock_structured
 
     mock_embeddings = MagicMock()
     mock_embeddings.embed_documents.return_value = [[0.1, 0.2]] * 75

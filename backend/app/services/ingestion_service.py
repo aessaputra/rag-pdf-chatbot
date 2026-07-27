@@ -1,7 +1,10 @@
+import asyncio
 import inspect
 import logging
 import uuid
 from typing import Any
+
+from pydantic import BaseModel, Field
 
 import fitz
 import pymupdf4llm
@@ -24,6 +27,9 @@ from app.services.rag_service import initialize_user_embeddings, initialize_user
 from app.services.storage_service import StorageService
 
 logger = logging.getLogger(__name__)
+
+class GeneratedQuestions(BaseModel):
+    questions: list[str] = Field(description="A list of diverse questions that can be answered by the given paragraph.")
 
 QUESTIONS_PER_PARAGRAPH = 5
 CHUNK_SIZE = 1000
@@ -101,7 +107,7 @@ class PDFIngestionService:
         wait=wait_exponential(multiplier=1, min=4, max=60),
         stop=stop_after_attempt(5),
     )
-    async def generate_questions_streaming(
+    async def generate_questions_batch(
         self, 
         paragraph_content: str, 
         llm: BaseChatModel
@@ -110,38 +116,21 @@ class PDFIngestionService:
             paragraph_content=paragraph_content
         )
 
-        chunks: list[str] = []
-        async for chunk in llm.astream(prompt):
-            if hasattr(chunk, "content"):
-                chunks.append(chunk.content)
-
-        raw_text = "".join(chunks)
-        questions = self._parse_questions_from_text(raw_text)
-
+        structured_llm = llm.with_structured_output(GeneratedQuestions)
+        response = await structured_llm.ainvoke(prompt)
+        
+        questions: list[str] = []
+        if isinstance(response, GeneratedQuestions):
+            questions = response.questions
+        elif isinstance(response, dict) and "questions" in response:
+            questions = response["questions"]
+        elif hasattr(response, "questions"):
+            questions = getattr(response, "questions")
+            
         if not questions:
             raise ValueError("LLM did not produce valid synthetic questions.")
 
         return questions[:QUESTIONS_PER_PARAGRAPH]
-
-    @staticmethod
-    def _parse_questions_from_text(raw_text: str) -> list[str]:
-        questions: list[str] = []
-
-        for line in raw_text.splitlines():
-            cleaned = line.strip()
-            
-            for prefix in ["1.", "2.", "3.", "4.", "5.", "-", "*", "•"]:
-                if cleaned.startswith(prefix):
-                    cleaned = cleaned[len(prefix):].strip()
-
-            cleaned = cleaned.strip('"').strip("'").strip()
-
-            if not cleaned or cleaned.endswith(":"):
-                continue
-
-            questions.append(cleaned)
-
-        return questions
 
     async def register_document(
         self, 
@@ -152,7 +141,7 @@ class PDFIngestionService:
     ) -> dict[str, Any]:
         supabase = await get_supabase_client()
 
-        doc_data = {
+        doc_data: dict[str, Any] = {
             "user_id": user_id,
             "filename": filename,
             "file_size": file_size,
@@ -303,43 +292,52 @@ class PDFIngestionService:
         question_chunks: list[DocumentChunkDTO] = []
         processed_count = 0
         failed_count = 0
+        
+        semaphore = asyncio.Semaphore(3)
 
-        for chunk in paragraph_chunks:
-            try:
-                questions = await self.generate_questions_streaming(
-                    chunk.content, llm
-                )
-                processed_count += 1
-            except Exception as exc:
-                logger.warning(
-                    "Skipping question enrichment for chunk %s: %s", chunk.id, exc
-                )
-                failed_count += 1
-                continue
-
-            for question in questions:
-                question_chunks.append(
-                    DocumentChunkDTO(
-                        id=str(uuid.uuid4()),
-                        parent_chunk_id=chunk.id,
-                        content=chunk.content,
-                        page_number=chunk.page_number,
-                        filename=chunk.filename,
-                        metadata={
-                            **chunk.metadata,
-                            "type": "question",
-                            "question": question,
-                        },
+        async def process_chunk(chunk: DocumentChunkDTO) -> list[DocumentChunkDTO]:
+            nonlocal processed_count, failed_count
+            async with semaphore:
+                try:
+                    questions = await self.generate_questions_batch(chunk.content, llm)
+                    processed_count += 1
+                    
+                    if processed_count % 10 == 0:
+                        await job_service.update_progress(
+                            document_id=document_id,
+                            user_id=user_id,
+                            processed_paragraphs=processed_count,
+                            question_chunks_created=len(question_chunks),
+                        )
+                        
+                    return [
+                        DocumentChunkDTO(
+                            id=str(uuid.uuid4()),
+                            parent_chunk_id=chunk.id,
+                            content=chunk.content,
+                            page_number=chunk.page_number,
+                            filename=chunk.filename,
+                            metadata={
+                                **chunk.metadata,
+                                "type": "question",
+                                "question": q,
+                            },
+                        )
+                        for q in questions
+                    ]
+                except Exception as exc:
+                    logger.warning(
+                        "Skipping question enrichment for chunk %s: %s", chunk.id, exc
                     )
-                )
+                    failed_count += 1
+                    return []
 
-            if processed_count % 10 == 0:
-                await job_service.update_progress(
-                    document_id=document_id,
-                    user_id=user_id,
-                    processed_paragraphs=processed_count,
-                    question_chunks_created=len(question_chunks),
-                )
+        tasks = [process_chunk(chunk) for chunk in paragraph_chunks]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for res in results:
+            if isinstance(res, list):
+                question_chunks.extend(res)
 
         if question_chunks:
             await self._store_chunks_with_embeddings(
