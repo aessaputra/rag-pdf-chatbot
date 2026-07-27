@@ -28,6 +28,24 @@ UUID_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
 )
 
+JUNK_SECTION_TITLES = (
+    "table of contents",
+    "references",
+    "bibliography",
+    "index",
+    "appendix",
+)
+
+ARGUMENTATIVE_CONJUNCTIONS = (
+    "however",
+    "therefore",
+    "moreover",
+    "furthermore",
+    "consequently",
+    "specifically",
+    "particularly",
+)
+
 
 class EnrichmentJobService:
     @staticmethod
@@ -371,16 +389,7 @@ class EnrichmentJobService:
             
         content_lower = content.lower()
 
-        if any(
-            phrase in content_lower
-            for phrase in [
-                "table of contents",
-                "references",
-                "bibliography",
-                "index",
-                "appendix",
-            ]
-        ):
+        if any(phrase in content_lower for phrase in JUNK_SECTION_TITLES):
             return False
 
         char_count = len(content)
@@ -412,18 +421,7 @@ class EnrichmentJobService:
             if 50 <= avg_chars_per_sentence <= 150:
                 score += 1.0
 
-        if any(
-            keyword in content.lower()
-            for keyword in [
-                "however",
-                "therefore",
-                "moreover",
-                "furthermore",
-                "consequently",
-                "specifically",
-                "particularly",
-            ]
-        ):
+        if any(keyword in content.lower() for keyword in ARGUMENTATIVE_CONJUNCTIONS):
             score += 0.5
 
         if content.strip()[-1] in ".!?。！？":
