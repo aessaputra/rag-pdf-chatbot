@@ -37,7 +37,7 @@ CHUNK_OVERLAP = 200
 
 QUESTION_GENERATION_PROMPT = (
     f"Generate {QUESTIONS_PER_PARAGRAPH} diverse questions that can be "
-    "answered by this paragraph:\n\n{{paragraph_content}}\n\n"
+    "answered by this paragraph:\n\n{paragraph_content}\n\n"
     "Some simple query(s) in non-technical language. "
     "Some intermediate query(s) that require some reasoning. "
     "Some advanced query(s) that require deep understanding, using more technical words. "
@@ -116,16 +116,16 @@ class PDFIngestionService:
             paragraph_content=paragraph_content
         )
 
-        structured_llm = llm.with_structured_output(GeneratedQuestions)
-        response = await structured_llm.ainvoke(prompt)
+        response = await llm.ainvoke(prompt)
+        content = str(response.content) if response.content else ""
         
-        questions: list[str] = []
-        if isinstance(response, GeneratedQuestions):
-            questions = response.questions
-        elif isinstance(response, dict) and "questions" in response:
-            questions = response["questions"]
-        elif hasattr(response, "questions"):
-            questions = getattr(response, "questions")
+        questions = []
+        for line in content.split('\n'):
+            cleaned = line.strip()
+            import re
+            cleaned = re.sub(r'^(\d+\.|[-*+])\s+', '', cleaned)
+            if cleaned:
+                questions.append(cleaned)
             
         if not questions:
             raise ValueError("LLM did not produce valid synthetic questions.")

@@ -67,19 +67,10 @@ def test_pdf_parsing_should_extract_text_from_pages():
 @pytest.mark.asyncio
 async def test_generate_questions_should_parse_structured_output():
     """Verify LLM response yields questions using structured output."""
-    mock_llm = MagicMock()
-    mock_structured = AsyncMock()
-    
-    mock_structured.ainvoke.return_value = MagicMock(
-        questions=[
-            "Apa itu RAG?",
-            "Bagaimana RAG meningkatkan akurasi?",
-            "Apa peran vektor dalam RAG?",
-            "Kapan RAG digunakan?",
-            "Mengapa RAG membutuhkan embedding?"
-        ]
-    )
-    mock_llm.with_structured_output.return_value = mock_structured
+    mock_llm = AsyncMock()
+    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(
+        content="Apa itu RAG?\nBagaimana RAG meningkatkan akurasi?\nApa peran vektor dalam RAG?\nKapan RAG digunakan?\nMengapa RAG membutuhkan embedding?"
+    ))
     
     ingestion_service = PDFIngestionService()
     questions = await ingestion_service.generate_questions_batch(
@@ -97,10 +88,8 @@ async def test_generate_questions_should_parse_structured_output():
 @pytest.mark.asyncio
 async def test_generate_questions_should_raise_on_unparseable_llm_output():
     """Verify an empty or question-less LLM response is treated as generation failure."""
-    mock_llm = MagicMock()
-    mock_structured = AsyncMock()
-    mock_structured.ainvoke.return_value = MagicMock(questions=[])
-    mock_llm.with_structured_output.return_value = mock_structured
+    mock_llm = AsyncMock()
+    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content="   \n \n"))
     
     ingestion_service = PDFIngestionService()
     with pytest.raises(ValueError):
@@ -271,12 +260,10 @@ async def test_enrich_document_with_questions_should_store_linked_question_chunk
         )
     ]
 
-    mock_llm = MagicMock()
-    mock_structured = AsyncMock()
-    mock_structured.ainvoke.return_value = MagicMock(
-        questions=["What is this?", "Why does it matter?"]
-    )
-    mock_llm.with_structured_output.return_value = mock_structured
+    mock_llm = AsyncMock()
+    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(
+        content="What is this?\nWhy does it matter?"
+    ))
 
     mock_embeddings = MagicMock()
     mock_embeddings.embed_documents.return_value = [[0.1, 0.2], [0.3, 0.4]]
@@ -338,18 +325,16 @@ async def test_enrich_document_with_questions_should_skip_failed_paragraphs_and_
     mock_job_service.get_preset_cap = MagicMock(return_value=75)
     mock_job_service.select_paragraphs_by_quality = lambda c, cap: chunks
 
-    mock_llm = MagicMock()
-    mock_structured = AsyncMock()
+    mock_llm = AsyncMock()
     
     call_count = [0]
     async def mock_ainvoke(*args, **kwargs):
         call_count[0] += 1
         if call_count[0] == 1:
             raise Exception("401 Unauthorized")
-        return MagicMock(questions=["What works?"])
+        return MagicMock(content="What works?")
     
-    mock_structured.ainvoke = mock_ainvoke
-    mock_llm.with_structured_output.return_value = mock_structured
+    mock_llm.ainvoke = mock_ainvoke
 
     mock_embeddings = MagicMock()
     mock_embeddings.embed_documents.return_value = [[0.1, 0.2]]
@@ -396,12 +381,10 @@ async def test_enrich_document_with_questions_should_respect_cap_parameter(
     mock_job_service.complete_job = AsyncMock()
     mock_job_service.select_paragraphs_by_quality = lambda c, cap: chunks[:cap]
 
-    mock_llm = MagicMock()
-    mock_structured = AsyncMock()
-    mock_structured.ainvoke.return_value = MagicMock(
-        questions=["What is this?"]
-    )
-    mock_llm.with_structured_output.return_value = mock_structured
+    mock_llm = AsyncMock()
+    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(
+        content="What is this?"
+    ))
 
     mock_embeddings = MagicMock()
     mock_embeddings.embed_documents.return_value = [[0.1, 0.2]] * 75
