@@ -16,7 +16,7 @@ from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
-    wait_exponential,
+    wait_random_exponential,
 )
 
 from app.database import execute_query, get_supabase_client
@@ -104,7 +104,7 @@ class PDFIngestionService:
 
     @retry(
         retry=retry_if_exception_type(get_retryable_exceptions()),
-        wait=wait_exponential(multiplier=2, min=5, max=120),
+        wait=wait_random_exponential(multiplier=2, min=5, max=120),
         stop=stop_after_attempt(10),
     )
     async def generate_questions_batch(
