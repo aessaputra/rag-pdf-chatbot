@@ -10,7 +10,9 @@ from app.schemas import (
     DocumentPreviewResponse,
     DocumentToggleRequest,
     DocumentUploadResponse,
+    EnrichmentStatusResponse,
 )
+from app.services.enrichment_job_service import EnrichmentJobService
 from app.services.ingestion_service import PDFIngestionService
 from app.services.storage_service import StorageService
 
@@ -91,7 +93,23 @@ async def list_user_documents(user: CurrentUserDep) -> list[DocumentItemResponse
         .order("created_at", desc=True)
     )
     data = res.data if res.data else []
-    return [DocumentItemResponse(**doc) for doc in data]
+
+    job_service = EnrichmentJobService()
+    documents = []
+    for doc in data:
+        enrichment_status = None
+        job = await job_service.get_job(doc["id"])
+        if job:
+            enrichment_status = EnrichmentStatusResponse(
+                status=job.get("status", "pending"),
+                total_paragraphs=job.get("total_paragraphs", 0),
+                processed_paragraphs=job.get("processed_paragraphs", 0),
+                question_chunks_created=job.get("question_chunks_created", 0),
+                failed_paragraphs=job.get("failed_paragraphs", 0),
+            )
+        documents.append(DocumentItemResponse(**doc, enrichment=enrichment_status))
+
+    return documents
 
 
 @router.patch("/{document_id}/toggle", response_model=DocumentItemResponse)

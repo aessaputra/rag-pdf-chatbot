@@ -14,6 +14,7 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 
 from app.database import execute_query, get_supabase_client
 from app.schemas import DocumentChunkDTO
+from app.services.enrichment_job_service import EnrichmentJobService
 from app.services.rag_service import initialize_user_embeddings, initialize_user_llm
 from app.services.storage_service import StorageService
 
@@ -148,6 +149,7 @@ class PDFIngestionService:
 
     async def process_document(self, document_id: str, user_id: str, filename: str, pdf_bytes: bytes, batch_size: int = 100) -> None:
         supabase = await get_supabase_client()
+        job_service = EnrichmentJobService()
         try:
             chunks = await asyncify(self.parse_pdf_bytes)(pdf_bytes, filename)
             if not chunks:
@@ -158,8 +160,18 @@ class PDFIngestionService:
             await execute_query(supabase.table('documents').update({'status': 'ready', 'total_pages': total_pages}).eq('id', document_id))
             logger.info('Document %s processed: %d chunks stored.', document_id, len(chunks))
             try:
-                llm = await initialize_user_llm(user_id)
-                await self.enrich_document_questions(supabase, document_id, user_id, chunks, llm, embeddings_model, batch_size)
+                preset = await job_service.get_user_preset(user_id)
+                cap = job_service.get_preset_cap(preset)
+                if cap > 0:
+                    await job_service.create_job(
+                        document_id=document_id,
+                        user_id=user_id,
+                        total_paragraphs=len([c for c in chunks if c.metadata.get('type') == 'paragraph']),
+                    )
+                    llm = await initialize_user_llm(user_id)
+                    await self.enrich_document_questions(
+                        supabase, document_id, user_id, chunks, llm, embeddings_model, batch_size, job_service, cap
+                    )
             except Exception:
                 logger.exception('Document %s question enrichment failed.', document_id)
         except Exception:
@@ -175,14 +187,28 @@ class PDFIngestionService:
         llm: BaseChatModel,
         embeddings_model: Embeddings,
         batch_size: int = 100,
+        job_service: EnrichmentJobService | None = None,
+        cap: int = MAX_ENRICHED_PARAGRAPHS,
     ) -> None:
+        if job_service is None:
+            job_service = EnrichmentJobService()
+
+        await job_service.start_job(document_id, user_id)
+
+        paragraph_chunks = job_service.select_paragraphs_by_quality(chunks, cap)
+        total_paragraphs = len(paragraph_chunks)
+
         question_chunks: list[DocumentChunkDTO] = []
-        paragraph_chunks = [chunk for chunk in chunks if chunk.metadata.get('type') == 'paragraph'][:MAX_ENRICHED_PARAGRAPHS]
+        processed_count = 0
+        failed_count = 0
+
         for chunk in paragraph_chunks:
             try:
                 questions = await self.generate_questions(chunk.content, llm)
+                processed_count += 1
             except Exception as exc:
                 logger.warning('Skipping question enrichment for chunk %s: %s', chunk.id, exc)
+                failed_count += 1
                 continue
             for question in questions:
                 question_chunks.append(DocumentChunkDTO(
@@ -197,8 +223,29 @@ class PDFIngestionService:
                         'question': question,
                     },
                 ))
+
+            if processed_count % 10 == 0:
+                await job_service.update_progress(
+                    document_id=document_id,
+                    user_id=user_id,
+                    processed_paragraphs=processed_count,
+                    question_chunks_created=len(question_chunks),
+                )
+
         if question_chunks:
             await self._store_chunks(supabase, document_id, user_id, question_chunks, embeddings_model, batch_size)
+
+        await job_service.complete_job(
+            document_id=document_id,
+            user_id=user_id,
+            processed_paragraphs=processed_count,
+            question_chunks_created=len(question_chunks),
+        )
+
+        logger.info(
+            'Document %s enrichment completed: %d/%d paragraphs, %d questions, %d failed.',
+            document_id, processed_count, total_paragraphs, len(question_chunks), failed_count
+        )
 
     async def _store_chunks(self, supabase: Any, document_id: str, user_id: str, chunks: list[DocumentChunkDTO], embeddings_model: Embeddings, batch_size: int) -> None:
         chunk_texts = [chunk.metadata.get('question', chunk.content) if chunk.metadata.get('type') == 'question' else chunk.content for chunk in chunks]

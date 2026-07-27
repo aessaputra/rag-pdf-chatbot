@@ -25,6 +25,16 @@ export interface Citation {
   readonly content: string;
 }
 
+export type EnrichmentStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface EnrichmentStatusInfo {
+  readonly status: EnrichmentStatus;
+  readonly total_paragraphs: number;
+  readonly processed_paragraphs: number;
+  readonly question_chunks_created: number;
+  readonly failed_paragraphs: number;
+}
+
 export interface DocumentItem {
   readonly id: string;
   readonly filename: string;
@@ -33,6 +43,7 @@ export interface DocumentItem {
   readonly is_active?: boolean;
   readonly status?: 'processing' | 'ready' | 'failed';
   readonly created_at: string;
+  readonly enrichment?: EnrichmentStatusInfo | null;
 }
 
 export interface DocumentPreviewResponse {
@@ -103,6 +114,17 @@ export interface EmbeddingConfigSavePayload {
   readonly base_url?: string;
   readonly model_name: string;
   readonly embedding_dimensions: number;
+}
+
+export type EnrichmentPreset = 'off' | 'standard' | 'high' | 'full';
+
+export interface EnrichmentConfig {
+  readonly preset: EnrichmentPreset;
+  readonly max_enriched_paragraphs: number;
+}
+
+export interface EnrichmentConfigSavePayload {
+  readonly preset: EnrichmentPreset;
 }
 
 

@@ -19,7 +19,16 @@ export function DocumentItemRow({ doc, isBusy, onToggleActive, onPreview, onDele
   const isActive = doc.is_active ?? true;
   const isProcessing = doc.status === 'processing';
   const isFailed = doc.status === 'failed';
-
+  const enrichment = doc.enrichment;
+  const enrichmentLabel = enrichment?.status === 'completed'
+    ? `${enrichment.question_chunks_created}Q`
+    : enrichment?.status === 'running'
+      ? `${enrichment.processed_paragraphs}/${enrichment.total_paragraphs}`
+      : enrichment?.status === 'pending'
+        ? 'QUEUE'
+        : enrichment?.status === 'failed'
+          ? 'ENRICH GAGAL'
+          : null;
 
   const handleDelete = async () => {
     await onDelete(doc.id);
@@ -53,6 +62,11 @@ export function DocumentItemRow({ doc, isBusy, onToggleActive, onPreview, onDele
                 OFF
               </span>
             )}
+            {enrichmentLabel ? (
+              <span className={`text-xs tracking-wider font-semibold px-2 py-0.5 rounded-full shrink-0 border ${enrichment?.status === 'failed' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-surface-card-hover text-muted border-subtle'}`}>
+                {enrichmentLabel}
+              </span>
+            ) : null}
           </div>
           <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
             <span>{formatFileSize(doc.file_size)}</span>

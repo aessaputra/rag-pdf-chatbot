@@ -48,6 +48,14 @@ class DocumentUploadResponse(BaseModel):
     created_at: datetime
 
 
+class EnrichmentStatusResponse(BaseModel):
+    status: str
+    total_paragraphs: int = 0
+    processed_paragraphs: int = 0
+    question_chunks_created: int = 0
+    failed_paragraphs: int = 0
+
+
 class DocumentItemResponse(BaseModel):
     id: str
     filename: str
@@ -56,6 +64,7 @@ class DocumentItemResponse(BaseModel):
     is_active: bool = True
     status: str = "ready"
     created_at: datetime
+    enrichment: EnrichmentStatusResponse | None = None
 
 
 class DocumentToggleRequest(BaseModel):
@@ -128,6 +137,18 @@ class EmbeddingConfigResponse(BaseModel):
     model_name: str
     embedding_dimensions: int
     locked: bool
+
+
+EnrichmentPreset = Literal["off", "standard", "high", "full"]
+
+
+class EnrichmentConfigRequest(BaseModel):
+    preset: EnrichmentPreset
+
+
+class EnrichmentConfigResponse(BaseModel):
+    preset: EnrichmentPreset
+    max_enriched_paragraphs: int
 
 
 class VerifyModelsRequest(BaseModel):

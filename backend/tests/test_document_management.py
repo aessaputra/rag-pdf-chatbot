@@ -60,11 +60,21 @@ def test_document_toggle_request_validation():
 # --- API Endpoint Tests ---
 
 
+@patch("app.routers.document_router.EnrichmentJobService")
 @patch("app.routers.document_router.get_supabase_client")
-def test_list_documents_returns_items(mock_get_supabase):
+def test_list_documents_returns_items(mock_get_supabase, mock_job_service_class):
     """Verify GET /api/documents returns list of DocumentItemResponse."""
     mock_supabase = MagicMock()
     mock_get_supabase.return_value = mock_supabase
+    mock_job_service = MagicMock()
+    mock_job_service.get_job = AsyncMock(return_value={
+        "status": "completed",
+        "total_paragraphs": 10,
+        "processed_paragraphs": 10,
+        "question_chunks_created": 50,
+        "failed_paragraphs": 0,
+    })
+    mock_job_service_class.return_value = mock_job_service
 
     mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = MagicMock(
         data=[
@@ -89,6 +99,8 @@ def test_list_documents_returns_items(mock_get_supabase):
         assert data[0]["id"] == MOCK_DOC_ID
         assert data[0]["is_active"] is True
         assert data[0]["status"] == "ready"
+        assert data[0]["enrichment"]["status"] == "completed"
+        assert data[0]["enrichment"]["question_chunks_created"] == 50
     finally:
         app.dependency_overrides.clear()
 

@@ -1,4 +1,4 @@
-import type { ApiResponse, Citation, DocumentItem, DocumentPreviewResponse, ProviderConfig, EmbeddingConfig, EmbeddingConfigSavePayload } from '@/types';
+import type { ApiResponse, Citation, DocumentItem, DocumentPreviewResponse, ProviderConfig, EmbeddingConfig, EmbeddingConfigSavePayload, EnrichmentConfig, EnrichmentConfigSavePayload } from '@/types';
 
 
 import { createClient } from '@/lib/supabaseClient';
@@ -259,6 +259,22 @@ export function saveEmbeddingConfig(
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
     token,
     'Gagal menyimpan konfigurasi embedding.'
+  );
+}
+
+export function getEnrichmentConfig(token: string): Promise<ApiResponse<EnrichmentConfig>> {
+  return apiFetch('/api/settings/enrichment', { method: 'GET' }, token, 'Gagal mengambil konfigurasi enrichment.');
+}
+
+export function saveEnrichmentConfig(
+  payload: EnrichmentConfigSavePayload,
+  token: string
+): Promise<ApiResponse<EnrichmentConfig>> {
+  return apiFetch(
+    '/api/settings/enrichment',
+    { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+    token,
+    'Gagal menyimpan konfigurasi enrichment.'
   );
 }
 

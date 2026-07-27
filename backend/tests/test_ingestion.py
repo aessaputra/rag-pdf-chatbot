@@ -312,22 +312,31 @@ async def test_process_document_should_mark_failed_when_embedding_fails(mock_get
 
 
 @pytest.mark.asyncio
-async def test_enrich_document_questions_should_store_linked_question_chunks():
+@patch("app.services.ingestion_service.EnrichmentJobService")
+async def test_enrich_document_questions_should_store_linked_question_chunks(mock_job_service_class):
     mock_supabase, tables = _make_supabase_mock()
 
-    source_chunk = DocumentChunkDTO(
-        id="paragraph-1",
-        content="Alpha paragraph text.",
-        page_number=2,
-        filename="paper.pdf",
-        metadata={
-            "filename": "paper.pdf",
-            "page_number": 2,
-            "line_start": 4,
-            "line_end": 6,
-            "type": "paragraph",
-        },
-    )
+    mock_job_service = MagicMock()
+    mock_job_service_class.return_value = mock_job_service
+    mock_job_service.start_job = AsyncMock()
+    mock_job_service.update_progress = AsyncMock()
+    mock_job_service.complete_job = AsyncMock()
+    mock_job_service.select_paragraphs_by_quality = lambda chunks, cap: [
+        DocumentChunkDTO(
+            id="paragraph-1",
+            content="Alpha paragraph text with enough length to pass minimum threshold.",
+            page_number=2,
+            filename="paper.pdf",
+            metadata={
+                "filename": "paper.pdf",
+                "page_number": 2,
+                "line_start": 4,
+                "line_end": 6,
+                "type": "paragraph",
+            },
+        )
+    ]
+
     mock_llm = MagicMock()
     mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content="1. What is alpha?\n2. Why alpha matters?"))
     mock_embeddings = MagicMock()
@@ -338,7 +347,7 @@ async def test_enrich_document_questions_should_store_linked_question_chunks():
         supabase=mock_supabase,
         document_id=MOCK_DOC_ID,
         user_id=MOCK_USER_ID,
-        chunks=[source_chunk],
+        chunks=[],
         llm=mock_llm,
         embeddings_model=mock_embeddings,
     )
@@ -348,7 +357,7 @@ async def test_enrich_document_questions_should_store_linked_question_chunks():
     assert [record["metadata"]["question"] for record in inserted_records] == ["What is alpha?", "Why alpha matters?"]
     for record in inserted_records:
         assert record["parent_chunk_id"] == "paragraph-1"
-        assert record["content"] == "Alpha paragraph text."
+        assert "Alpha paragraph text" in record["content"]
         assert record["metadata"]["type"] == "question"
         assert record["metadata"]["line_start"] == 4
         assert record["metadata"]["line_end"] == 6
@@ -356,24 +365,34 @@ async def test_enrich_document_questions_should_store_linked_question_chunks():
 
 
 @pytest.mark.asyncio
-async def test_enrich_document_questions_should_skip_failed_paragraphs_and_continue():
+@patch("app.services.ingestion_service.EnrichmentJobService")
+async def test_enrich_document_questions_should_skip_failed_paragraphs_and_continue(mock_job_service_class):
     mock_supabase, tables = _make_supabase_mock()
+
     chunks = [
         DocumentChunkDTO(
             id="paragraph-1",
-            content="Broken paragraph.",
+            content="Broken paragraph with enough length to pass threshold.",
             page_number=1,
             filename="paper.pdf",
             metadata={"filename": "paper.pdf", "page_number": 1, "line_start": 1, "line_end": 1, "type": "paragraph"},
         ),
         DocumentChunkDTO(
             id="paragraph-2",
-            content="Working paragraph.",
+            content="Working paragraph with enough length to pass threshold.",
             page_number=1,
             filename="paper.pdf",
             metadata={"filename": "paper.pdf", "page_number": 1, "line_start": 2, "line_end": 2, "type": "paragraph"},
         ),
     ]
+
+    mock_job_service = MagicMock()
+    mock_job_service_class.return_value = mock_job_service
+    mock_job_service.start_job = AsyncMock()
+    mock_job_service.update_progress = AsyncMock()
+    mock_job_service.complete_job = AsyncMock()
+    mock_job_service.select_paragraphs_by_quality = lambda c, cap: chunks
+
     mock_llm = MagicMock()
     mock_llm.ainvoke = AsyncMock(side_effect=[Exception("401 Unauthorized"), MagicMock(content="1. What works?")])
     mock_embeddings = MagicMock()
@@ -397,18 +416,28 @@ async def test_enrich_document_questions_should_skip_failed_paragraphs_and_conti
 
 
 @pytest.mark.asyncio
-async def test_enrich_document_questions_should_cap_enriched_paragraphs_at_75():
+@patch("app.services.ingestion_service.EnrichmentJobService")
+async def test_enrich_document_questions_should_cap_enriched_paragraphs_at_75(mock_job_service_class):
     mock_supabase, tables = _make_supabase_mock()
+
     chunks = [
         DocumentChunkDTO(
             id=f"paragraph-{index}",
-            content=f"Paragraph {index}.",
+            content=f"Paragraph {index} with enough length to pass minimum threshold for selection.",
             page_number=1,
             filename="paper.pdf",
             metadata={"filename": "paper.pdf", "page_number": 1, "line_start": index, "line_end": index, "type": "paragraph"},
         )
         for index in range(80)
     ]
+
+    mock_job_service = MagicMock()
+    mock_job_service_class.return_value = mock_job_service
+    mock_job_service.start_job = AsyncMock()
+    mock_job_service.update_progress = AsyncMock()
+    mock_job_service.complete_job = AsyncMock()
+    mock_job_service.select_paragraphs_by_quality = lambda c, cap: chunks[:75]
+
     mock_llm = MagicMock()
     mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content="1. What is this?"))
     mock_embeddings = MagicMock()

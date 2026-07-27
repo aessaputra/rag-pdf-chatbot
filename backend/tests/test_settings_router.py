@@ -226,4 +226,48 @@ def test_verify_embedding_models_success(mock_fetch):
         app.dependency_overrides.clear()
 
 
+@patch("app.routers.settings_router.get_supabase_client")
+def test_get_enrichment_config_defaults_to_standard(mock_get_supabase):
+    """Verify GET /api/settings/enrichment returns the default preset when unset."""
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_response = MagicMock()
+    mock_response.data = []
+    mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_response
+
+    try:
+        response = client.get("/api/settings/enrichment")
+        assert response.status_code == 200
+        assert response.json() == {"preset": "standard", "max_enriched_paragraphs": 75}
+    finally:
+        app.dependency_overrides.clear()
+
+
+@patch("app.routers.settings_router.get_supabase_client")
+def test_save_enrichment_config_upserts_user_preset(mock_get_supabase):
+    """Verify PUT /api/settings/enrichment persists the user's preset."""
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    mock_supabase = MagicMock()
+    mock_get_supabase.return_value = mock_supabase
+
+    mock_response = MagicMock()
+    mock_response.data = [{"user_id": MOCK_USER.user_id, "preset": "high"}]
+    mock_supabase.table.return_value.upsert.return_value.execute.return_value = mock_response
+
+    try:
+        response = client.put("/api/settings/enrichment", json={"preset": "high"})
+        assert response.status_code == 200
+        assert response.json() == {"preset": "high", "max_enriched_paragraphs": 150}
+        mock_supabase.table.return_value.upsert.assert_called_once_with(
+            {"user_id": MOCK_USER.user_id, "preset": "high"},
+            on_conflict="user_id"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+
 

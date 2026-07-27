@@ -8,6 +8,7 @@ import { useApp } from '@/context/AppContext';
 import { listProviderConfigs } from '@/lib/api';
 import ProviderSettingsSection from '@/components/settings/ProviderSettingsSection';
 import EmbeddingSettingsSection from '@/components/settings/EmbeddingSettingsSection';
+import EnrichmentSettingsSection from '@/components/settings/EnrichmentSettingsSection';
 
 export default function SettingsPage() {
   const { user, token, providerConfigs, embeddingConfig, setProviderConfigs, setEmbeddingConfig, isInitializing } = useApp();
@@ -48,7 +49,7 @@ export default function SettingsPage() {
       </header>
 
 
-      <main className="max-w-5xl mx-auto px-4 md:px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-12 lg:py-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
 
         {(successMsg || errorMsg) && (
           <div className="md:col-span-3 space-y-3 mb-2">
@@ -92,6 +93,13 @@ export default function SettingsPage() {
                 embeddingConfig={embeddingConfig}
                 token={token}
                 onSetEmbeddingConfig={setEmbeddingConfig}
+                onSetSuccessMsg={setSuccessMsg}
+                onSetErrorMsg={setErrorMsg}
+              />
+            </div>
+            <div className="md:col-span-1 h-full flex flex-col min-w-0">
+              <EnrichmentSettingsSection
+                token={token}
                 onSetSuccessMsg={setSuccessMsg}
                 onSetErrorMsg={setErrorMsg}
               />

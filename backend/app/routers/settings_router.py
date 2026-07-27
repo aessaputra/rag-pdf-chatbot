@@ -6,6 +6,8 @@ from app.database import execute_query, get_supabase_client
 from app.schemas import (
     EmbeddingConfigResponse,
     EmbeddingConfigSaveRequest,
+    EnrichmentConfigRequest,
+    EnrichmentConfigResponse,
     ProviderConfigCreate,
     ProviderConfigResponse,
     ProviderConfigUpdate,
@@ -13,6 +15,7 @@ from app.schemas import (
     VerifyModelsResponse,
 )
 from app.services.crypto_service import CryptoService
+from app.services.enrichment_job_service import DEFAULT_PRESET, EnrichmentJobService
 from app.services.model_service import ModelService
 
 router = APIRouter(
@@ -295,4 +298,45 @@ async def save_embedding_config(
         )
 
     return _format_embedding_response(upsert_res.data[0], has_documents)
+
+
+@router.get("/enrichment", response_model=EnrichmentConfigResponse)
+async def get_enrichment_config(user: CurrentUserDep) -> EnrichmentConfigResponse:
+    supabase = await get_supabase_client()
+    response = await execute_query(
+        supabase.table("user_enrichment_configs")
+        .select("preset")
+        .eq("user_id", user.user_id)
+    )
+    preset = response.data[0].get("preset", DEFAULT_PRESET) if response.data else DEFAULT_PRESET
+    job_service = EnrichmentJobService()
+    return EnrichmentConfigResponse(
+        preset=preset,
+        max_enriched_paragraphs=job_service.get_preset_cap(preset),
+    )
+
+
+@router.put("/enrichment", response_model=EnrichmentConfigResponse)
+async def save_enrichment_config(
+    payload: EnrichmentConfigRequest,
+    user: CurrentUserDep,
+) -> EnrichmentConfigResponse:
+    supabase = await get_supabase_client()
+    response = await execute_query(
+        supabase.table("user_enrichment_configs")
+        .upsert({"user_id": user.user_id, "preset": payload.preset}, on_conflict="user_id")
+    )
+
+    if not response.data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gagal menyimpan konfigurasi enrichment."
+        )
+
+    preset = response.data[0].get("preset", payload.preset)
+    job_service = EnrichmentJobService()
+    return EnrichmentConfigResponse(
+        preset=preset,
+        max_enriched_paragraphs=job_service.get_preset_cap(preset),
+    )
 
